@@ -93,7 +93,8 @@ frontend builds and tests, and GitHub Actions runs the same checks.
 | Frontend lint and format | `npm run lint`, `npm run format:check` | ✅ |
 | Frontend tests | `npm test` | ✅ 1 passed |
 | Frontend build | `npm run build` | ✅ |
-| CI and Compose YAML | YAML parse | ✅ Valid. **The CI workflow itself first runs after this push.** |
+| CI and Compose YAML | YAML parse | ✅ Valid |
+| GitHub Actions run #1 | Push of `9af37f2` | ✅ Backend (verify, Testcontainers) and frontend (ci, lint, format, test, build) both passed |
 
 ### How this was verified in the cloud session (workarounds, not committed)
 - Maven Central and Docker Hub were rate-limiting the cloud machine (HTTP 429). Maven used Google's Maven Central mirror via `~/.m2/settings.xml`, and the `postgres:17-alpine` image was pulled from `mirror.gcr.io`. **Your PC and GitHub Actions use the normal sources**, so nothing in the project depends on these workarounds.

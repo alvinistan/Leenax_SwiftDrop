@@ -15,11 +15,11 @@ Running log so work can resume at any time. Newest entry first.
   - `docker-compose.yml` (PostgreSQL 17) and `.env.example`
   - GitHub Actions CI for the backend and frontend
   - README Windows run guide and troubleshooting
+  - First GitHub Actions run (commit `9af37f2`): backend ✅ and frontend ✅
 - **Waiting on owner:**
   1. Run the project on the Windows PC (exercise 1) and report the result
-  2. Check that the first GitHub Actions run is green
-  3. Approve creating a `main` branch
-  4. Decision D-12 (Sinhala and Tamil) before Phase 2
+  2. Approve creating a `main` branch
+  3. Decision D-12 (Sinhala and Tamil) before Phase 2
 - **Report:** [phase-reports/phase-1-foundation.md](phase-reports/phase-1-foundation.md)
 
 ## Phase 0 — Repository audit and requirements
