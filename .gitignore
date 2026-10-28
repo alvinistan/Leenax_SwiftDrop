@@ -1,0 +1,31 @@
+# --- Secrets: never commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+.aws/
+
+# --- Java / Maven ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.log
+
+# --- Node / Vite ---
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.local
+
+# --- IDEs and OS ---
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
