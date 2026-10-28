@@ -12,10 +12,12 @@ Running log so work can resume at any time. Newest entry first.
   - Recorded cloud-container tool versions and checked current dependency versions
   - Wrote the requirements, architecture, backlog and learning roadmap
   - Added `.gitignore` and `.gitattributes`
-- **Waiting on owner:**
-  1. Approve or change the Spring Boot 4.1.x recommendation (AD-12)
-  2. Run the Windows PC version commands (audit §5) and share the output
-  3. Answer the open decisions in `REQUIREMENTS.md` §6 that you can (D-2 and D-12 matter soonest)
-  4. Approve committing and pushing Phase 0
-  5. Choose where Phase 1 runs: this cloud session, or Claude Code locally on the PC
+- **Commit:** `d665aa3` pushed to GitHub
+- **Decided:**
+  - Spring Boot 4.1.x with Java 21 language level (AD-12): approved
+  - Windows PC toolchain checked (audit §5): JDK 25, Node 22.14, npm 11.6, Docker 29.9, Compose 5.6, WSL 2
+- **Still open:**
+  1. `git --version` on the PC
+  2. Where Phase 1 runs: this cloud session, or Claude Code locally on the PC
+  3. Open decisions in `REQUIREMENTS.md` §6 (D-2 variants and D-12 languages matter soonest)
 - **Report:** [phase-reports/phase-0-repository-audit.md](phase-reports/phase-0-repository-audit.md)

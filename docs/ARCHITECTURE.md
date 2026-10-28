@@ -80,7 +80,7 @@ API stable when the database changes.
 | AD-9 | Inventory updated with row locking or optimistic versioning inside a transaction | Prevents overselling under concurrency |
 | AD-10 | Idempotency keys for checkout and payment webhooks | Retries and double-clicks are safe |
 | AD-11 | Private S3 bucket + pre-signed URLs (Phase 7) | No public write access; least privilege |
-| AD-12 | Spring Boot 4.1.x on Java 21 (**pending approval**) | Boot 3.5 OSS support has ended; see the Phase 0 audit §4 |
+| AD-12 | Spring Boot 4.1.x; Java 21 language level (`release` 21) | Boot 3.5 OSS support has ended (Phase 0 audit §4). Code compiled for Java 21 builds and runs on the owner's JDK 25 and on JDK 21 in CI and the cloud. |
 
 ### Authentication approach (decided in Phase 6)
 
@@ -147,4 +147,4 @@ Configuration comes from environment variables. Only safe defaults are kept in
 | Date | Decision | Status |
 |---|---|---|
 | 2026-10-28 | AD-1 to AD-11 proposed | Proposed |
-| 2026-10-28 | AD-12 Spring Boot 4.1.x | Awaiting owner approval |
+| 2026-10-28 | AD-12 Spring Boot 4.1.x, Java 21 language level | Approved by owner |

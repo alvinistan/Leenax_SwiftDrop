@@ -111,6 +111,18 @@ wsl --status
 Maven does not need a separate install: the project will include the Maven
 Wrapper (`mvnw.cmd`).
 
+### Results reported by the owner (2026-10-28)
+
+| Tool | Windows PC | Assessment |
+|---|---|---|
+| Java | Oracle JDK 25.0.1 LTS | OK. Spring Boot 4.1 supports Java 25. The project compiles with `release 21`, so it runs on 25 locally and on 21 elsewhere. No extra JDK needed. |
+| Node.js | 22.14.0 | OK for Vite 8 (needs 22.12+). Node 22 is in maintenance LTS; upgrading to Node 24 LTS is optional. |
+| npm | 11.6.2 | OK |
+| Docker | 29.9.2 | OK |
+| Docker Compose | v5.6.1 | OK |
+| WSL | Version 2, `docker-desktop` distribution | OK: Docker Desktop uses the WSL 2 backend |
+| Git | Not reported yet | Run `git --version` |
+
 Expected for Phase 1:
 
 - **Java 21** (for example Eclipse Temurin 21)

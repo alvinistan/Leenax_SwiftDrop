@@ -13,7 +13,7 @@ It is also a step-by-step programming-learning project.
 | Layer | Technology |
 |---|---|
 | Frontend | React, TypeScript, Vite, React Router, Axios, Tailwind CSS |
-| Backend | Java 21, Spring Boot (version per `docs/ARCHITECTURE.md` AD-12), Spring Security, Spring Data JPA |
+| Backend | Java 21 (language level), Spring Boot 4.1.x, Spring Security, Spring Data JPA |
 | Database | PostgreSQL + Flyway migrations |
 | Storage | AWS S3 (private bucket) for product images |
 | Testing | JUnit 5, Mockito, Testcontainers, Vitest, React Testing Library, Playwright |
