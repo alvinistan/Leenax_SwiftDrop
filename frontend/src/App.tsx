@@ -1,15 +1,17 @@
+import { useState } from 'react'
+import { AppLayout } from './components/layout/AppLayout'
+import { HomePage } from './pages/HomePage'
+
 function App() {
+  // "Lifted" state: App owns the cart count because both the Header (shows it)
+  // and the product cards (change it) need it. Preview only: a real cart
+  // arrives in Phase 8 and will be stored on the server.
+  const [cartCount, setCartCount] = useState(0)
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Leenax SwiftDrop.lk
-        </h1>
-        <p className="mt-3 text-slate-600">
-          Our online store is being built. Please check back soon.
-        </p>
-      </div>
-    </main>
+    <AppLayout cartCount={cartCount}>
+      <HomePage onAddToCart={() => setCartCount((count) => count + 1)} />
+    </AppLayout>
   )
 }
 

@@ -1,1 +1,31 @@
 @import 'tailwindcss';
+
+/*
+ * Design tokens. Tailwind turns each variable into utility classes:
+ * --color-brand-600 → bg-brand-600, text-brand-600, border-brand-600 ...
+ * Change the brand colour here and the whole site follows.
+ */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand: teal. 700 on white passes WCAG AA contrast for text. */
+  --color-brand-50: var(--color-teal-50);
+  --color-brand-100: var(--color-teal-100);
+  --color-brand-200: var(--color-teal-200);
+  --color-brand-500: var(--color-teal-500);
+  --color-brand-600: var(--color-teal-600);
+  --color-brand-700: var(--color-teal-700);
+  --color-brand-800: var(--color-teal-800);
+  --color-brand-900: var(--color-teal-900);
+}
+
+@layer base {
+  body {
+    @apply bg-white text-slate-900 antialiased;
+  }
+
+  /* One consistent, clearly visible keyboard focus style everywhere. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+}

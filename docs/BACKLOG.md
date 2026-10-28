@@ -8,8 +8,8 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | Phase | Title | Depends on | Status |
 |---|---|---|---|
 | 0 | Repository audit and requirements | — | Done |
-| 1 | Development environment and project foundation | 0 | Awaiting review |
-| 2 | React fundamentals and design system | 1 | Not started |
+| 1 | Development environment and project foundation | 0 | Done |
+| 2 | React fundamentals and design system | 1 | Awaiting review |
 | 3 | Spring Boot REST API and ResponseEntity | 1 | Not started |
 | 4 | React Router and navigation | 2 | Not started |
 | 5 | Axios and backend integration | 3, 4 | Not started |

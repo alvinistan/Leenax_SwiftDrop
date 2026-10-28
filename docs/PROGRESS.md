@@ -2,9 +2,28 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Phase 1 — Development environment and project foundation
+## Phase 2 — React fundamentals and design system
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-10-28
+- **Branch:** `claude/create-projects-s4blmr`
+- **Done:**
+  - Design tokens (Tailwind `@theme`, teal brand, Inter font)
+  - UI components: Button, Input, Card, Badge, Skeleton, EmptyState, ErrorState
+  - Layout: skip link, header with mobile menu and cart count, footer
+  - Home page: hero, sample banner, categories, product grid with loading/empty/error states, launch-updates form
+  - Clearly labelled sample data only
+  - 21 frontend tests passing; lint, format and build clean; checked in Chromium at desktop and mobile widths
+- **Assumed (please confirm):** English only for now (D-12 still open)
+- **Waiting on owner:**
+  1. Review the design (screenshots in the report) and do the exercises
+  2. Decision D-2 (product variants) before Phase 3
+  3. Approve creating a `main` branch
+- **Report:** [phase-reports/phase-2-design-system.md](phase-reports/phase-2-design-system.md)
+
+## Phase 1 — Development environment and project foundation
+
+- **Status:** Done (owner continued to Phase 2)
 - **Date:** 2026-10-28
 - **Branch:** `claude/create-projects-s4blmr`
 - **Done:**

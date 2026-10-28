@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 1 (project foundation). The backend and frontend start, but there are no store features yet.
+> **Status:** Phase 2 (design system). The frontend home page uses **sample data only**; there are no real products, and the frontend and backend are not connected yet.
 
 ## Planned stack
 
