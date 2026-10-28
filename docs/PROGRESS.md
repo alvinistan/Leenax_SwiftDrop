@@ -14,11 +14,11 @@ Running log so work can resume at any time. Newest entry first.
   - Home page: hero, sample banner, categories, product grid with loading/empty/error states, launch-updates form
   - Clearly labelled sample data only
   - 21 frontend tests passing; lint, format and build clean; checked in Chromium at desktop and mobile widths
-- **Assumed (please confirm):** English only for now (D-12 still open)
+  - Owner feedback: category carousel with round images, swipe and Previous/Next buttons (24 tests passing)
+- **Decided by owner:** product variants = yes (D-2); English only (D-12); `main` branch created; commits now authored as `alvinistan`
 - **Waiting on owner:**
-  1. Review the design (screenshots in the report) and do the exercises
-  2. Decision D-2 (product variants) before Phase 3
-  3. Approve creating a `main` branch
+  1. Review the carousel and do the exercises
+  2. Approve Phase 2, so it can be merged into `main`
 - **Report:** [phase-reports/phase-2-design-system.md](phase-reports/phase-2-design-system.md)
 
 ## Phase 1 — Development environment and project foundation

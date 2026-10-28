@@ -12,6 +12,8 @@ export type Category = {
   id: string
   name: string
   slug: string
+  /** Uploaded by the admin when the category is created (Phases 6 and 7). */
+  imageUrl: string | null
 }
 
 export type Product = {

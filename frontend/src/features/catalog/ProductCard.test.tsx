@@ -8,7 +8,7 @@ const product: Product = {
   id: 'test-1',
   name: 'Test Mug',
   slug: 'test-mug',
-  category: { id: 'c1', name: 'Kitchen', slug: 'kitchen' },
+  category: { id: 'c1', name: 'Kitchen', slug: 'kitchen', imageUrl: null },
   price: { amount: '1450.00', currency: 'LKR' },
   imageUrl: null,
   inStock: true,

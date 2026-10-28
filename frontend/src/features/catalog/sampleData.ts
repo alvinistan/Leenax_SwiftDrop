@@ -8,10 +8,46 @@ import type { Category, Product } from '../../types/catalog'
  */
 
 export const sampleCategories: Category[] = [
-  { id: 'sample-cat-1', name: 'Home & Kitchen', slug: 'home-kitchen' },
-  { id: 'sample-cat-2', name: 'Fashion', slug: 'fashion' },
-  { id: 'sample-cat-3', name: 'Electronics', slug: 'electronics' },
-  { id: 'sample-cat-4', name: 'Beauty & Care', slug: 'beauty-care' },
+  {
+    id: 'sample-cat-1',
+    name: 'Home & Kitchen',
+    slug: 'home-kitchen',
+    imageUrl: null,
+  },
+  { id: 'sample-cat-2', name: 'Fashion', slug: 'fashion', imageUrl: null },
+  {
+    id: 'sample-cat-3',
+    name: 'Electronics',
+    slug: 'electronics',
+    imageUrl: null,
+  },
+  {
+    id: 'sample-cat-4',
+    name: 'Beauty & Care',
+    slug: 'beauty-care',
+    imageUrl: null,
+  },
+  { id: 'sample-cat-5', name: 'Groceries', slug: 'groceries', imageUrl: null },
+  {
+    id: 'sample-cat-6',
+    name: 'Kids & Toys',
+    slug: 'kids-toys',
+    imageUrl: null,
+  },
+  {
+    id: 'sample-cat-7',
+    name: 'Sports & Outdoors',
+    slug: 'sports-outdoors',
+    imageUrl: null,
+  },
+  {
+    id: 'sample-cat-8',
+    name: 'Books & Stationery',
+    slug: 'books-stationery',
+    imageUrl: null,
+  },
+  { id: 'sample-cat-9', name: 'Health', slug: 'health', imageUrl: null },
+  { id: 'sample-cat-10', name: 'Gifts', slug: 'gifts', imageUrl: null },
 ]
 
 const [home, fashion, electronics, beauty] = sampleCategories

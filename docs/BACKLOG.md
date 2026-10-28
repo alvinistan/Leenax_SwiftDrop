@@ -44,14 +44,15 @@ Frontend:
 Project:
 - [x] `.env.example` (no real secrets)
 - [x] GitHub Actions workflow: build and test the backend and frontend on every push and PR
-- [ ] Create the `main` branch from approved work (**waiting for owner approval**)
+- [x] Create the `main` branch from approved work (created 2026-10-28)
 - [x] README "How to run locally on Windows" section
 
 Not in Phase 1: entities other than `sellers`, UI design, authentication, AWS.
 
 ## Items parked for later
 
-- Internationalization (Sinhala and Tamil): decide by Phase 2 (D-12)
-- Product variants: decide by Phase 3 (D-2)
+- Category image upload by the admin: form in Phase 6, S3 storage in Phase 7 (FR-1a)
+- Product variants (D-2 = yes): design in Phase 3, admin in Phase 6, stock per variant in Phase 8
+- Category carousel items become links to the category's products in Phase 4
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch

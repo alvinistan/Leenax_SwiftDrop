@@ -94,8 +94,9 @@ JWTs in `localStorage`. Phase 6 will compare the options before deciding.
 Tables are created only in the phase that needs them.
 
 ```
-sellers ─< products >─ categories
+sellers ─< products >─ categories        (categories.image: Phases 6–7)
              │
+             ├─< product_variants      (D-2: SKU, options, price, stock)
              ├─< product_images        (Phase 7)
              └── inventory              (Phase 6/8)
 
@@ -148,3 +149,6 @@ Configuration comes from environment variables. Only safe defaults are kept in
 |---|---|---|
 | 2026-10-28 | AD-1 to AD-11 proposed | Proposed |
 | 2026-10-28 | AD-12 Spring Boot 4.1.x, Java 21 language level | Approved by owner |
+| 2026-10-28 | Product variants supported (D-2); English only (D-12) | Decided by owner |
+| 2026-10-28 | Commits authored as the owner's GitHub identity (`alvinistan`, GitHub noreply email); Claude listed as co-author | Requested by owner |
+| 2026-10-28 | `main` created from the last approved phase (Phase 1); each approved phase is then merged into `main` | Approved by owner |

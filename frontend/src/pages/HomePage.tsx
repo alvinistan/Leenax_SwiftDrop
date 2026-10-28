@@ -1,7 +1,7 @@
 import { Info } from 'lucide-react'
 import { buttonClasses } from '../components/ui/buttonStyles'
 import { Container } from '../components/layout/Container'
-import { CategoryList } from '../features/catalog/CategoryList'
+import { CategoryCarousel } from '../features/catalog/CategoryCarousel'
 import { ProductGrid } from '../features/catalog/ProductGrid'
 import { sampleCategories } from '../features/catalog/sampleData'
 import {
@@ -65,15 +65,17 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           aria-labelledby="categories-heading"
           className="scroll-mt-20"
         >
-          <h2
-            id="categories-heading"
-            className="text-2xl font-bold text-slate-900"
-          >
-            Shop by category
-          </h2>
-          <div className="mt-4">
-            <CategoryList categories={sampleCategories} />
-          </div>
+          <CategoryCarousel
+            categories={sampleCategories}
+            header={
+              <h2
+                id="categories-heading"
+                className="text-2xl font-bold text-slate-900"
+              >
+                Shop by category
+              </h2>
+            }
+          />
         </section>
 
         <section

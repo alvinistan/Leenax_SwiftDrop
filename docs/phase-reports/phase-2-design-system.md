@@ -170,6 +170,24 @@ See `docs/PROGRESS.md` and the chat summary.
 - Do you like the teal brand colour? Changing it means editing about eight lines in `index.css`.
 - Hero wording: "Everyday essentials, delivered to your door." Change it to whatever fits your brand.
 
+## H. Change after owner review — category carousel
+
+Requested by the owner: "Shop by category" as round images with the name
+below, which can be swiped or moved with Previous/Next buttons.
+
+![Category carousel](images/phase-2-category-carousel.png)
+
+- `features/catalog/CategoryCarousel.tsx` replaces `CategoryList.tsx`
+- `features/catalog/CategoryImage.tsx`: the uploaded image, or the first letter until one exists
+- `Category.imageUrl` added (filled by admin upload in Phases 6–7)
+- Native horizontal scrolling with snap points (swipe), Previous/Next buttons that disable at each end, keyboard arrow keys, reduced-motion support
+- New concepts: **`useRef`** (direct access to a DOM element) and passing JSX as a prop (`header`)
+- Tests: 3 new carousel tests (**24 in total**), plus a real-browser check of the buttons, keyboard scrolling and phone layout
+
+**Exercise 4 (carousel):** in `CategoryCarousel.tsx`, change the scroll
+distance from 80% to 100% of the visible width. Which feels better, and why
+did we keep one item in view?
+
 ## G. Next phase preview — Phase 3: Spring Boot REST API and ResponseEntity
 
 Back to Java. You'll learn classes, records, enums, OOP and dependency

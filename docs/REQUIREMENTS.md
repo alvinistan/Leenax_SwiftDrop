@@ -24,8 +24,10 @@ It is also a learning project, so clarity is preferred over cleverness.
 
 ### 3.1 Catalogue
 - FR-1 The admin creates, edits, activates and deactivates **categories**. No categories are hard-coded.
+- FR-1a Each category has an **image uploaded by the admin** when the category is created (upload in Phases 6–7). The storefront shows categories as a "Shop by category" carousel: a round image with the name below, swipe on touch screens, and Previous/Next buttons (built in Phase 2).
 - FR-2 The admin creates, edits, activates and deactivates **products**. Each product belongs to a seller (initially the single default seller).
 - FR-3 Products have a name, slug, description, price, currency, category, images and status.
+- FR-3a Products can have **variants** (for example size and colour). Each variant has its own SKU and stock, and can have its own price (decision D-2).
 - FR-4 Customers browse, filter by category, search and page through active products.
 - FR-5 Sample or demo products must be clearly marked as samples and never presented as real stock.
 
@@ -82,7 +84,7 @@ None of these block Phase 1. Each one blocks the phase listed.
 | # | Decision | Needed by | Notes |
 |---|---|---|---|
 | D-1 | What will you sell first? (product types, categories) | Phase 3 (sample data); real data before launch | Affects attributes such as size, colour and weight |
-| D-2 | Do products have variants (size, colour)? | Phase 3 | Changes the data model significantly; better decided early |
+| D-2 | Do products have variants (size, colour)? | Phase 3 | **Decided 2026-10-28: Yes.** See FR-3a. |
 | D-3 | Which countries do you ship to at launch? | Phase 8 | Start with Sri Lanka only? |
 | D-4 | How are delivery fees calculated? (flat, by district, by weight, by country) | Phase 8 | |
 | D-5 | Where is COD allowed? (Sri Lanka only?) | Phase 8 | |
@@ -92,4 +94,4 @@ None of these block Phase 1. Each one blocks the phase listed.
 | D-9 | Do prices include tax? Are you VAT-registered? | Phase 8 | Ask an accountant; the system must not guess |
 | D-10 | Domain name (`swiftdrop.lk`?) and business registration | Phase 14 | `.lk` domains are registered through the LK Domain Registry |
 | D-11 | Return, refund and privacy policies | Before launch | Legal text written by you |
-| D-12 | Languages: English only, or also Sinhala and Tamil? | Phase 2 (if yes, plan i18n early) | |
+| D-12 | Languages: English only, or also Sinhala and Tamil? | Phase 2 | **Decided 2026-10-28: English only, permanently.** No translation framework needed. |
