@@ -4,7 +4,7 @@ Running log so work can resume at any time. Newest entry first.
 
 ## Phase 2 — React fundamentals and design system
 
-- **Status:** Awaiting owner review
+- **Status:** Done (approved 2026-10-28, merged into `main`)
 - **Date:** 2026-10-28
 - **Branch:** `claude/create-projects-s4blmr`
 - **Done:**
@@ -16,9 +16,6 @@ Running log so work can resume at any time. Newest entry first.
   - 21 frontend tests passing; lint, format and build clean; checked in Chromium at desktop and mobile widths
   - Owner feedback: category carousel with round images, swipe and Previous/Next buttons (24 tests passing)
 - **Decided by owner:** product variants = yes (D-2); English only (D-12); `main` branch created; commits now authored as `alvinistan`
-- **Waiting on owner:**
-  1. Review the carousel and do the exercises
-  2. Approve Phase 2, so it can be merged into `main`
 - **Report:** [phase-reports/phase-2-design-system.md](phase-reports/phase-2-design-system.md)
 
 ## Phase 1 — Development environment and project foundation
