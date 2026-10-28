@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 2 (design system). The frontend home page uses **sample data only**; there are no real products, and the frontend and backend are not connected yet.
+> **Status:** Phase 3 (catalogue API). The backend has category and product APIs; the frontend still uses **sample data** and isn't connected yet. ⚠️ Admin API endpoints have **no login until Phase 6**: local use only.
 
 ## Planned stack
 
@@ -69,6 +69,8 @@ cd backend
 
 Check it at http://localhost:8080/actuator/health. You should see
 `"status":"UP"` and `"db":{"status":"UP"}`.
+
+Explore and try the API in **Swagger UI**: http://localhost:8080/swagger-ui.html
 
 ### 4. Start the frontend (terminal 2)
 

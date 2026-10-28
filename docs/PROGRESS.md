@@ -2,6 +2,22 @@
 
 Running log so work can resume at any time. Newest entry first.
 
+## Phase 3 — Spring Boot REST API and ResponseEntity
+
+- **Status:** Awaiting owner review
+- **Date:** 2026-10-28
+- **Branch:** `claude/create-projects-s4blmr`
+- **Done:**
+  - Flyway V2 (categories) and V3 (products, variants, variant options)
+  - Category and product APIs: public read endpoints and admin CRUD endpoints
+  - Product variants (D-2): SKU, price and options per variant
+  - DTOs, Bean Validation, RFC 9457 error responses, pagination with a sort whitelist
+  - OpenAPI / Swagger UI at `/swagger-ui.html`
+  - 23 backend tests (unit, web slice, Testcontainers integration); N+1 check: 2 queries per product page
+- **Important:** `/api/admin/**` is NOT secured until Phase 6. Local use only.
+- **Waiting on owner:** review, exercises, approval to merge into `main`
+- **Report:** [phase-reports/phase-3-catalog-api.md](phase-reports/phase-3-catalog-api.md)
+
 ## Phase 2 — React fundamentals and design system
 
 - **Status:** Done (approved 2026-10-28, merged into `main`)

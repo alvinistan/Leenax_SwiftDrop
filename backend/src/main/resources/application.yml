@@ -23,12 +23,31 @@ spring:
       ddl-auto: validate
     # Keep database access inside the service layer, not the HTTP view.
     open-in-view: false
+    properties:
+      hibernate:
+        # Load lazy collections (e.g. variants of 20 products) in batches
+        # instead of one query per product.
+        default_batch_fetch_size: 50
+
+  data:
+    web:
+      pageable:
+        # Clients cannot ask for huge pages (?size=1000000).
+        max-page-size: 100
 
   flyway:
     locations: classpath:db/migration
 
 server:
   port: ${SERVER_PORT:8080}
+
+# OpenAPI JSON at /v3/api-docs and Swagger UI at /swagger-ui.html.
+# Enabled for local development; set API_DOCS_ENABLED=false in production.
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:true}
 
 management:
   endpoints:

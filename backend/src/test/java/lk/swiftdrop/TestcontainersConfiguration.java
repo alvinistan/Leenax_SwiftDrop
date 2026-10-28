@@ -14,7 +14,7 @@ import org.testcontainers.utility.DockerImageName;
  * Use the same PostgreSQL version as docker-compose.yml.
  */
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
     @Bean
     @ServiceConnection

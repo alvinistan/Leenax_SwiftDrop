@@ -22,6 +22,8 @@
     <properties>
         <!-- Compile for Java 21 (runs on JDK 21 and newer, e.g. JDK 25) -->
         <java.version>21</java.version>
+        <!-- Not managed by Spring Boot; 3.2.x is built for Spring Boot 4.1 -->
+        <springdoc.version>3.2.0</springdoc.version>
     </properties>
 
     <dependencies>
@@ -53,6 +55,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- OpenAPI description + Swagger UI at /swagger-ui.html -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
