@@ -121,7 +121,7 @@ Wrapper (`mvnw.cmd`).
 | Docker | 29.9.2 | OK |
 | Docker Compose | v5.6.1 | OK |
 | WSL | Version 2, `docker-desktop` distribution | OK: Docker Desktop uses the WSL 2 backend |
-| Git | Not reported yet | Run `git --version` |
+| Git | 2.48.1.windows.1 | OK |
 
 Expected for Phase 1:
 
