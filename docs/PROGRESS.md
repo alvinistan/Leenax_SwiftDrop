@@ -2,9 +2,29 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Phase 0 — Repository audit and requirements
+## Phase 1 — Development environment and project foundation
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-10-28
+- **Branch:** `claude/create-projects-s4blmr`
+- **Done:**
+  - Spring Boot 4.1.2 backend (Java 21, Maven Wrapper) with PostgreSQL, Flyway, Actuator health
+  - First migration: `sellers` table and the default seller
+  - Testcontainers smoke tests (2 passing)
+  - React 19 + TypeScript + Vite 8 + Tailwind 4 frontend with Vitest (1 passing), oxlint, Prettier
+  - `docker-compose.yml` (PostgreSQL 17) and `.env.example`
+  - GitHub Actions CI for the backend and frontend
+  - README Windows run guide and troubleshooting
+- **Waiting on owner:**
+  1. Run the project on the Windows PC (exercise 1) and report the result
+  2. Check that the first GitHub Actions run is green
+  3. Approve creating a `main` branch
+  4. Decision D-12 (Sinhala and Tamil) before Phase 2
+- **Report:** [phase-reports/phase-1-foundation.md](phase-reports/phase-1-foundation.md)
+
+## Phase 0 — Repository audit and requirements
+
+- **Status:** Done (approved 2026-10-28)
 - **Date:** 2026-10-28
 - **Branch:** `claude/create-projects-s4blmr`
 - **Done:**

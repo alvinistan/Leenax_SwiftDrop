@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: swiftdrop-backend
+
+  # Local settings (database password etc.) come from the .env file in the
+  # repository root, which is git-ignored. Both paths are listed so the app
+  # works whether it is started from the repo root or from backend/.
+  # Real environment variables always override values from .env.
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:swiftdrop}
+    username: ${DB_USERNAME:swiftdrop}
+    # No default on purpose: a password must never be committed to Git.
+    password: ${DB_PASSWORD}
+
+  jpa:
+    # Flyway owns the schema. Hibernate only checks that entities match it.
+    hibernate:
+      ddl-auto: validate
+    # Keep database access inside the service layer, not the HTTP view.
+    open-in-view: false
+
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose only the health endpoint over HTTP.
+        include: health
+  endpoint:
+    health:
+      # Shows "db: UP" etc. without connection details.
+      show-components: always

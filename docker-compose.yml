@@ -1,0 +1,28 @@
+# Local development services. Start with:  docker compose up -d
+# Settings are read from the .env file next to this file (copy .env.example).
+name: swiftdrop
+
+services:
+  postgres:
+    # Keep this version in sync with backend TestcontainersConfiguration.
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-swiftdrop}
+      POSTGRES_USER: ${DB_USERNAME:-swiftdrop}
+      # Compose stops with this message if the password is missing.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the .env file (copy .env.example to .env)}
+    ports:
+      # 127.0.0.1 = reachable only from this computer, not from your network.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      # Named volume: data survives "docker compose down" and restarts.
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

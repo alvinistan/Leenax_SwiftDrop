@@ -1,0 +1,48 @@
+# Continuous Integration: build and test every push and pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Read-only token: CI only needs to read the code.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Java 21, Maven)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # verify = compile + unit/integration tests + package.
+      # Testcontainers uses the Docker that GitHub runners provide.
+      - run: ./mvnw -B verify
+
+  frontend:
+    name: Frontend (Node 22, npm)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # npm ci installs exactly what package-lock.json says.
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
