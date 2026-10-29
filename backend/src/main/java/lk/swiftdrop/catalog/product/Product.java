@@ -15,7 +15,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -111,12 +110,11 @@ public class Product {
         variants.add(variant);
     }
 
-    /** The lowest price among active variants, used for "from LKR 1,450.00" on product cards. */
-    public Optional<BigDecimal> lowestActivePrice() {
+    /** The active variant with the lowest price, used for "from LKR 1,450.00" on product cards. */
+    public Optional<ProductVariant> cheapestActiveVariant() {
         return variants.stream()
                 .filter(ProductVariant::isActive)
-                .map(ProductVariant::getPrice)
-                .min(Comparator.naturalOrder());
+                .min(Comparator.comparing(ProductVariant::getPrice));
     }
 
     public UUID getId() {

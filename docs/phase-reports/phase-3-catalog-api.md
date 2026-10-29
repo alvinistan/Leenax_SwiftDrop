@@ -187,11 +187,43 @@ See `docs/PROGRESS.md` and the chat summary.
 3. Text search on product names.
 4. Configure Mockito as a Java agent (the dynamic-agent warning from Phase 1 is still there).
 
+## H. Change after owner review — selling by piece or by weight
+
+Owner request: "sometimes, like cake, we sell in kg or 1 piece; the user can
+also select." Decision: support **both** fixed choices and any weight.
+
+| Example | `saleUnit` | `price` means | Quantity rules |
+|---|---|---|---|
+| T-shirt M; Cake "1 kg" (fixed size) | `PIECE` (default) | per piece | min 1, step 1 (whole numbers) |
+| Cake by weight | `KG` | per kg | e.g. min 0.5, max 5, step 0.5 |
+
+- `V4__add_variant_sale_units.sql`: a **new** migration (V3 wasn't edited, because it may already have run on your PC). Existing variants become PIECE with min 1 and step 1.
+- `SaleUnit` enum and the `QuantityRules` **embeddable record** (three columns in `product_variants`) with `allows(quantity)`, ready for the cart's server-side check in Phase 8
+- API: variants return `saleUnit` and `quantity: {min, max, step}`; product cards return `fromPriceUnit`
+- Validation: max ≥ min; PIECE quantities must be whole numbers; unknown units → 400
+- Tests: `QuantityRulesTest` plus 2 new integration tests (**27 backend tests in total**)
+
+Example request for a cake variant sold by weight:
+```json
+{"sku": "CAKE-BYKG", "price": 4200, "saleUnit": "KG",
+ "minQuantity": 0.5, "maxQuantity": 5, "quantityStep": 0.5,
+ "options": {"Size": "Custom weight"}}
+```
+
+New concepts: `@Embeddable` (a value object stored inside its owner's
+row), Java `switch` expressions, and `BigDecimal.remainder` for exact step
+checks (0.1 + 0.2 problems can't happen).
+
+**Exercise 4 (sale units):** in Swagger UI, create a product with two
+variants: "Butter Cake 1 kg" (PIECE, LKR 3,800) and "Butter Cake by weight"
+(KG, LKR 3,600 per kg, 1–4 kg in 0.25 kg steps). Then try a step of 0.5 on a
+PIECE variant and read the 400 error.
+
 ## G. Next phase preview — Phase 4: React Router and frontend navigation
 
 You'll learn routes, route parameters (`/products/:slug`), nested and layout
 routes, not-found pages, and keeping filters and page numbers in the URL.
 Phase 4 builds a product listing page, a product details page (with variant
-selection, using sample data shaped exactly like this API's responses),
+selection and a quantity or weight input that respects min/max/step, using sample data shaped exactly like this API's responses),
 category filtering via the carousel, pagination controls, and a 404 page.
 It depends on Phase 2's components and on this phase's response shapes.

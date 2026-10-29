@@ -50,7 +50,7 @@ class ProductServiceTest {
     }
 
     private static VariantRequest variant(String sku, String price, Map<String, String> options) {
-        return new VariantRequest(sku, new BigDecimal(price), options, null);
+        return new VariantRequest(sku, new BigDecimal(price), options, null, null, null, null, null);
     }
 
     @Test
@@ -73,7 +73,11 @@ class ProductServiceTest {
         assertThat(product.getCurrency()).isEqualTo("LKR");
         assertThat(product.getVariants()).extracting(ProductVariant::getSku).containsExactly("TSHIRT-M", "TSHIRT-L");
         assertThat(product.getVariants()).allMatch(ProductVariant::isActive);
-        assertThat(product.lowestActivePrice()).contains(new BigDecimal("2900.00"));
+        assertThat(product.cheapestActiveVariant()).map(ProductVariant::getPrice).contains(new BigDecimal("2900.00"));
+        // no sale unit given → sold by the piece, one or more whole pieces
+        assertThat(product.getVariants()).allMatch(v -> v.getSaleUnit() == SaleUnit.PIECE);
+        assertThat(product.getVariants().getFirst().getQuantityRules())
+                .isEqualTo(new QuantityRules(BigDecimal.ONE, null, BigDecimal.ONE));
     }
 
     @Test

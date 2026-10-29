@@ -1,5 +1,6 @@
 package lk.swiftdrop.catalog.product;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -28,25 +29,42 @@ public final class ProductResponses {
             CategoryRef category,
             /** Lowest active variant price; null if no variant is active. */
             MoneyResponse fromPrice,
+            /** What fromPrice is per: PIECE or KG ("from LKR 4,500.00 / kg"). */
+            SaleUnit fromPriceUnit,
             ProductStatus status) {
 
         static ProductSummary from(Product product) {
+            var cheapest = product.cheapestActiveVariant();
             return new ProductSummary(
                     product.getId(),
                     product.getName(),
                     product.getSlug(),
                     CategoryRef.from(product.getCategory()),
-                    product.lowestActivePrice()
-                            .map(price -> MoneyResponse.of(price, product.getCurrency()))
-                            .orElse(null),
+                    cheapest.map(v -> MoneyResponse.of(v.getPrice(), product.getCurrency())).orElse(null),
+                    cheapest.map(ProductVariant::getSaleUnit).orElse(null),
                     product.getStatus());
+        }
+    }
+
+    /** Allowed quantities, as decimal strings: {"min": "0.5", "max": "5", "step": "0.5"}. */
+    public record QuantityResponse(String min, String max, String step) {
+
+        static QuantityResponse from(QuantityRules rules) {
+            return new QuantityResponse(plain(rules.minQuantity()), plain(rules.maxQuantity()), plain(rules.step()));
+        }
+
+        private static String plain(BigDecimal value) {
+            return value == null ? null : value.stripTrailingZeros().toPlainString();
         }
     }
 
     public record VariantResponse(
             UUID id,
             String sku,
+            /** Price per saleUnit: per piece, or per kg. */
             MoneyResponse price,
+            SaleUnit saleUnit,
+            QuantityResponse quantity,
             /** Sorted by option name so the JSON order is predictable. */
             Map<String, String> options,
             boolean active) {
@@ -56,6 +74,8 @@ public final class ProductResponses {
                     variant.getId(),
                     variant.getSku(),
                     MoneyResponse.of(variant.getPrice(), currency),
+                    variant.getSaleUnit(),
+                    QuantityResponse.from(variant.getQuantityRules()),
                     new TreeMap<>(variant.getOptions()),
                     variant.isActive());
         }

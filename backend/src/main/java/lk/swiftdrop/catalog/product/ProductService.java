@@ -82,6 +82,8 @@ public class ProductService {
             product.addVariant(new ProductVariant(
                     variant.sku(),
                     variant.price(),
+                    variant.effectiveSaleUnit(),
+                    variant.effectiveQuantityRules(),
                     Objects.requireNonNullElse(variant.options(), Map.of()),
                     Objects.requireNonNullElse(variant.active(), true),
                     position++));

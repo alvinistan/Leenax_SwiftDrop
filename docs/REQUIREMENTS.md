@@ -27,6 +27,7 @@ It is also a learning project, so clarity is preferred over cleverness.
 - FR-1a Each category has an **image uploaded by the admin** when the category is created (upload in Phases 6–7). The storefront shows categories as a "Shop by category" carousel: a round image with the name below, swipe on touch screens, and Previous/Next buttons (built in Phase 2).
 - FR-2 The admin creates, edits, activates and deactivates **products**. Each product belongs to a seller (initially the single default seller).
 - FR-3 Products have a name, slug, description, price, currency, category, images and status.
+- FR-3b Each variant has a **sale unit** (owner request, 2026-10-29): `PIECE` (price per piece, whole quantities; fixed sizes such as "Cake 1 kg" are pieces) or `KG` (price per kg; the customer enters a weight within the variant's minimum, maximum and step, e.g. 0.5–5 kg in 0.5 kg steps). Both can be mixed on one product. Totals are always calculated on the server.
 - FR-3a Products can have **variants** (for example size and colour). Each variant has its own SKU and stock, and can have its own price (decision D-2).
 - FR-4 Customers browse, filter by category, search and page through active products.
 - FR-5 Sample or demo products must be clearly marked as samples and never presented as real stock.

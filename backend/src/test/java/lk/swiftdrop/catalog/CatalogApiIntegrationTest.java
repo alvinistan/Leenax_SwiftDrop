@@ -173,6 +173,80 @@ class CatalogApiIntegrationTest {
     }
 
     @Test
+    void cakeCanBeSoldAsFixedSizesAndByAnyWeight() throws Exception {
+        String category = createCategory(unique("cakes"), true);
+        String slug = unique("chocolate-cake");
+        String sku = unique("CAKE");
+
+        mockMvc.perform(post("/api/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoryId": "%s", "name": "Chocolate Cake", "slug": "%s", "status": "ACTIVE",
+                                 "variants": [
+                                   {"sku": "%s-1PC", "price": 1200, "options": {"Size": "1 piece"}},
+                                   {"sku": "%s-1KG", "price": 4500, "options": {"Size": "1 kg"}},
+                                   {"sku": "%s-BYKG", "price": 4200, "saleUnit": "KG",
+                                    "minQuantity": 0.5, "maxQuantity": 5, "quantityStep": 0.5,
+                                    "options": {"Size": "Custom weight"}}
+                                 ]}
+                                """.formatted(category, slug, sku, sku, sku)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/products/{slug}", slug))
+                .andExpect(status().isOk())
+                // fixed choices are sold by the piece
+                .andExpect(jsonPath("$.variants[1].saleUnit").value("PIECE"))
+                .andExpect(jsonPath("$.variants[1].quantity.min").value("1"))
+                .andExpect(jsonPath("$.variants[1].quantity.step").value("1"))
+                // any weight: price per kg and weight limits
+                .andExpect(jsonPath("$.variants[2].saleUnit").value("KG"))
+                .andExpect(jsonPath("$.variants[2].price.amount").value("4200.00"))
+                .andExpect(jsonPath("$.variants[2].quantity.min").value("0.5"))
+                .andExpect(jsonPath("$.variants[2].quantity.max").value("5"))
+                .andExpect(jsonPath("$.variants[2].quantity.step").value("0.5"));
+
+        mockMvc.perform(get("/api/products").param("category", JsonPath.read(
+                                mockMvc.perform(get("/api/admin/categories/{id}", category))
+                                        .andReturn().getResponse().getContentAsString(), "$.slug").toString()))
+                .andExpect(jsonPath("$.content[0].fromPrice.amount").value("1200.00"))
+                .andExpect(jsonPath("$.content[0].fromPriceUnit").value("PIECE"));
+    }
+
+    @Test
+    void invalidQuantityRulesAreRejected() throws Exception {
+        String category = createCategory(unique("bakery"), true);
+
+        // half a piece is not allowed
+        mockMvc.perform(post("/api/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoryId": "%s", "name": "Bun", "slug": "%s", "status": "DRAFT",
+                                 "variants": [{"sku": "%s", "price": 80, "quantityStep": 0.5}]}
+                                """.formatted(category, unique("bun"), unique("SKU"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("variants[0].quantityRulesValid"));
+
+        // maximum below minimum
+        mockMvc.perform(post("/api/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoryId": "%s", "name": "Cake", "slug": "%s", "status": "DRAFT",
+                                 "variants": [{"sku": "%s", "price": 4000, "saleUnit": "KG",
+                                               "minQuantity": 2, "maxQuantity": 1}]}
+                                """.formatted(category, unique("cake"), unique("SKU"))))
+                .andExpect(status().isBadRequest());
+
+        // unknown sale unit (not PIECE or KG) → unreadable JSON → 400
+        mockMvc.perform(post("/api/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoryId": "%s", "name": "Rope", "slug": "%s", "status": "DRAFT",
+                                 "variants": [{"sku": "%s", "price": 10, "saleUnit": "METRE"}]}
+                                """.formatted(category, unique("rope"), unique("SKU"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void categoryWithProductsCannotBeDeletedButAnEmptyOneCan() throws Exception {
         String used = createCategory(unique("toys"), true);
         String productId = createProduct(used, unique("ball"), "ACTIVE", unique("SKU"));

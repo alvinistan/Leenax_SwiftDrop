@@ -14,6 +14,7 @@ Running log so work can resume at any time. Newest entry first.
   - DTOs, Bean Validation, RFC 9457 error responses, pagination with a sort whitelist
   - OpenAPI / Swagger UI at `/swagger-ui.html`
   - 23 backend tests (unit, web slice, Testcontainers integration); N+1 check: 2 queries per product page
+  - Owner feedback: sell by piece or by weight (`saleUnit` PIECE/KG with min/max/step, Flyway V4); 27 backend tests
 - **Important:** `/api/admin/**` is NOT secured until Phase 6. Local use only.
 - **Waiting on owner:** review, exercises, approval to merge into `main`
 - **Report:** [phase-reports/phase-3-catalog-api.md](phase-reports/phase-3-catalog-api.md)

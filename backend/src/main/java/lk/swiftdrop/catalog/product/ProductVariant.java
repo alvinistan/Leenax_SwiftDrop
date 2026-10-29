@@ -3,6 +3,9 @@ package lk.swiftdrop.catalog.product;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -37,9 +40,16 @@ public class ProductVariant {
     @Column(nullable = false, length = 64, unique = true)
     private String sku;
 
-    /** BigDecimal: exact decimal arithmetic. Never use double for money. */
+    /** Price per sale unit (per piece, or per kg). BigDecimal: exact decimals, never double. */
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal price;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sale_unit", nullable = false, length = 10)
+    private SaleUnit saleUnit;
+
+    @Embedded
+    private QuantityRules quantityRules;
 
     @Column(nullable = false)
     private boolean active;
@@ -65,9 +75,12 @@ public class ProductVariant {
     protected ProductVariant() {
     }
 
-    public ProductVariant(String sku, BigDecimal price, Map<String, String> options, boolean active, int sortOrder) {
+    public ProductVariant(String sku, BigDecimal price, SaleUnit saleUnit, QuantityRules quantityRules,
+                          Map<String, String> options, boolean active, int sortOrder) {
         this.sku = sku;
         this.price = price;
+        this.saleUnit = saleUnit;
+        this.quantityRules = quantityRules;
         this.options = new HashMap<>(options);
         this.active = active;
         this.sortOrder = sortOrder;
@@ -88,6 +101,14 @@ public class ProductVariant {
 
     public BigDecimal getPrice() {
         return price;
+    }
+
+    public SaleUnit getSaleUnit() {
+        return saleUnit;
+    }
+
+    public QuantityRules getQuantityRules() {
+        return quantityRules;
     }
 
     public boolean isActive() {
