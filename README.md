@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 4 (routing). The storefront has real pages (home, product list, product details, 404) using **sample data**; Phase 5 connects it to the backend API. ⚠️ Admin API endpoints have **no login until Phase 6**: local use only.
+> **Status:** Phase 5 (backend integration). The storefront shows real categories and products from the Spring Boot API. ⚠️ Admin API endpoints have **no login until Phase 6**: local use only.
 
 ## Planned stack
 
@@ -79,7 +79,19 @@ cd frontend
 npm run dev
 ```
 
-Open http://localhost:5173.
+Open http://localhost:5173. The storefront loads its categories and products
+from the backend, so the backend (step 3) must be running. Add products in
+Swagger UI and they appear in the shop.
+
+**Frontend settings** (optional): copy `frontend/.env.example` to
+`frontend/.env.local` and edit it.
+
+- If you changed `SERVER_PORT` in the root `.env` (e.g. to 8081), set
+  `VITE_API_URL=http://localhost:8081`.
+- To work on the design **without** the backend, set `VITE_USE_SAMPLE_DATA=true`
+  (built-in sample products, labelled "Sample").
+
+Restart `npm run dev` after changing these files.
 
 ### 5. Run the checks (the same checks CI runs)
 
@@ -102,5 +114,6 @@ cd frontend; npm run lint; npm test; npm run build; cd ..
 | `password authentication failed for user "swiftdrop"` | (a) The backend can't find `.env`. Start it from `backend/` or the repository root. (b) The password in `.env` differs from the one the database was first created with. Put the old one back, or reset with `docker compose down -v` (deletes local data). |
 | `port 5432 is already allocated` / `bind: ... in use`, or `password authentication failed` even though `.env` is correct | PostgreSQL is also installed on Windows and is using port 5432 (check with `Get-Service *postgres*`). Set `DB_PORT=5433` in `.env`, then `docker compose down` and `docker compose up -d --wait`. |
 | `Connection to localhost:5432 refused` | The database isn't running. Run `docker compose up -d --wait`. |
+| Shop says "We couldn't reach the store" | (a) The backend isn't running: start it (step 3). (b) Wrong address: `VITE_API_URL` in `frontend/.env.local` must match the backend port. (c) CORS: open the browser console (F12). A "CORS policy" error means the page's address isn't in `CORS_ALLOWED_ORIGINS` (default `http://localhost:5173`). |
 | Backend tests fail with `Could not find a valid Docker environment` | Docker Desktop isn't running. Start it and try again. |
 | `Port 8080 was already in use` | See what uses it: `Get-NetTCPConnection -LocalPort 8080 -State Listen \| ForEach-Object { Get-Process -Id $_.OwningProcess }`. If it is `java`, an earlier backend is still running: press `Ctrl+C` in its window or `Stop-Process -Id <Id>`. Otherwise set `SERVER_PORT=8081` in `.env`. |

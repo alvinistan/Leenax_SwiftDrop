@@ -12,7 +12,7 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 2 | React fundamentals and design system | 1 | Done |
 | 3 | Spring Boot REST API and ResponseEntity | 1 | Done |
 | 4 | React Router and navigation | 2 | Done |
-| 5 | Axios and backend integration | 3, 4 | In progress |
+| 5 | Axios and backend integration | 3, 4 | Awaiting review |
 | 6 | Authentication and administration | 5 | Not started |
 | 7 | AWS S3 product images | 6 | Not started |
 | 8 | Shopping cart and checkout (COD) | 6 | Not started |
@@ -58,5 +58,6 @@ Not in Phase 1: entities other than `sellers`, UI design, authentication, AWS.
 - Production hosting must fall back to index.html for client-side routes: Phases 12–14
 - "From" price rule for products mixing PIECE and KG variants: owner to decide
 - ETag / If-Match using Product.version: optional, with the admin UI (Phase 6)
+- CORS must also be configured in Spring Security (Phase 6); allowCredentials + CSRF if cookies are used
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch

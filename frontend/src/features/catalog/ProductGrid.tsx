@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState'
 import type { AsyncState } from '../../hooks/useAsync'
+import { userMessage } from '../../lib/errors'
 import type { ProductSummary } from '../../types/catalog'
 import { USING_SAMPLE_DATA } from './catalogApi'
 import { ProductCard } from './ProductCard'
@@ -43,7 +44,7 @@ export function ProductGrid({
     return (
       <ErrorState
         title="We couldn't load the products"
-        description="Please check your connection and try again."
+        description={userMessage(state.error)}
         onRetry={onRetry}
       />
     )

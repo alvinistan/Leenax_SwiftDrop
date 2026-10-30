@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { NotFoundError } from '../../lib/errors'
-import { getProduct, listProducts } from './catalogApi'
+import {
+  sampleGetProduct as getProduct,
+  sampleListProducts as listProducts,
+} from './sampleCatalog'
 
-describe('sample catalog API', () => {
+describe('sample catalog (in-memory API)', () => {
   it('filters by category and reports the lowest price and its unit', async () => {
     const page = await listProducts({ categorySlug: 'cakes-bakery' })
 

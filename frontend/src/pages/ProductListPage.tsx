@@ -30,9 +30,13 @@ export function ProductListPage() {
   // In the URL pages start at 1 (for people); the API starts at 0.
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
 
-  const categories = useAsync(listCategories, 'categories')
+  const categories = useAsync((signal) => listCategories(signal), 'categories')
   const products = useAsync(
-    () => listProducts({ categorySlug, sort, page: page - 1, size: PAGE_SIZE }),
+    (signal) =>
+      listProducts(
+        { categorySlug, sort, page: page - 1, size: PAGE_SIZE },
+        signal,
+      ),
     `${categorySlug}|${sort}|${page}`,
   )
 

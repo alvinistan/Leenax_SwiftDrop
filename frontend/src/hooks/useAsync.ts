@@ -8,11 +8,14 @@ export type AsyncState<T> =
 /**
  * Runs an async function (e.g. an API call) and tracks loading / success / error.
  *
- * @param load the function to run
+ * @param load the function to run. It receives an AbortSignal: pass it to the
+ *             request so it can be cancelled when no longer needed.
  * @param key  re-run when this changes, e.g. the category or page in the URL.
- *             (Pass the values `load` uses, joined into one string.)
  */
-export function useAsync<T>(load: () => Promise<T>, key: string) {
+export function useAsync<T>(
+  load: (signal: AbortSignal) => Promise<T>,
+  key: string,
+) {
   const [state, setState] = useState<AsyncState<T>>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   // Remember which key the current state belongs to, to show "loading" as soon as the key changes.
@@ -26,16 +29,19 @@ export function useAsync<T>(load: () => Promise<T>, key: string) {
   }
 
   useEffect(() => {
-    // If the user navigates on before this request finishes, ignore its result,
-    // otherwise an old, slow response could overwrite a newer one (a "race condition").
-    let ignore = false
-    load().then(
-      (data) => !ignore && setState({ status: 'success', data }),
-      (error: unknown) => !ignore && setState({ status: 'error', error }),
+    // When the key changes or the page closes, cancel the request still in flight.
+    // Otherwise an old, slow response could overwrite a newer one (a "race condition"),
+    // and the browser would keep downloading data nobody will see.
+    const controller = new AbortController()
+    load(controller.signal).then(
+      (data) => {
+        if (!controller.signal.aborted) setState({ status: 'success', data })
+      },
+      (error: unknown) => {
+        if (!controller.signal.aborted) setState({ status: 'error', error })
+      },
     )
-    return () => {
-      ignore = true
-    }
+    return () => controller.abort()
     // `load` is a new function on every render, so it is deliberately left out;
     // `key` says when the request really changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps

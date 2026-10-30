@@ -2,6 +2,22 @@
 
 Running log so work can resume at any time. Newest entry first.
 
+## Phase 5 — Axios and backend integration
+
+- **Status:** Awaiting owner review
+- **Date:** 2026-10-30
+- **Branch:** `claude/create-projects-s4blmr`
+- **Done:**
+  - Backend CORS for `/api/**`, limited to `CORS_ALLOWED_ORIGINS` (default http://localhost:5173), with tests
+  - Shared Axios instance (`VITE_API_URL`, timeout, error interceptor → `ApiError`/`NotFoundError`)
+  - Storefront now uses the real API; requests are cancelled when navigating away
+  - Sample mode kept behind `VITE_USE_SAMPLE_DATA=true`
+  - MSW fake backend for frontend tests; 53 frontend + 29 backend tests passing
+  - End-to-end verified in Chromium against a real backend and database, including the CORS block
+- **Note for the owner:** if `SERVER_PORT=8081` is set in the root `.env`, create `frontend/.env.local` with `VITE_API_URL=http://localhost:8081`
+- **Waiting on owner:** review, exercises, approval
+- **Report:** [phase-reports/phase-5-api-integration.md](phase-reports/phase-5-api-integration.md)
+
 ## Phase 4 — React Router and frontend navigation
 
 - **Status:** Done (approved 2026-10-30, merged into `main`)

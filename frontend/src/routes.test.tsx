@@ -1,14 +1,17 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { API, server } from './test/mockApi'
 import { renderRoute } from './test/renderRoute'
 
 describe('home page', () => {
-  it('shows the hero, the sample notice and category links', async () => {
+  it('shows the hero and category links from the API', async () => {
     renderRoute('/')
 
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
-    expect(screen.getByText(/not for sale/)).toBeInTheDocument()
+    // Real API mode: no "sample" banner
+    expect(screen.queryByText(/not for sale/)).not.toBeInTheDocument()
     expect(
       await screen.findByRole('link', { name: 'Cakes & Bakery' }),
     ).toHaveAttribute('href', '/products?category=cakes-bakery')
@@ -148,6 +151,27 @@ describe('product details page', () => {
 
     expect(
       await screen.findByRole('heading', { name: 'Product not found' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('when the API fails', () => {
+  it('shows a friendly error, and "Try again" recovers', async () => {
+    // First request fails as if the server were down; later ones use the normal handler.
+    server.use(
+      http.get(`${API}/api/products`, () => HttpResponse.error(), {
+        once: true,
+      }),
+    )
+    renderRoute('/products')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /couldn't reach the store/,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(
+      await screen.findByRole('link', { name: 'Chocolate Cake' }),
     ).toBeInTheDocument()
   })
 })

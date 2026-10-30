@@ -1,23 +1,25 @@
-import { NotFoundError } from '../../lib/errors'
+import { http } from '../../api/http'
 import type {
   Category,
   Page,
   ProductDetail,
   ProductSummary,
 } from '../../types/catalog'
-import { sampleCategories, sampleProducts } from './sampleData'
+import {
+  sampleGetProduct,
+  sampleListCategories,
+  sampleListProducts,
+} from './sampleCatalog'
 
 /*
  * The ONE place the frontend gets catalogue data from. Pages call these
- * functions and never know where the data comes from.
- *
- * Today: sample data with a short fake delay.
- * Phase 5: the same functions call the backend with Axios
- *   (GET /api/categories, /api/products, /api/products/{slug}).
+ * functions and never know where the data comes from:
+ * - normally: the Spring Boot API, through the shared Axios instance
+ * - VITE_USE_SAMPLE_DATA=true: built-in sample data (no backend needed)
  */
 
-/** True while the data is sample data; the UI shows "Sample" labels. */
-export const USING_SAMPLE_DATA = true
+/** True while showing sample data; the UI then shows "Sample" labels. */
+export const USING_SAMPLE_DATA = import.meta.env.VITE_USE_SAMPLE_DATA === 'true'
 
 export type ProductSort = 'newest' | 'name'
 
@@ -29,72 +31,50 @@ export type ProductQuery = {
   sort?: ProductSort
 }
 
-// No delay in tests, so they run fast.
-const FAKE_DELAY_MS = import.meta.env.MODE === 'test' ? 0 : 400
-
-function delay<T>(value: T): Promise<T> {
-  return new Promise((resolve) =>
-    setTimeout(() => resolve(value), FAKE_DELAY_MS),
-  )
+/** Our sort names → the API's ?sort= values (only fields the backend allows). */
+const SORT_PARAMS: Record<ProductSort, string> = {
+  newest: 'createdAt,desc',
+  name: 'name,asc',
 }
 
-function toSummary(product: ProductDetail): ProductSummary {
-  const cheapest = product.variants
-    .filter((variant) => variant.active)
-    .reduce<ProductDetail['variants'][number] | null>(
-      (lowest, variant) =>
-        lowest === null ||
-        Number(variant.price.amount) < Number(lowest.price.amount)
-          ? variant
-          : lowest,
-      null,
-    )
-  return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    category: product.category,
-    fromPrice: cheapest?.price ?? null,
-    fromPriceUnit: cheapest?.saleUnit ?? null,
-    status: product.status,
-  }
+/**
+ * Each function takes an optional AbortSignal: when the page no longer needs
+ * the answer (the user navigated away), the request is cancelled.
+ * `await` waits for the Promise; `.data` is the parsed JSON body.
+ */
+export async function listCategories(
+  signal?: AbortSignal,
+): Promise<Category[]> {
+  if (USING_SAMPLE_DATA) return sampleListCategories()
+  const response = await http.get<Category[]>('/api/categories', { signal })
+  return response.data
 }
 
-export function listCategories(): Promise<Category[]> {
-  return delay(sampleCategories)
-}
-
-export function listProducts(
+export async function listProducts(
   query: ProductQuery = {},
+  signal?: AbortSignal,
 ): Promise<Page<ProductSummary>> {
+  if (USING_SAMPLE_DATA) return sampleListProducts(query)
   const { categorySlug, page = 0, size = 8, sort = 'newest' } = query
-
-  let products = sampleProducts
-  if (categorySlug) {
-    products = products.filter(
-      (product) => product.category.slug === categorySlug,
-    )
-  }
-  if (sort === 'name') {
-    products = [...products].sort((a, b) => a.name.localeCompare(b.name))
-  }
-
-  const start = page * size
-  return delay({
-    content: products.slice(start, start + size).map(toSummary),
-    page,
-    size,
-    totalElements: products.length,
-    totalPages: Math.ceil(products.length / size),
+  const response = await http.get<Page<ProductSummary>>('/api/products', {
+    // Axios builds ?category=…&page=…&size=…&sort=… and leaves out undefined values.
+    params: { category: categorySlug, page, size, sort: SORT_PARAMS[sort] },
+    signal,
   })
+  return response.data
 }
 
-export function getProduct(slug: string): Promise<ProductDetail> {
-  const product = sampleProducts.find((p) => p.slug === slug)
-  if (!product) {
-    return delay(null).then(() => {
-      throw new NotFoundError(`Product not found: ${slug}`)
-    })
-  }
-  return delay(product)
+export async function getProduct(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<ProductDetail> {
+  if (USING_SAMPLE_DATA) return sampleGetProduct(slug)
+  // encodeURIComponent: a slug from the URL must not be able to change the API path.
+  const response = await http.get<ProductDetail>(
+    `/api/products/${encodeURIComponent(slug)}`,
+    {
+      signal,
+    },
+  )
+  return response.data
 }

@@ -8,12 +8,13 @@ import { CategoryCarousel } from '../features/catalog/CategoryCarousel'
 import { ProductGrid } from '../features/catalog/ProductGrid'
 import { SampleDataNotice } from '../features/catalog/SampleDataNotice'
 import { NotifyMeForm } from '../features/launch/NotifyMeForm'
-import { useAsync } from '../hooks/useAsync'
+import { useAsync, type AsyncState } from '../hooks/useAsync'
+import type { Category } from '../types/catalog'
 
 export function HomePage() {
-  const categories = useAsync(listCategories, 'categories')
+  const categories = useAsync((signal) => listCategories(signal), 'categories')
   const featured = useAsync(
-    () => listProducts({ size: 8 }).then((page) => page.content),
+    (signal) => listProducts({ size: 8 }, signal).then((page) => page.content),
     'featured',
   )
 
@@ -49,36 +50,7 @@ export function HomePage() {
 
       <Container className="mt-12">
         <section aria-labelledby="categories-heading">
-          {categories.state.status === 'success' ? (
-            <CategoryCarousel
-              categories={categories.state.data}
-              header={
-                <h2
-                  id="categories-heading"
-                  className="text-2xl font-bold text-slate-900"
-                >
-                  Shop by category
-                </h2>
-              }
-            />
-          ) : (
-            <>
-              <h2
-                id="categories-heading"
-                className="text-2xl font-bold text-slate-900"
-              >
-                Shop by category
-              </h2>
-              <div className="mt-4 flex gap-6" aria-hidden="true">
-                {Array.from({ length: 6 }, (_, i) => (
-                  <Skeleton
-                    key={i}
-                    className="size-24 shrink-0 rounded-full sm:size-28"
-                  />
-                ))}
-              </div>
-            </>
-          )}
+          <CategorySection state={categories.state} />
         </section>
 
         <section aria-labelledby="products-heading" className="mt-16">
@@ -117,6 +89,39 @@ export function HomePage() {
           </div>
         </section>
       </Container>
+    </>
+  )
+}
+
+const categoriesHeading = (
+  <h2 id="categories-heading" className="text-2xl font-bold text-slate-900">
+    Shop by category
+  </h2>
+)
+
+/** The carousel once loaded; placeholders while loading; a short note if empty or failed. */
+function CategorySection({ state }: { state: AsyncState<Category[]> }) {
+  if (state.status === 'success' && state.data.length > 0) {
+    return (
+      <CategoryCarousel categories={state.data} header={categoriesHeading} />
+    )
+  }
+  return (
+    <>
+      {categoriesHeading}
+      {state.status === 'loading' ? (
+        <div className="mt-4 flex gap-6" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton
+              key={i}
+              className="size-24 shrink-0 rounded-full sm:size-28"
+            />
+          ))}
+        </div>
+      ) : (
+        // Failed or empty: the products section below shows any error with a retry button.
+        <p className="mt-3 text-slate-600">Categories will appear here soon.</p>
+      )}
     </>
   )
 }

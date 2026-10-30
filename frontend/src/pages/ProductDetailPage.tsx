@@ -14,7 +14,7 @@ import { QuantitySelector } from '../features/catalog/QuantitySelector'
 import { VariantSelector } from '../features/catalog/VariantSelector'
 import { variantLabel } from '../features/catalog/variantLabel'
 import { useAsync } from '../hooks/useAsync'
-import { NotFoundError } from '../lib/errors'
+import { NotFoundError, userMessage } from '../lib/errors'
 import { formatMoney, formatUnitPrice, multiplyMoney } from '../lib/money'
 import { formatQuantity } from '../lib/quantity'
 import type { ProductDetail } from '../types/catalog'
@@ -23,7 +23,7 @@ import { NotFoundContent } from './NotFoundPage'
 /** /products/:slug, where :slug is a route parameter read with useParams(). */
 export function ProductDetailPage() {
   const { slug = '' } = useParams()
-  const { state, retry } = useAsync(() => getProduct(slug), slug)
+  const { state, retry } = useAsync((signal) => getProduct(slug, signal), slug)
 
   if (state.status === 'loading') {
     return (
@@ -55,7 +55,11 @@ export function ProductDetailPage() {
     }
     return (
       <Container className="py-8">
-        <ErrorState title="We couldn't load this product" onRetry={retry} />
+        <ErrorState
+          title="We couldn't load this product"
+          description={userMessage(state.error)}
+          onRetry={retry}
+        />
       </Container>
     )
   }
