@@ -98,9 +98,9 @@ cd frontend; npm run lint; npm test; npm run build; cd ..
 
 | Problem | Likely cause and fix |
 |---|---|
-| `Set DB_PASSWORD in the .env file` | `.env` is missing. Run `Copy-Item .env.example .env`. |
+| `Set DB_PASSWORD in the .env file` | `.env` is missing. Run `Copy-Item .env.example .env`. Check the name with `Get-ChildItem -Force .env*`: Notepad sometimes saves it as `.env.txt`. |
 | `password authentication failed for user "swiftdrop"` | (a) The backend can't find `.env`. Start it from `backend/` or the repository root. (b) The password in `.env` differs from the one the database was first created with. Put the old one back, or reset with `docker compose down -v` (deletes local data). |
-| `port 5432 is already allocated` / `bind: ... in use` | PostgreSQL is already installed on your PC. Set `DB_PORT=5433` in `.env`. |
+| `port 5432 is already allocated` / `bind: ... in use`, or `password authentication failed` even though `.env` is correct | PostgreSQL is also installed on Windows and is using port 5432 (check with `Get-Service *postgres*`). Set `DB_PORT=5433` in `.env`, then `docker compose down` and `docker compose up -d --wait`. |
 | `Connection to localhost:5432 refused` | The database isn't running. Run `docker compose up -d --wait`. |
 | Backend tests fail with `Could not find a valid Docker environment` | Docker Desktop isn't running. Start it and try again. |
-| `Port 8080 was already in use` | Another program uses 8080. Stop it, or set `SERVER_PORT=8081` in `.env`. |
+| `Port 8080 was already in use` | See what uses it: `Get-NetTCPConnection -LocalPort 8080 -State Listen \| ForEach-Object { Get-Process -Id $_.OwningProcess }`. If it is `java`, an earlier backend is still running: press `Ctrl+C` in its window or `Stop-Process -Id <Id>`. Otherwise set `SERVER_PORT=8081` in `.env`. |
