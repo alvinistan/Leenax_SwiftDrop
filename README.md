@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 3 (catalogue API). The backend has category and product APIs; the frontend still uses **sample data** and isn't connected yet. ⚠️ Admin API endpoints have **no login until Phase 6**: local use only.
+> **Status:** Phase 4 (routing). The storefront has real pages (home, product list, product details, 404) using **sample data**; Phase 5 connects it to the backend API. ⚠️ Admin API endpoints have **no login until Phase 6**: local use only.
 
 ## Planned stack
 

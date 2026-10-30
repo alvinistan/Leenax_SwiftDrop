@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { CategoryCarousel } from './CategoryCarousel'
 import { sampleCategories } from './sampleData'
@@ -23,8 +24,25 @@ function setRowSize(list: HTMLElement, { scrollLeft = 0 } = {}) {
 }
 
 describe('CategoryCarousel', () => {
+  it('links each category to its product list', () => {
+    render(
+      <MemoryRouter>
+        <CategoryCarousel categories={sampleCategories} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: 'Fashion' })).toHaveAttribute(
+      'href',
+      '/products?category=fashion',
+    )
+  })
+
   it('shows every category name', () => {
-    render(<CategoryCarousel categories={sampleCategories} />)
+    render(
+      <MemoryRouter>
+        <CategoryCarousel categories={sampleCategories} />
+      </MemoryRouter>,
+    )
 
     for (const category of sampleCategories) {
       expect(screen.getByText(category.name)).toBeInTheDocument()
@@ -32,7 +50,11 @@ describe('CategoryCarousel', () => {
   })
 
   it('moves forward when Next is clicked', async () => {
-    render(<CategoryCarousel categories={sampleCategories} />)
+    render(
+      <MemoryRouter>
+        <CategoryCarousel categories={sampleCategories} />
+      </MemoryRouter>,
+    )
     const list = screen.getByRole('list', { name: 'Categories' })
     setRowSize(list)
 
@@ -46,7 +68,11 @@ describe('CategoryCarousel', () => {
   })
 
   it('disables Previous at the start and enables it after scrolling', () => {
-    render(<CategoryCarousel categories={sampleCategories} />)
+    render(
+      <MemoryRouter>
+        <CategoryCarousel categories={sampleCategories} />
+      </MemoryRouter>,
+    )
     const list = screen.getByRole('list', { name: 'Categories' })
     const previous = screen.getByRole('button', { name: 'Previous categories' })
 

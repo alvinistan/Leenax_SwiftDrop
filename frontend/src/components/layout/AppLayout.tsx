@@ -7,7 +7,7 @@ type AppLayoutProps = { cartCount: number; children: ReactNode }
 /** The frame around every page: skip link, header, main content, footer. */
 export function AppLayout({ cartCount, children }: AppLayoutProps) {
   return (
-    <div id="top" className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col">
       {/* Lets keyboard users jump past the navigation. Visible only when focused. */}
       <a
         href="#main-content"

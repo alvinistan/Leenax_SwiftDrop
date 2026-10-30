@@ -1,52 +1,47 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import type { Product } from '../../types/catalog'
+import { MemoryRouter } from 'react-router'
+import { describe, expect, it } from 'vitest'
+import type { ProductSummary } from '../../types/catalog'
 import { ProductCard } from './ProductCard'
 
-const product: Product = {
+const product: ProductSummary = {
   id: 'test-1',
-  name: 'Test Mug',
-  slug: 'test-mug',
-  category: { id: 'c1', name: 'Kitchen', slug: 'kitchen', imageUrl: null },
-  price: { amount: '1450.00', currency: 'LKR' },
-  imageUrl: null,
-  inStock: true,
-  isSample: true,
+  name: 'Chocolate Cake',
+  slug: 'chocolate-cake',
+  category: { id: 'c1', name: 'Cakes', slug: 'cakes' },
+  fromPrice: { amount: '4200.00', currency: 'LKR' },
+  fromPriceUnit: 'KG',
+  status: 'ACTIVE',
 }
 
 describe('ProductCard', () => {
-  it('shows the name, formatted price and sample label', () => {
-    render(<ProductCard product={product} onAddToCart={() => {}} />)
-
-    expect(
-      screen.getByRole('heading', { name: 'Test Mug' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/LKR\s1,450\.00/)).toBeInTheDocument()
-    expect(screen.getByText('Sample')).toBeInTheDocument()
-  })
-
-  it('passes the product to onAddToCart when the button is clicked', async () => {
-    const handleAdd = vi.fn()
-    render(<ProductCard product={product} onAddToCart={handleAdd} />)
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Add Test Mug to cart' }),
-    )
-
-    expect(handleAdd).toHaveBeenCalledWith(product)
-  })
-
-  it('cannot be added to the cart when out of stock', () => {
+  it('links to the product page and shows the price per unit', () => {
+    // Link needs a router around it; MemoryRouter is a router for tests.
     render(
-      <ProductCard
-        product={{ ...product, inStock: false }}
-        onAddToCart={() => {}}
-      />,
+      <MemoryRouter>
+        <ProductCard product={product} />
+      </MemoryRouter>,
     )
 
     expect(
-      screen.getByRole('button', { name: 'Test Mug is out of stock' }),
-    ).toBeDisabled()
+      screen.getByRole('link', { name: 'Chocolate Cake' }),
+    ).toHaveAttribute('href', '/products/chocolate-cake')
+    expect(screen.getByText(/LKR\s4,200\.00 \/ kg/)).toBeInTheDocument()
+  })
+
+  it('shows the Sample badge only when asked', () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <ProductCard product={product} />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByText('Sample')).not.toBeInTheDocument()
+
+    rerender(
+      <MemoryRouter>
+        <ProductCard product={product} showSampleBadge />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Sample')).toBeInTheDocument()
   })
 })

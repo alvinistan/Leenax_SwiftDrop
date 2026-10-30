@@ -1,21 +1,27 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
+import type { ProductSummary } from '../../types/catalog'
 import { ProductGrid } from './ProductGrid'
-import { sampleProducts } from './sampleData'
 
-const noop = () => {}
+const products: ProductSummary[] = [1, 2, 3].map((n) => ({
+  id: `p${n}`,
+  name: `Product ${n}`,
+  slug: `product-${n}`,
+  category: { id: 'c', name: 'Cat', slug: 'cat' },
+  fromPrice: { amount: '100.00', currency: 'LKR' },
+  fromPriceUnit: 'PIECE',
+  status: 'ACTIVE',
+}))
+
+function renderGrid(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>)
+}
 
 describe('ProductGrid', () => {
   it('shows a busy placeholder while loading', () => {
-    render(
-      <ProductGrid
-        status="loading"
-        products={[]}
-        onRetry={noop}
-        onAddToCart={noop}
-      />,
-    )
+    renderGrid(<ProductGrid state={{ status: 'loading' }} onRetry={() => {}} />)
 
     expect(screen.getByLabelText('Loading products')).toHaveAttribute(
       'aria-busy',
@@ -25,12 +31,10 @@ describe('ProductGrid', () => {
 
   it('shows an error with a working retry button', async () => {
     const handleRetry = vi.fn()
-    render(
+    renderGrid(
       <ProductGrid
-        status="error"
-        products={[]}
+        state={{ status: 'error', error: new Error('x') }}
         onRetry={handleRetry}
-        onAddToCart={noop}
       />,
     )
 
@@ -42,30 +46,26 @@ describe('ProductGrid', () => {
   })
 
   it('shows a helpful message when there are no products', () => {
-    render(
+    renderGrid(
       <ProductGrid
-        status="success"
-        products={[]}
-        onRetry={noop}
-        onAddToCart={noop}
+        state={{ status: 'success', data: [] }}
+        onRetry={() => {}}
       />,
     )
 
     expect(
-      screen.getByRole('heading', { name: 'No products yet' }),
+      screen.getByRole('heading', { name: 'No products found' }),
     ).toBeInTheDocument()
   })
 
   it('shows one list item per product', () => {
-    render(
+    renderGrid(
       <ProductGrid
-        status="success"
-        products={sampleProducts}
-        onRetry={noop}
-        onAddToCart={noop}
+        state={{ status: 'success', data: products }}
+        onRetry={() => {}}
       />,
     )
 
-    expect(screen.getAllByRole('listitem')).toHaveLength(sampleProducts.length)
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
   })
 })

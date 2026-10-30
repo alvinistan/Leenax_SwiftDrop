@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link } from 'react-router'
 import type { Category } from '../../types/catalog'
 import { CategoryImage } from './CategoryImage'
 
@@ -14,7 +15,7 @@ type CategoryCarouselProps = {
  * - Phones: swipe left and right (native scrolling with snap points).
  * - All devices: Previous / Next buttons move one "page" at a time.
  * - Keyboard: Tab to the row, then use the arrow keys.
- * Phase 4 turns each category into a link to its product listing.
+ * Each category links to its product list (/products?category=...).
  */
 export function CategoryCarousel({
   categories,
@@ -93,12 +94,17 @@ export function CategoryCarousel({
       >
         {categories.map((category) => (
           <li key={category.id} className="w-24 shrink-0 snap-start sm:w-28">
-            <div className="aspect-square overflow-hidden rounded-full border border-slate-200 bg-white p-1">
-              <CategoryImage category={category} />
-            </div>
-            <p className="mt-2 text-center text-sm font-medium leading-tight text-slate-800">
-              {category.name}
-            </p>
+            <Link
+              to={`/products?category=${category.slug}`}
+              className="group block rounded-lg"
+            >
+              <div className="aspect-square overflow-hidden rounded-full border border-slate-200 bg-white p-1 transition group-hover:border-brand-500">
+                <CategoryImage category={category} />
+              </div>
+              <p className="mt-2 text-center text-sm font-medium leading-tight text-slate-800 group-hover:text-brand-700">
+                {category.name}
+              </p>
+            </Link>
           </li>
         ))}
       </ul>

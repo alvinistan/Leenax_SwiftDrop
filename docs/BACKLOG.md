@@ -11,7 +11,7 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 1 | Development environment and project foundation | 0 | Done |
 | 2 | React fundamentals and design system | 1 | Done |
 | 3 | Spring Boot REST API and ResponseEntity | 1 | Done |
-| 4 | React Router and navigation | 2 | In progress |
+| 4 | React Router and navigation | 2 | Awaiting review |
 | 5 | Axios and backend integration | 3, 4 | Not started |
 | 6 | Authentication and administration | 5 | Not started |
 | 7 | AWS S3 product images | 6 | Not started |
@@ -53,9 +53,10 @@ Not in Phase 1: entities other than `sellers`, UI design, authentication, AWS.
 
 - Category image upload by the admin: form in Phase 6, S3 storage in Phase 7 (FR-1a)
 - Product variants (D-2 = yes): design in Phase 3, admin in Phase 6, stock per variant in Phase 8
-- Category carousel items become links to the category's products in Phase 4
 - Variant add/edit/delete endpoints and admin screens: Phase 6
-- Product text search: decide in Phase 4/5
+- Product text search (`?q=`): Phase 5 or later
+- Production hosting must fall back to index.html for client-side routes: Phases 12–14
+- "From" price rule for products mixing PIECE and KG variants: owner to decide
 - ETag / If-Match using Product.version: optional, with the admin UI (Phase 6)
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch

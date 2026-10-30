@@ -1,5 +1,7 @@
 import { Menu, ShoppingBag, X } from 'lucide-react'
 import { useState } from 'react'
+import { Link, NavLink } from 'react-router'
+import { cn } from '../../lib/cn'
 import { buttonClasses } from '../ui/buttonStyles'
 import { Container } from './Container'
 import { navigationLinks } from './navigation'
@@ -18,32 +20,43 @@ export function Header({ cartCount }: HeaderProps) {
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
       <Container className="flex h-16 items-center justify-between gap-4">
-        <a
-          href="#top"
+        <Link
+          to="/"
           className="text-lg font-bold tracking-tight text-slate-900"
         >
           Leenax <span className="text-brand-700">SwiftDrop</span>
           <span className="text-slate-500">.lk</span>
-        </a>
+        </Link>
 
         <nav aria-label="Main" className="hidden md:block">
           <ul className="flex items-center gap-1">
             {navigationLinks.map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+              <li key={link.to}>
+                {/* NavLink knows whether its URL is the current page: it adds
+                    aria-current="page" and lets us style the active link. */}
+                <NavLink
+                  to={link.to}
+                  end={link.end}
+                  className={({ isActive }) =>
+                    // Not buttonClasses(): its text colour would clash with the active colour.
+                    cn(
+                      'inline-flex h-9 items-center rounded-lg px-3 text-sm font-semibold transition-colors',
+                      isActive
+                        ? 'bg-brand-50 text-brand-800'
+                        : 'text-slate-700 hover:bg-slate-100',
+                    )
+                  }
                 >
                   {link.label}
-                </a>
+                </NavLink>
               </li>
             ))}
           </ul>
         </nav>
 
         <div className="flex items-center gap-1">
-          <a
-            href="#cart"
+          <Link
+            to="/cart"
             aria-label={cartLabel}
             className={buttonClasses({ variant: 'ghost', size: 'sm' })}
           >
@@ -54,7 +67,7 @@ export function Header({ cartCount }: HeaderProps) {
             >
               {cartCount}
             </span>
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -84,14 +97,20 @@ export function Header({ cartCount }: HeaderProps) {
           <Container className="py-2">
             <ul className="flex flex-col">
               {navigationLinks.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="block rounded-lg px-3 py-3 font-medium text-slate-800 hover:bg-slate-100"
+                <li key={link.to}>
+                  <NavLink
+                    to={link.to}
+                    end={link.end}
+                    className={({ isActive }) =>
+                      cn(
+                        'block rounded-lg px-3 py-3 font-medium hover:bg-slate-100',
+                        isActive ? 'text-brand-700' : 'text-slate-800',
+                      )
+                    }
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {link.label}
-                  </a>
+                  </NavLink>
                 </li>
               ))}
             </ul>

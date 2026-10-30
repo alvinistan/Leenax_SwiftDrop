@@ -1,17 +1,18 @@
-import type { Product } from '../../types/catalog'
+import type { ReactNode } from 'react'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState'
+import type { AsyncState } from '../../hooks/useAsync'
+import type { ProductSummary } from '../../types/catalog'
+import { USING_SAMPLE_DATA } from './catalogApi'
 import { ProductCard } from './ProductCard'
 import { ProductCardSkeleton } from './ProductCardSkeleton'
-import type { LoadStatus } from './useSampleProducts'
-
-const SKELETON_COUNT = 8
 
 type ProductGridProps = {
-  status: LoadStatus
-  products: Product[]
+  state: AsyncState<ProductSummary[]>
   onRetry: () => void
-  onAddToCart: (product: Product) => void
+  /** Shown when the list is empty, e.g. a "View all products" link. */
+  emptyAction?: ReactNode
+  skeletonCount?: number
 }
 
 const gridClasses =
@@ -19,26 +20,26 @@ const gridClasses =
 
 /** Shows exactly one of four states: loading, error, empty, or the products. */
 export function ProductGrid({
-  status,
-  products,
+  state,
   onRetry,
-  onAddToCart,
+  emptyAction,
+  skeletonCount = 8,
 }: ProductGridProps) {
-  if (status === 'loading') {
+  if (state.status === 'loading') {
     return (
       <div
         className={gridClasses}
         aria-busy="true"
         aria-label="Loading products"
       >
-        {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+        {Array.from({ length: skeletonCount }, (_, index) => (
           <ProductCardSkeleton key={index} />
         ))}
       </div>
     )
   }
 
-  if (status === 'error') {
+  if (state.status === 'error') {
     return (
       <ErrorState
         title="We couldn't load the products"
@@ -48,21 +49,21 @@ export function ProductGrid({
     )
   }
 
-  if (products.length === 0) {
+  if (state.data.length === 0) {
     return (
       <EmptyState
-        title="No products yet"
-        description="New products are being added. Please check back soon."
+        title="No products found"
+        description="There are no products here yet. Please check back soon."
+        action={emptyAction}
       />
     )
   }
 
   return (
     <ul className={gridClasses}>
-      {products.map((product) => (
-        // key tells React which item is which when the list changes.
+      {state.data.map((product) => (
         <li key={product.id} className="flex">
-          <ProductCard product={product} onAddToCart={onAddToCart} />
+          <ProductCard product={product} showSampleBadge={USING_SAMPLE_DATA} />
         </li>
       ))}
     </ul>
