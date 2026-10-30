@@ -4,7 +4,7 @@ Running log so work can resume at any time. Newest entry first.
 
 ## Phase 4 — React Router and frontend navigation
 
-- **Status:** Awaiting owner review
+- **Status:** Done (approved 2026-10-30, merged into `main`)
 - **Date:** 2026-10-30
 - **Branch:** `claude/create-projects-s4blmr`
 - **Done:**
@@ -14,7 +14,6 @@ Running log so work can resume at any time. Newest entry first.
   - `catalogApi` module with sample data in the exact API shape (ready to swap for Axios in Phase 5)
   - `useAsync` hook with race-condition protection
   - 46 frontend tests (12 new full-app route tests); checked in Chromium at desktop and mobile widths
-- **Waiting on owner:** review, exercises, approval
 - **Report:** [phase-reports/phase-4-routing.md](phase-reports/phase-4-routing.md)
 
 ## Phase 3 — Spring Boot REST API and ResponseEntity
