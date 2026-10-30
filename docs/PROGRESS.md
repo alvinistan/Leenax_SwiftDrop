@@ -4,7 +4,7 @@ Running log so work can resume at any time. Newest entry first.
 
 ## Phase 3 — Spring Boot REST API and ResponseEntity
 
-- **Status:** Awaiting owner review
+- **Status:** Done (approved 2026-10-30, merged into `main`; owner ran it locally: health UP)
 - **Date:** 2026-10-28
 - **Branch:** `claude/create-projects-s4blmr`
 - **Done:**
@@ -16,7 +16,6 @@ Running log so work can resume at any time. Newest entry first.
   - 23 backend tests (unit, web slice, Testcontainers integration); N+1 check: 2 queries per product page
   - Owner feedback: sell by piece or by weight (`saleUnit` PIECE/KG with min/max/step, Flyway V4); 27 backend tests
 - **Important:** `/api/admin/**` is NOT secured until Phase 6. Local use only.
-- **Waiting on owner:** review, exercises, approval to merge into `main`
 - **Report:** [phase-reports/phase-3-catalog-api.md](phase-reports/phase-3-catalog-api.md)
 
 ## Phase 2 — React fundamentals and design system

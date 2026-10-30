@@ -10,8 +10,8 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 0 | Repository audit and requirements | — | Done |
 | 1 | Development environment and project foundation | 0 | Done |
 | 2 | React fundamentals and design system | 1 | Done |
-| 3 | Spring Boot REST API and ResponseEntity | 1 | Awaiting review |
-| 4 | React Router and navigation | 2 | Not started |
+| 3 | Spring Boot REST API and ResponseEntity | 1 | Done |
+| 4 | React Router and navigation | 2 | In progress |
 | 5 | Axios and backend integration | 3, 4 | Not started |
 | 6 | Authentication and administration | 5 | Not started |
 | 7 | AWS S3 product images | 6 | Not started |
