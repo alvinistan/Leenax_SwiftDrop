@@ -2,6 +2,22 @@
 
 Running log so work can resume at any time. Newest entry first.
 
+## Phase 7 — Product and category images (S3)
+
+- **Status:** Awaiting owner review (code complete and verified locally; real AWS awaiting approval)
+- **Date:** 2026-11-09
+- **Branch:** `claude/create-projects-s4blmr`
+- **Done:**
+  - AWS SDK v2 S3 storage behind an `ImageStorage` interface; private bucket + pre-signed GET URLs
+  - Upload through the backend with magic-byte checks, 5 MB limit, random keys, store/undo and delete-after-commit
+  - Product photos (up to 10, alt text) and category pictures; Flyway V7
+  - Admin upload UI with progress; store gallery and card photos
+  - S3Mock for local development (docker compose, persistent volume) and tests (Testcontainers)
+  - 56 backend + 84 frontend tests; browser end-to-end and curl checks
+- **Owner action:** run `docker compose up -d --wait` again (new S3Mock service); copy the new S3 lines from `.env.example` into `.env`
+- **Awaiting approval:** create AWS resources per `docs/AWS_SETUP.md` (budget first)
+- **Report:** [phase-reports/phase-7-s3-images.md](phase-reports/phase-7-s3-images.md)
+
 ## Phase 6B — Product, variant and stock administration
 
 - **Status:** Done (approved 2026-11-09, merged into `main`)

@@ -20,6 +20,7 @@ import {
 } from '../../features/admin/categorySchema'
 import { useAsync } from '../../hooks/useAsync'
 import { ApiError, NotFoundError, userMessage } from '../../lib/errors'
+import { CategoryImageSection } from '../../features/admin/CategoryImageSection'
 import { slugify } from '../../lib/slugify'
 
 const EMPTY: CategoryFormValues = {
@@ -52,16 +53,19 @@ function EditCategory({ id }: { id: string }) {
   }
   const c = state.data
   return (
-    <CategoryForm
-      categoryId={c.id}
-      initial={{
-        name: c.name,
-        slug: c.slug,
-        description: c.description ?? '',
-        sortOrder: c.sortOrder,
-        active: c.active,
-      }}
-    />
+    <>
+      <CategoryForm
+        categoryId={c.id}
+        initial={{
+          name: c.name,
+          slug: c.slug,
+          description: c.description ?? '',
+          sortOrder: c.sortOrder,
+          active: c.active,
+        }}
+      />
+      <CategoryImageSection categoryId={c.id} initialUrl={c.imageUrl} />
+    </>
   )
 }
 

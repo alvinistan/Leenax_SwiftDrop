@@ -79,6 +79,11 @@ public class Product {
     @OrderBy("sortOrder ASC")
     private List<ProductVariant> variants = new ArrayList<>();
 
+    /** Photos, first one = the main photo. Rows are deleted with the product (files: see ProductService). */
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC, createdAt ASC")
+    private List<ProductImage> images = new ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -113,6 +118,26 @@ public class Product {
     /** Removes the variants whose id is not in keepIds (orphanRemoval deletes their rows). */
     public void removeVariantsExcept(java.util.Set<UUID> keepIds) {
         variants.removeIf(variant -> !keepIds.contains(variant.getId()));
+    }
+
+    public ProductImage addImage(String objectKey, String contentType, long sizeBytes, String altText) {
+        int nextOrder = images.stream().mapToInt(ProductImage::getSortOrder).max().orElse(-1) + 1;
+        ProductImage image = new ProductImage(this, objectKey, contentType, sizeBytes, altText, nextOrder);
+        images.add(image);
+        return image;
+    }
+
+    public void removeImage(ProductImage image) {
+        images.remove(image);
+    }
+
+    public List<ProductImage> getImages() {
+        return Collections.unmodifiableList(images);
+    }
+
+    /** The main photo's storage key, if there is a photo. */
+    public Optional<String> mainImageKey() {
+        return images.stream().findFirst().map(ProductImage::getObjectKey);
     }
 
     /** Is any active variant available to buy? */

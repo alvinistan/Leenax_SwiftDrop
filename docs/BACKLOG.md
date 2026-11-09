@@ -14,7 +14,7 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 4 | React Router and navigation | 2 | Done |
 | 5 | Axios and backend integration | 3, 4 | Done |
 | 6 | Authentication and administration (6A + 6B) | 5 | Done |
-| 7 | AWS S3 product images | 6 | In progress |
+| 7 | AWS S3 product images | 6 | Awaiting review (real AWS awaiting approval) |
 | 8 | Shopping cart and checkout (COD) | 6 | Not started |
 | 9 | Orders and payments | 8 | Not started |
 | 10 | Delivery management | 9 | Not started |
@@ -61,6 +61,7 @@ Not in Phase 1: entities other than `sellers`, UI design, authentication, AWS.
 - Admin password change and "forgot password": later
 - Audit log of admin actions: candidate for Phase 6B/11
 - Inventory history (stock movements) and low-stock alerts: later
-- Image upload via pre-signed S3 URLs: Phase 7 (design in the Phase 6B report)
+- **Strip EXIF metadata and resize images: required before going live**
+- Reorder photos / edit alt text; CloudFront for images (Phase 14); orphaned-file clean-up job
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch

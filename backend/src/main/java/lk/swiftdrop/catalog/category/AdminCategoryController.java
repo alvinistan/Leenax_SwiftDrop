@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
@@ -65,6 +68,23 @@ public class AdminCategoryController {
     public ResponseEntity<CategoryResponse> update(
             @PathVariable UUID id, @Valid @RequestBody CategoryRequest request) {
         return ResponseEntity.ok(categoryService.update(id, request));
+    }
+
+    /**
+     * PUT /api/admin/categories/{id}/image, a multipart form with a "file" field.
+     * 200 with the category (now with imageUrl). 400 not a JPEG/PNG/WebP, 413 too large.
+     */
+    @PutMapping(path = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CategoryResponse> uploadImage(
+            @PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(categoryService.uploadImage(id, file));
+    }
+
+    /** 204: the picture is removed (the category stays). */
+    @DeleteMapping("/{id}/image")
+    public ResponseEntity<Void> removeImage(@PathVariable UUID id) {
+        categoryService.removeImage(id);
+        return ResponseEntity.noContent().build();
     }
 
     /** 204 No Content: it worked, and there is nothing to send back. 404 or 409 on errors. */

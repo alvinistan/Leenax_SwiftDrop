@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Function;
 import lk.swiftdrop.catalog.category.Category;
 import lk.swiftdrop.common.money.MoneyResponse;
 
@@ -33,9 +34,12 @@ public final class ProductResponses {
             SaleUnit fromPriceUnit,
             ProductStatus status,
             /** Can any active variant be bought? (Exact stock is never shown to customers.) */
-            boolean inStock) {
+            boolean inStock,
+            /** The main photo (short-lived link), or null. */
+            String imageUrl) {
 
-        static ProductSummary from(Product product) {
+        /** @param imageUrl turns a storage key into a link a browser can show */
+        static ProductSummary from(Product product, Function<String, String> imageUrl) {
             var cheapest = product.cheapestActiveVariant();
             return new ProductSummary(
                     product.getId(),
@@ -45,8 +49,13 @@ public final class ProductResponses {
                     cheapest.map(v -> MoneyResponse.of(v.getPrice(), product.getCurrency())).orElse(null),
                     cheapest.map(ProductVariant::getSaleUnit).orElse(null),
                     product.getStatus(),
-                    product.isInStock());
+                    product.isInStock(),
+                    product.mainImageKey().map(imageUrl).orElse(null));
         }
+    }
+
+    /** A photo as customers get it. */
+    public record ImageResponse(String url, String altText) {
     }
 
     /** Allowed quantities, as decimal strings: {"min": "0.5", "max": "5", "step": "0.5"}. */
@@ -95,10 +104,12 @@ public final class ProductResponses {
             CategoryRef category,
             ProductStatus status,
             String currency,
-            List<VariantResponse> variants) {
+            List<VariantResponse> variants,
+            /** In display order; the first is the main photo. */
+            List<ImageResponse> images) {
 
         /** Customers only see active variants. (Admins use AdminProductResponses.) */
-        static ProductDetail from(Product product) {
+        static ProductDetail from(Product product, Function<String, String> imageUrl) {
             return new ProductDetail(
                     product.getId(),
                     product.getName(),
@@ -110,6 +121,9 @@ public final class ProductResponses {
                     product.getVariants().stream()
                             .filter(ProductVariant::isActive)
                             .map(variant -> VariantResponse.from(variant, product.getCurrency()))
+                            .toList(),
+                    product.getImages().stream()
+                            .map(image -> new ImageResponse(imageUrl.apply(image.getObjectKey()), image.getAltText()))
                             .toList());
         }
     }

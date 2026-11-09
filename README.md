@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 6 (administration). Admins log in and manage categories, products, variants (piece or by weight) and stock; the store shows real data. Next: product images (Phase 7).
+> **Status:** Phase 7 (images). Admins manage categories, products, variants, stock and photos. Images use S3Mock locally; connecting real AWS S3 is described in `docs/AWS_SETUP.md` (not done yet).
 
 ## Planned stack
 
@@ -26,6 +26,7 @@ It is also a step-by-step programming-learning project.
 - [Backlog](docs/BACKLOG.md): phases and their scope
 - [Learning roadmap](docs/LEARNING_ROADMAP.md): what to study for each phase
 - [Progress](docs/PROGRESS.md): what has been completed
+- [AWS setup](docs/AWS_SETUP.md): S3 for images: costs, budget alert, least-privilege IAM (needs approval)
 - [Phase reports](docs/phase-reports/)
 
 ## Project layout
@@ -34,7 +35,7 @@ It is also a step-by-step programming-learning project.
 backend/            Spring Boot API (Java 21, Maven Wrapper)
 frontend/           React + TypeScript + Vite app
 docs/               Requirements, architecture, phase reports
-docker-compose.yml  Local PostgreSQL database
+docker-compose.yml  Local PostgreSQL database and S3Mock (image storage)
 .env.example        Template for your local settings (copy to .env)
 .github/workflows/  GitHub Actions CI
 ```
@@ -56,7 +57,7 @@ cd frontend; npm install; cd ..
 ### 2. Start the database
 
 ```powershell
-docker compose up -d --wait      # starts PostgreSQL in the background
+docker compose up -d --wait      # starts PostgreSQL and S3Mock (images) in the background
 docker compose ps                # STATUS should say "healthy"
 ```
 
@@ -135,6 +136,8 @@ cd frontend; npm run lint; npm test; npm run build; cd ..
 | Backend stops with `ADMIN_PASSWORD must be at least 12 characters long` | Choose a longer `ADMIN_PASSWORD` in `.env`. |
 | Log says `No administrator exists yet` | Add `ADMIN_EMAIL` and `ADMIN_PASSWORD` to `.env` and restart the backend. |
 | Admin login always says "incorrect" | The account was created with the password `.env` had at the **first** start. Changing `.env` later doesn't change it. For a local test database: `docker compose down -v` (deletes local data) and start again. |
+| Image upload fails with "The store is having a problem" | S3Mock isn't running, or `.env` lacks `S3_ENDPOINT=http://localhost:9090` (copy the S3 lines from `.env.example`). Run `docker compose up -d --wait`. |
+| `port 9090 is already allocated` | Another program uses 9090. Change the left number in `docker-compose.yml` (`127.0.0.1:9091:9090`) and set `S3_ENDPOINT=http://localhost:9091`. |
 | Shop says "We couldn't reach the store" | (a) The backend isn't running: start it (step 3). (b) Wrong address: `VITE_API_URL` in `frontend/.env.local` must match the backend port. (c) CORS: open the browser console (F12). A "CORS policy" error means the page's address isn't in `CORS_ALLOWED_ORIGINS` (default `http://localhost:5173`). |
 | Backend tests fail with `Could not find a valid Docker environment` | Docker Desktop isn't running. Start it and try again. |
 | `Port 8080 was already in use` | See what uses it: `Get-NetTCPConnection -LocalPort 8080 -State Listen \| ForEach-Object { Get-Process -Id $_.OwningProcess }`. If it is `java`, an earlier backend is still running: press `Ctrl+C` in its window or `Stop-Process -Id <Id>`. Otherwise set `SERVER_PORT=8081` in `.env`. |

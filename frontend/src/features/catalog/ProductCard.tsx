@@ -19,7 +19,8 @@ export function ProductCard({
     // while screen readers still hear one simple link: the product name.
     <Card className="relative flex w-full flex-col transition-shadow hover:shadow-md">
       <div className="relative">
-        <ProductImage src={null} alt={product.name} />
+        {/* alt="": the product name is right below, so screen readers need not hear it twice. */}
+        <ProductImage src={product.imageUrl} alt="" />
         <div className="absolute left-3 top-3 flex gap-2">
           {showSampleBadge && <Badge tone="warning">Sample</Badge>}
           {!product.inStock && <Badge tone="danger">Out of stock</Badge>}

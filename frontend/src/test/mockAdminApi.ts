@@ -41,6 +41,7 @@ function toDetail(id: string, input: ProductInput): AdminProductDetail {
     category: { id: category.id, name: category.name, slug: category.slug },
     status: input.status,
     currency: 'LKR',
+    images: [],
     variants: input.variants.map((v, i) => ({
       id:
         v.id ?? `${id}-var-${i + 1}-${Math.random().toString(36).slice(2, 6)}`,
@@ -237,7 +238,12 @@ export const adminHandlers = [
     if (denied) return denied
     const body = (await request.json()) as ProductInput
     lastProductRequest = body
-    const updated = toDetail(String(params.id), body)
+    const existingImages =
+      products.find((p) => p.id === params.id)?.images ?? []
+    const updated = {
+      ...toDetail(String(params.id), body),
+      images: existingImages,
+    }
     products = products.map((p) => (p.id === params.id ? updated : p))
     return apiJson(updated)
   }),
@@ -246,6 +252,68 @@ export const adminHandlers = [
     const denied = requireAdmin()
     if (denied) return denied
     products = products.filter((p) => p.id !== params.id)
+    return apiEmpty(204)
+  }),
+
+  // ---- images ----
+
+  http.post(
+    `${API}/api/admin/products/:id/images`,
+    async ({ params, request }) => {
+      const denied = requireAdmin()
+      if (denied) return denied
+      const form = await request.formData()
+      // Not `instanceof File`: the test browser (jsdom) and Node.js each have their own
+      // File class, so a file made by one is not an "instance" of the other's class.
+      const file = form.get('file') as File | string | null
+      if (!file || typeof file === 'string')
+        return problem(400, 'Bad Request', 'Choose an image file to upload.')
+      if (file.name.includes('fake'))
+        return problem(400, 'Bad Request', 'Upload a JPEG, PNG or WebP image.')
+      const product = products.find((p) => p.id === params.id)
+      if (!product) return problem(404, 'Not Found', 'Product not found')
+      const image = {
+        id: `img-${product.images.length + 1}`,
+        url: `https://images.example/${file.name}`,
+        altText: (form.get('altText') as string | null) ?? null,
+      }
+      product.images = [...product.images, image]
+      return apiJson(image, { status: 201 })
+    },
+  ),
+
+  http.delete(`${API}/api/admin/products/:id/images/:imageId`, ({ params }) => {
+    const denied = requireAdmin()
+    if (denied) return denied
+    const product = products.find((p) => p.id === params.id)
+    if (!product?.images.some((i) => i.id === params.imageId)) {
+      return problem(404, 'Not Found', 'Image not found')
+    }
+    product.images = product.images.filter((i) => i.id !== params.imageId)
+    return apiEmpty(204)
+  }),
+
+  http.put(
+    `${API}/api/admin/categories/:id/image`,
+    async ({ params, request }) => {
+      const denied = requireAdmin()
+      if (denied) return denied
+      const file = (await request.formData()).get('file') as File
+      categories = categories.map((c) =>
+        c.id === params.id
+          ? { ...c, imageUrl: `https://images.example/${file.name}` }
+          : c,
+      )
+      return apiJson(categories.find((c) => c.id === params.id))
+    },
+  ),
+
+  http.delete(`${API}/api/admin/categories/:id/image`, ({ params }) => {
+    const denied = requireAdmin()
+    if (denied) return denied
+    categories = categories.map((c) =>
+      c.id === params.id ? { ...c, imageUrl: null } : c,
+    )
     return apiEmpty(204)
   }),
 ]

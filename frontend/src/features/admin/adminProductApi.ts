@@ -1,4 +1,5 @@
 import { http } from '../../api/http'
+import type { AdminImage } from './imageApi'
 import type {
   CategoryRef,
   Money,
@@ -19,6 +20,7 @@ export type AdminProductSummary = {
   fromPrice: Money | null
   fromPriceUnit: SaleUnit | null
   inStock: boolean
+  imageUrl: string | null
 }
 
 export type AdminVariant = {
@@ -43,6 +45,7 @@ export type AdminProductDetail = {
   status: ProductStatus
   currency: string
   variants: AdminVariant[]
+  images: AdminImage[]
 }
 
 /**

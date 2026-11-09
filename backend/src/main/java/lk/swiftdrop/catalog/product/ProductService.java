@@ -18,6 +18,7 @@ import lk.swiftdrop.catalog.product.ProductResponses.ProductSummary;
 import lk.swiftdrop.common.error.ConflictException;
 import lk.swiftdrop.common.error.ResourceNotFoundException;
 import lk.swiftdrop.common.web.PageResponse;
+import lk.swiftdrop.media.ImageUploads;
 import lk.swiftdrop.store.StoreDefaults;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,24 +31,27 @@ public class ProductService {
     private final ProductRepository products;
     private final ProductVariantRepository variants;
     private final CategoryRepository categories;
+    private final ImageUploads imageUploads;
 
-    public ProductService(
-            ProductRepository products, ProductVariantRepository variants, CategoryRepository categories) {
+    public ProductService(ProductRepository products, ProductVariantRepository variants,
+                          CategoryRepository categories, ImageUploads imageUploads) {
         this.products = products;
         this.variants = variants;
         this.categories = categories;
+        this.imageUploads = imageUploads;
     }
 
     // ---- Storefront (customers) ----
 
     public PageResponse<ProductSummary> listVisible(String categorySlug, Pageable pageable) {
-        return PageResponse.from(products.findVisible(categorySlug, pageable), ProductSummary::from);
+        return PageResponse.from(products.findVisible(categorySlug, pageable),
+                product -> ProductSummary.from(product, imageUploads::urlFor));
     }
 
     public ProductDetail getVisibleBySlug(String slug) {
         Product product = products.findVisibleBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", slug));
-        return ProductDetail.from(product);
+        return ProductDetail.from(product, imageUploads::urlFor);
     }
 
     // ---- Admin ----
@@ -55,11 +59,12 @@ public class ProductService {
     /** @param search part of the product name (optional); @param status optional filter */
     public PageResponse<AdminProductSummary> listForAdmin(String search, ProductStatus status, Pageable pageable) {
         return PageResponse.from(
-                products.searchForAdmin(status, likePattern(search), pageable), AdminProductSummary::from);
+                products.searchForAdmin(status, likePattern(search), pageable),
+                product -> AdminProductSummary.from(product, imageUploads::urlFor));
     }
 
     public AdminProductDetail get(UUID id) {
-        return AdminProductDetail.from(find(id));
+        return AdminProductDetail.from(find(id), imageUploads::urlFor);
     }
 
     /**
@@ -89,7 +94,7 @@ public class ProductService {
             }
             product.addVariant(newVariant(variant, position++));
         }
-        return AdminProductDetail.from(products.save(product));
+        return AdminProductDetail.from(products.save(product), imageUploads::urlFor);
     }
 
     /**
@@ -149,7 +154,7 @@ public class ProductService {
             }
             position++;
         }
-        return AdminProductDetail.from(product);
+        return AdminProductDetail.from(product, imageUploads::urlFor);
     }
 
     /**
@@ -158,7 +163,10 @@ public class ProductService {
      */
     @Transactional
     public void delete(UUID id) {
-        products.delete(find(id));
+        Product product = find(id);
+        // Image rows go with the product (cascade); the files are removed once that is committed.
+        product.getImages().forEach(image -> imageUploads.deleteAfterCommit(image.getObjectKey()));
+        products.delete(product);
     }
 
     private static ProductVariant newVariant(VariantRequest variant, int position) {

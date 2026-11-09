@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Function;
 import lk.swiftdrop.catalog.product.ProductResponses.CategoryRef;
 import lk.swiftdrop.catalog.product.ProductResponses.QuantityResponse;
 import lk.swiftdrop.common.money.MoneyResponse;
@@ -27,9 +28,10 @@ public final class AdminProductResponses {
             int variantCount,
             MoneyResponse fromPrice,
             SaleUnit fromPriceUnit,
-            boolean inStock) {
+            boolean inStock,
+            String imageUrl) {
 
-        static AdminProductSummary from(Product product) {
+        static AdminProductSummary from(Product product, Function<String, String> imageUrl) {
             var cheapest = product.cheapestActiveVariant();
             return new AdminProductSummary(
                     product.getId(),
@@ -40,7 +42,8 @@ public final class AdminProductResponses {
                     product.getVariants().size(),
                     cheapest.map(v -> MoneyResponse.of(v.getPrice(), product.getCurrency())).orElse(null),
                     cheapest.map(ProductVariant::getSaleUnit).orElse(null),
-                    product.isInStock());
+                    product.isInStock(),
+                    product.mainImageKey().map(imageUrl).orElse(null));
         }
     }
 
@@ -70,6 +73,14 @@ public final class AdminProductResponses {
         }
     }
 
+    /** A photo as the admin sees it: with its id, so it can be deleted. */
+    public record AdminImage(UUID id, String url, String altText) {
+
+        static AdminImage from(ProductImage image, Function<String, String> imageUrl) {
+            return new AdminImage(image.getId(), imageUrl.apply(image.getObjectKey()), image.getAltText());
+        }
+    }
+
     public record AdminProductDetail(
             UUID id,
             String name,
@@ -79,9 +90,10 @@ public final class AdminProductResponses {
             ProductStatus status,
             String currency,
             /** All variants, including inactive ones. */
-            List<AdminVariant> variants) {
+            List<AdminVariant> variants,
+            List<AdminImage> images) {
 
-        static AdminProductDetail from(Product product) {
+        static AdminProductDetail from(Product product, Function<String, String> imageUrl) {
             return new AdminProductDetail(
                     product.getId(),
                     product.getName(),
@@ -92,7 +104,8 @@ public final class AdminProductResponses {
                     product.getCurrency(),
                     product.getVariants().stream()
                             .map(v -> AdminVariant.from(v, product.getCurrency()))
-                            .toList());
+                            .toList(),
+                    product.getImages().stream().map(i -> AdminImage.from(i, imageUrl)).toList());
         }
     }
 }

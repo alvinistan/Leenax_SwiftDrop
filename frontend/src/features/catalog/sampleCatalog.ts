@@ -45,6 +45,7 @@ function toSummary(product: ProductDetail): ProductSummary {
     inStock: product.variants.some(
       (variant) => variant.active && variant.inStock,
     ),
+    imageUrl: product.images[0]?.url ?? null,
   }
 }
 

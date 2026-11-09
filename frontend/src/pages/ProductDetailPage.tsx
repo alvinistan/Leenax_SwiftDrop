@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button'
 import { ErrorState } from '../components/ui/ErrorState'
 import { Skeleton } from '../components/ui/Skeleton'
 import { getProduct, USING_SAMPLE_DATA } from '../features/catalog/catalogApi'
-import { ProductImage } from '../features/catalog/ProductImage'
+import { ProductGallery } from '../features/catalog/ProductGallery'
 import { QuantitySelector } from '../features/catalog/QuantitySelector'
 import { VariantSelector } from '../features/catalog/VariantSelector'
 import { variantLabel } from '../features/catalog/variantLabel'
@@ -109,7 +109,7 @@ function ProductView({ product }: { product: ProductDetail }) {
       <div className="mt-6 grid gap-10 md:grid-cols-2">
         {/* self-start: keep the image its own height instead of stretching to the text column. */}
         <div className="relative self-start overflow-hidden rounded-xl border border-slate-200">
-          <ProductImage src={null} alt={product.name} />
+          <ProductGallery images={product.images} productName={product.name} />
           {USING_SAMPLE_DATA && (
             <Badge tone="warning" className="absolute left-3 top-3">
               Sample

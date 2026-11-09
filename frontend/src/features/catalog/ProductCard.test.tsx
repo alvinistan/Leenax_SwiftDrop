@@ -13,6 +13,7 @@ const product: ProductSummary = {
   fromPriceUnit: 'KG',
   status: 'ACTIVE',
   inStock: true,
+  imageUrl: null,
 }
 
 describe('ProductCard', () => {

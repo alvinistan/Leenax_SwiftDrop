@@ -32,6 +32,7 @@ import {
 } from '../../features/admin/productSchema'
 import { useAsync } from '../../hooks/useAsync'
 import { ApiError, NotFoundError, userMessage } from '../../lib/errors'
+import { ProductImagesSection } from '../../features/admin/ProductImagesSection'
 import { slugify } from '../../lib/slugify'
 import type { Category } from '../../types/catalog'
 
@@ -122,11 +123,25 @@ export function AdminProductFormPage() {
   }
   const { categories, product } = data.state.data
   return (
-    <ProductForm
-      productId={product?.id}
-      initial={product ? toFormValues(product) : EMPTY}
-      categories={categories}
-    />
+    <>
+      <ProductForm
+        productId={product?.id}
+        initial={product ? toFormValues(product) : EMPTY}
+        categories={categories}
+      />
+      <div className="mt-8 max-w-4xl">
+        {product ? (
+          <ProductImagesSection
+            productId={product.id}
+            initial={product.images}
+          />
+        ) : (
+          <p className="text-sm text-slate-600">
+            You can add photos after creating the product.
+          </p>
+        )}
+      </div>
+    </>
   )
 }
 

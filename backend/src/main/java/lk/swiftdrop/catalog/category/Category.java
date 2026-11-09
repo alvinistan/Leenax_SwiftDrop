@@ -38,6 +38,10 @@ public class Category {
     @Column(nullable = false)
     private boolean active;
 
+    /** S3 key of the round category picture, or null. */
+    @Column(name = "image_object_key", length = 300)
+    private String imageObjectKey;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -85,5 +89,16 @@ public class Category {
 
     public boolean isActive() {
         return active;
+    }
+
+    public String getImageObjectKey() {
+        return imageObjectKey;
+    }
+
+    /** Sets a new picture (or null for none) and returns the previous key, so its file can be deleted. */
+    public String replaceImage(String newKey) {
+        String previous = imageObjectKey;
+        imageObjectKey = newKey;
+        return previous;
     }
 }

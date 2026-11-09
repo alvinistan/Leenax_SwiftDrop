@@ -14,6 +14,7 @@ const products: ProductSummary[] = [1, 2, 3].map((n) => ({
   fromPriceUnit: 'PIECE',
   status: 'ACTIVE',
   inStock: true,
+  imageUrl: null,
 }))
 
 function renderGrid(ui: React.ReactElement) {

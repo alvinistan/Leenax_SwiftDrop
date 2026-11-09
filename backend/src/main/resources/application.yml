@@ -29,6 +29,12 @@ spring:
         # instead of one query per product.
         default_batch_fetch_size: 50
 
+  servlet:
+    multipart:
+      # Largest image we accept (anything bigger gets HTTP 413).
+      max-file-size: 5MB
+      max-request-size: 6MB
+
   data:
     web:
       pageable:
@@ -53,6 +59,17 @@ server:
         secure: ${SESSION_COOKIE_SECURE:false}
 
 app:
+  storage:
+    s3:
+      # Product and category images. Local development uses S3Mock (docker compose);
+      # leave S3_ENDPOINT empty to use real AWS S3 (see docs/AWS_SETUP.md).
+      bucket: ${S3_BUCKET:swiftdrop-images}
+      region: ${AWS_REGION:ap-south-1}
+      endpoint: ${S3_ENDPOINT:}
+      # Optional AWS CLI profile for real AWS on your PC (never put keys here).
+      profile: ${AWS_PROFILE_NAME:}
+      # How long an image link stays valid.
+      url-expiry: 1h
   admin:
     # The first administrator, created at startup if none exists (see AdminProvisioner).
     email: ${ADMIN_EMAIL:}

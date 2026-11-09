@@ -80,6 +80,7 @@ function product(
     status: 'ACTIVE',
     currency: 'LKR',
     variants,
+    images: [],
   }
 }
 

@@ -61,6 +61,15 @@ export type ProductSummary = {
   status: ProductStatus
   /** Can any active variant be bought? */
   inStock: boolean
+  /** The main photo (a short-lived link), or null. */
+  imageUrl: string | null
+}
+
+/** A product photo. */
+export type ProductImage = {
+  url: string
+  /** Describes the photo for people who cannot see it. */
+  altText: string | null
 }
 
 /** A full product (GET /api/products/{slug}). */
@@ -73,6 +82,8 @@ export type ProductDetail = {
   status: ProductStatus
   currency: string
   variants: Variant[]
+  /** In display order; the first is the main photo. */
+  images: ProductImage[]
 }
 
 /** One page of results (the backend's PageResponse). */

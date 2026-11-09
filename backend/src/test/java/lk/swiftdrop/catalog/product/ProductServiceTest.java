@@ -17,6 +17,7 @@ import lk.swiftdrop.catalog.category.Category;
 import lk.swiftdrop.catalog.category.CategoryRepository;
 import lk.swiftdrop.common.error.ConflictException;
 import lk.swiftdrop.common.error.ResourceNotFoundException;
+import lk.swiftdrop.media.ImageUploads;
 import lk.swiftdrop.store.StoreDefaults;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,8 +41,10 @@ class ProductServiceTest {
     private ProductVariantRepository variants;
     @Mock
     private CategoryRepository categories;
+    @Mock
+    private ImageUploads imageUploads;
 
-    /** Mockito creates the service and passes the three mocks to its constructor. */
+    /** Mockito creates the service and passes the mocks to its constructor. */
     @InjectMocks
     private ProductService productService;
 
