@@ -1,9 +1,10 @@
 import { LoaderCircle } from 'lucide-react'
-import type { ButtonHTMLAttributes } from 'react'
+import type { ComponentProps } from 'react'
 import { cn } from '../../lib/cn'
 import { buttonClasses, type ButtonStyleOptions } from './buttonStyles'
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+// ComponentProps<'button'> includes `ref` (React 19 passes refs as normal props).
+type ButtonProps = ComponentProps<'button'> &
   ButtonStyleOptions & {
     /** Shows a spinner and blocks clicks while an action is running. */
     isLoading?: boolean

@@ -2,14 +2,17 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
+import { AuthProvider } from '../../features/auth/AuthProvider'
 import { Header } from './Header'
 
 // Links need a router around them; MemoryRouter is a router for tests.
 function renderHeader(cartCount: number, path = '/') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Header cartCount={cartCount} />
-    </MemoryRouter>,
+    <AuthProvider>
+      <MemoryRouter initialEntries={[path]}>
+        <Header cartCount={cartCount} />
+      </MemoryRouter>
+    </AuthProvider>,
   )
 }
 

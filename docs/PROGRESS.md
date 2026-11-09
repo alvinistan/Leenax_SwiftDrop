@@ -2,6 +2,23 @@
 
 Running log so work can resume at any time. Newest entry first.
 
+## Phase 6A — Authentication, authorization and category administration
+
+- **Status:** Awaiting owner review
+- **Date:** 2026-11-09
+- **Branch:** `claude/create-projects-s4blmr`
+- **Done:**
+  - Spring Security: session login (HttpOnly cookie), logout, CSRF (`csrf.spa()`), deny-by-default rules, JSON 401/403
+  - Users and roles (Flyway V5); bcrypt password hashes; first admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`
+  - CORS with credentials through Spring Security
+  - React: AuthProvider, protected admin routes, login page, admin layout, category management (React Hook Form + Zod), accessible confirm dialog
+  - Lazy-loaded admin/login code (bundle 557 kB → 420 kB)
+  - 40 backend + 69 frontend tests; browser end-to-end and curl attack checks
+- **Owner action:** add `ADMIN_EMAIL` and `ADMIN_PASSWORD` (12+ characters) to your `.env` (see README "Admin login")
+- **Required before going live:** login rate limiting (Phase 11), secure cookies over HTTPS (Phase 14)
+- **Waiting on owner:** review, exercises, approval to continue with 6B
+- **Report:** [phase-reports/phase-6a-security-admin.md](phase-reports/phase-6a-security-admin.md)
+
 ## Phase 5 — Axios and backend integration
 
 - **Status:** Done (approved 2026-11-09, merged into `main`)

@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * call this?". These tests act like that browser.
  */
 @WebMvcTest(CategoryController.class)
-@Import(CorsConfig.class)
+@Import({CorsConfig.class, SecurityConfig.class})
 class CorsConfigTest {
 
     @Autowired
@@ -35,7 +35,9 @@ class CorsConfigTest {
                         .header(HttpHeaders.ORIGIN, "http://localhost:5173")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"));
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"))
+                // the browser may send the login cookie
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
 
         mockMvc.perform(get("/api/categories").header(HttpHeaders.ORIGIN, "http://localhost:5173"))
                 .andExpect(status().isOk())

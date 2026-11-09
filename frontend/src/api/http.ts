@@ -18,6 +18,12 @@ export const http = axios.create({
   // Give up after 10 seconds instead of spinning forever.
   timeout: 10_000,
   headers: { Accept: 'application/json' },
+  // Send and receive cookies (the login session) on calls to the API.
+  withCredentials: true,
+  // CSRF protection: copy the XSRF-TOKEN cookie into the X-XSRF-TOKEN header on
+  // every change (POST/PUT/DELETE). Another website cannot read our cookie, so
+  // it cannot forge this header. (Axios' default cookie/header names match Spring's.)
+  withXSRFToken: true,
 })
 
 /**

@@ -40,8 +40,23 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      # Log out automatically after 2 hours without activity.
+      timeout: 2h
+      cookie:
+        # JavaScript cannot read the session cookie (protects it from injected scripts).
+        http-only: true
+        # Not sent when another website starts the request (extra CSRF defence).
+        same-site: lax
+        # true = only sent over HTTPS. Must be true in production (Phase 14).
+        secure: ${SESSION_COOKIE_SECURE:false}
 
 app:
+  admin:
+    # The first administrator, created at startup if none exists (see AdminProvisioner).
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
   cors:
     # Browser origins allowed to call /api/** (comma-separated). The Vite dev
     # server runs on http://localhost:5173. Set the real site URL in production.
@@ -54,6 +69,9 @@ springdoc:
     enabled: ${API_DOCS_ENABLED:true}
   swagger-ui:
     enabled: ${API_DOCS_ENABLED:true}
+    # Let "Try it out" send the CSRF token, so admin requests work after logging in.
+    csrf:
+      enabled: true
 
 management:
   endpoints:

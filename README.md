@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 5 (backend integration). The storefront shows real categories and products from the Spring Boot API. ⚠️ Admin API endpoints have **no login until Phase 6**: local use only.
+> **Status:** Phase 6A (security). Admin login and category management are done; product management comes in Phase 6B. The store shows real data from the API.
 
 ## Planned stack
 
@@ -72,6 +72,24 @@ Check it at http://localhost:8080/actuator/health. You should see
 
 Explore and try the API in **Swagger UI**: http://localhost:8080/swagger-ui.html
 
+### Admin login
+
+The admin area is at http://localhost:5173/admin. There is no public sign-up:
+the first administrator is created from `.env` when the backend starts.
+
+1. Make sure `.env` has these lines (copy them from `.env.example` if your
+   `.env` is older), with your own email and a password of **12+ characters**:
+   ```
+   ADMIN_EMAIL=you@example.com
+   ADMIN_PASSWORD=a-long-password-only-you-know
+   ```
+2. Restart the backend. The log shows `Initial administrator account created.`
+   This happens only once; changing these lines later does not change the account.
+3. Log in at http://localhost:5173/login.
+
+Swagger UI uses the same login: after logging in to the app, the admin
+endpoints work in Swagger's "Try it out".
+
 ### 4. Start the frontend (terminal 2)
 
 ```powershell
@@ -114,6 +132,9 @@ cd frontend; npm run lint; npm test; npm run build; cd ..
 | `password authentication failed for user "swiftdrop"` | (a) The backend can't find `.env`. Start it from `backend/` or the repository root. (b) The password in `.env` differs from the one the database was first created with. Put the old one back, or reset with `docker compose down -v` (deletes local data). |
 | `port 5432 is already allocated` / `bind: ... in use`, or `password authentication failed` even though `.env` is correct | PostgreSQL is also installed on Windows and is using port 5432 (check with `Get-Service *postgres*`). Set `DB_PORT=5433` in `.env`, then `docker compose down` and `docker compose up -d --wait`. |
 | `Connection to localhost:5432 refused` | The database isn't running. Run `docker compose up -d --wait`. |
+| Backend stops with `ADMIN_PASSWORD must be at least 12 characters long` | Choose a longer `ADMIN_PASSWORD` in `.env`. |
+| Log says `No administrator exists yet` | Add `ADMIN_EMAIL` and `ADMIN_PASSWORD` to `.env` and restart the backend. |
+| Admin login always says "incorrect" | The account was created with the password `.env` had at the **first** start. Changing `.env` later doesn't change it. For a local test database: `docker compose down -v` (deletes local data) and start again. |
 | Shop says "We couldn't reach the store" | (a) The backend isn't running: start it (step 3). (b) Wrong address: `VITE_API_URL` in `frontend/.env.local` must match the backend port. (c) CORS: open the browser console (F12). A "CORS policy" error means the page's address isn't in `CORS_ALLOWED_ORIGINS` (default `http://localhost:5173`). |
 | Backend tests fail with `Could not find a valid Docker environment` | Docker Desktop isn't running. Start it and try again. |
 | `Port 8080 was already in use` | See what uses it: `Get-NetTCPConnection -LocalPort 8080 -State Listen \| ForEach-Object { Get-Process -Id $_.OwningProcess }`. If it is `java`, an earlier backend is still running: press `Ctrl+C` in its window or `Stop-Process -Id <Id>`. Otherwise set `SERVER_PORT=8081` in `.env`. |

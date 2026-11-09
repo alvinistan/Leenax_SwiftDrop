@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { AuthProvider } from '../features/auth/AuthProvider'
 import { routes } from '../routes'
 
 /**
@@ -9,6 +10,10 @@ import { routes } from '../routes'
  */
 export function renderRoute(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
-  render(<RouterProvider router={router} />)
+  render(
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>,
+  )
   return router
 }

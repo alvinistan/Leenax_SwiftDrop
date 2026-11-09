@@ -3,6 +3,7 @@ package lk.swiftdrop.catalog;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,14 +21,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * End-to-end through every layer: HTTP → controller → service → JPA → PostgreSQL
  * (in Docker, via Testcontainers). Each test uses unique slugs and SKUs, so tests
- * do not depend on each other's data.
+ * do not depend on each other's data. Runs as a logged-in ADMIN (security
+ * itself is tested in AuthIntegrationTest).
  */
 @SpringBootTest
+@WithMockUser(roles = "ADMIN")
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class CatalogApiIntegrationTest {
@@ -40,7 +44,7 @@ class CatalogApiIntegrationTest {
     }
 
     private String createCategory(String slug, boolean active) throws Exception {
-        String body = mockMvc.perform(post("/api/admin/categories")
+        String body = mockMvc.perform(post("/api/admin/categories").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "Category %s", "slug": "%s", "active": %s}
@@ -51,7 +55,7 @@ class CatalogApiIntegrationTest {
     }
 
     private String createProduct(String categoryId, String slug, String status, String sku) throws Exception {
-        String body = mockMvc.perform(post("/api/admin/products")
+        String body = mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -123,7 +127,7 @@ class CatalogApiIntegrationTest {
         String sku = unique("SKU");
         createProduct(category, slug, "ACTIVE", sku);
 
-        mockMvc.perform(post("/api/admin/categories")
+        mockMvc.perform(post("/api/admin/categories").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "Again", "slug": "%s"}
@@ -134,7 +138,7 @@ class CatalogApiIntegrationTest {
                 .andExpect(status().isConflict());
 
         // same SKU as an existing product
-        mockMvc.perform(post("/api/admin/products")
+        mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "Other", "slug": "%s", "status": "DRAFT",
@@ -148,7 +152,7 @@ class CatalogApiIntegrationTest {
     void sameSkuTwiceInOneRequestIsAValidationError() throws Exception {
         String category = createCategory(unique("gifts"), true);
 
-        mockMvc.perform(post("/api/admin/products")
+        mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "Box", "slug": "%s", "status": "DRAFT",
@@ -162,7 +166,7 @@ class CatalogApiIntegrationTest {
     void priceWithThreeDecimalsIsRejected() throws Exception {
         String category = createCategory(unique("health"), true);
 
-        mockMvc.perform(post("/api/admin/products")
+        mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "Pills", "slug": "%s", "status": "DRAFT",
@@ -178,7 +182,7 @@ class CatalogApiIntegrationTest {
         String slug = unique("chocolate-cake");
         String sku = unique("CAKE");
 
-        mockMvc.perform(post("/api/admin/products")
+        mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "Chocolate Cake", "slug": "%s", "status": "ACTIVE",
@@ -217,7 +221,7 @@ class CatalogApiIntegrationTest {
         String category = createCategory(unique("bakery"), true);
 
         // half a piece is not allowed
-        mockMvc.perform(post("/api/admin/products")
+        mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "Bun", "slug": "%s", "status": "DRAFT",
@@ -227,7 +231,7 @@ class CatalogApiIntegrationTest {
                 .andExpect(jsonPath("$.errors[0].field").value("variants[0].quantityRulesValid"));
 
         // maximum below minimum
-        mockMvc.perform(post("/api/admin/products")
+        mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "Cake", "slug": "%s", "status": "DRAFT",
@@ -237,7 +241,7 @@ class CatalogApiIntegrationTest {
                 .andExpect(status().isBadRequest());
 
         // unknown sale unit (not PIECE or KG) → unreadable JSON → 400
-        mockMvc.perform(post("/api/admin/products")
+        mockMvc.perform(post("/api/admin/products").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "Rope", "slug": "%s", "status": "DRAFT",
@@ -251,10 +255,10 @@ class CatalogApiIntegrationTest {
         String used = createCategory(unique("toys"), true);
         String productId = createProduct(used, unique("ball"), "ACTIVE", unique("SKU"));
 
-        mockMvc.perform(delete("/api/admin/categories/{id}", used)).andExpect(status().isConflict());
+        mockMvc.perform(delete("/api/admin/categories/{id}", used).with(csrf())).andExpect(status().isConflict());
 
-        mockMvc.perform(delete("/api/admin/products/{id}", productId)).andExpect(status().isNoContent());
-        mockMvc.perform(delete("/api/admin/categories/{id}", used)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/admin/products/{id}", productId).with(csrf())).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/admin/categories/{id}", used).with(csrf())).andExpect(status().isNoContent());
         mockMvc.perform(get("/api/admin/categories/{id}", used)).andExpect(status().isNotFound());
     }
 
@@ -264,7 +268,7 @@ class CatalogApiIntegrationTest {
         String slug = unique("notebook");
         String id = createProduct(category, slug, "ACTIVE", unique("SKU"));
 
-        mockMvc.perform(put("/api/admin/products/{id}", id)
+        mockMvc.perform(put("/api/admin/products/{id}", id).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"categoryId": "%s", "name": "A5 Notebook", "slug": "%s", "status": "ARCHIVED"}

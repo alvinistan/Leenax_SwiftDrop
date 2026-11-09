@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { http } from 'msw'
 import { setupServer } from 'msw/node'
 import type { ProductSort } from '../features/catalog/catalogApi'
 import {
@@ -7,31 +7,14 @@ import {
   sampleListProducts,
 } from '../features/catalog/sampleCatalog'
 import { NotFoundError } from '../lib/errors'
+import { API, apiJson } from './apiResponses'
+import { adminHandlers } from './mockAdminApi'
 
 /**
  * A fake backend for tests, using MSW (Mock Service Worker). It intercepts the
  * HTTP requests Axios makes and answers like the Spring Boot API would, using
  * the sample catalogue. Tests therefore exercise the real Axios code.
  */
-export const API = 'http://localhost:8080'
-
-/** The test page pretends to be the Vite dev server (see vite.config.ts). */
-export const FRONTEND_ORIGIN = 'http://localhost:5173'
-
-/**
- * A JSON response with the CORS header the real backend sends (CorsConfig).
- * Without it, jsdom blocks the response, exactly like a real browser would.
- */
-export function apiJson(body: unknown, init: ResponseInit = {}) {
-  return HttpResponse.json(body as never, {
-    ...init,
-    headers: {
-      'Access-Control-Allow-Origin': FRONTEND_ORIGIN,
-      ...init.headers,
-    },
-  })
-}
-
 export const handlers = [
   http.get(`${API}/api/categories`, async () =>
     apiJson(await sampleListCategories()),
@@ -70,4 +53,8 @@ export const handlers = [
   }),
 ]
 
-export const server = setupServer(...handlers)
+// Catalogue handlers plus the login/admin handlers from mockAdminApi.ts.
+export const server = setupServer(...handlers, ...adminHandlers)
+
+// Re-exported so tests can import everything about the fake API from one place.
+export { API, apiEmpty, apiJson, FRONTEND_ORIGIN } from './apiResponses'
