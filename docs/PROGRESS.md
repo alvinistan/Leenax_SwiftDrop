@@ -2,6 +2,22 @@
 
 Running log so work can resume at any time. Newest entry first.
 
+## Phase 6B — Product, variant and stock administration
+
+- **Status:** Awaiting owner review
+- **Date:** 2026-11-09
+- **Branch:** `claude/create-projects-s4blmr`
+- **Done:**
+  - Stock per variant (Flyway V6); public `inStock` only; admin sees exact stock
+  - `PUT /api/admin/products/{id}` saves the product and its variants in one transaction; IDOR protection
+  - Admin search (`?q=`, `?status=`) with escaped LIKE wildcards
+  - Admin product list and create/edit form with dynamic variants and options (useFieldArray), piece/kg aware
+  - Storefront: out-of-stock badges and disabled choices
+  - 47 backend + 79 frontend tests; browser end-to-end verified
+- **Note:** existing variants start with stock 0 after V6; enter stock in the admin form
+- **Waiting on owner:** review, exercises, approval (Phase 6 then complete)
+- **Report:** [phase-reports/phase-6b-products-inventory.md](phase-reports/phase-6b-products-inventory.md)
+
 ## Phase 6A — Authentication, authorization and category administration
 
 - **Status:** Done (approved 2026-11-09, merged into `main`)

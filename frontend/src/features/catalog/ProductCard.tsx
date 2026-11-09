@@ -20,11 +20,10 @@ export function ProductCard({
     <Card className="relative flex w-full flex-col transition-shadow hover:shadow-md">
       <div className="relative">
         <ProductImage src={null} alt={product.name} />
-        {showSampleBadge && (
-          <Badge tone="warning" className="absolute left-3 top-3">
-            Sample
-          </Badge>
-        )}
+        <div className="absolute left-3 top-3 flex gap-2">
+          {showSampleBadge && <Badge tone="warning">Sample</Badge>}
+          {!product.inStock && <Badge tone="danger">Out of stock</Badge>}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col p-4">

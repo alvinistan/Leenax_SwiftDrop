@@ -3,8 +3,8 @@ package lk.swiftdrop.catalog.product;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
-import lk.swiftdrop.catalog.product.ProductResponses.ProductDetail;
-import lk.swiftdrop.catalog.product.ProductResponses.ProductSummary;
+import lk.swiftdrop.catalog.product.AdminProductResponses.AdminProductDetail;
+import lk.swiftdrop.catalog.product.AdminProductResponses.AdminProductSummary;
 import java.util.Set;
 import lk.swiftdrop.common.web.PageResponse;
 import lk.swiftdrop.common.web.SortWhitelist;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -40,21 +41,25 @@ public class AdminProductController {
         this.productService = productService;
     }
 
+    /** GET /api/admin/products?q=cake&status=DRAFT&page=0&size=20&sort=name,asc */
     @GetMapping
-    public ResponseEntity<PageResponse<ProductSummary>> list(
+    public ResponseEntity<PageResponse<AdminProductSummary>> list(
+            @RequestParam(name = "q", required = false) String search,
+            @RequestParam(name = "status", required = false) ProductStatus status,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(productService.listAll(SortWhitelist.requireAllowed(pageable, SORTABLE)));
+        return ResponseEntity.ok(
+                productService.listForAdmin(search, status, SortWhitelist.requireAllowed(pageable, SORTABLE)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDetail> get(@PathVariable UUID id) {
+    public ResponseEntity<AdminProductDetail> get(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.get(id));
     }
 
     /** 201 Created + Location header. 400 invalid, 404 unknown category, 409 slug or SKU taken. */
     @PostMapping
-    public ResponseEntity<ProductDetail> create(@Valid @RequestBody ProductRequest request) {
-        ProductDetail created = productService.create(request);
+    public ResponseEntity<AdminProductDetail> create(@Valid @RequestBody ProductRequest request) {
+        AdminProductDetail created = productService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(created.id())
@@ -62,9 +67,13 @@ public class AdminProductController {
         return ResponseEntity.created(location).body(created);
     }
 
+    /**
+     * 200 with the updated product. Replaces the variant list too (see ProductService.update).
+     * 400 invalid, 404 unknown product/category/variant, 409 slug or SKU taken.
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<ProductDetail> update(
-            @PathVariable UUID id, @Valid @RequestBody ProductUpdateRequest request) {
+    public ResponseEntity<AdminProductDetail> update(
+            @PathVariable UUID id, @Valid @RequestBody ProductRequest request) {
         return ResponseEntity.ok(productService.update(id, request));
     }
 

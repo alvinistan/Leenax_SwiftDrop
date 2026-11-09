@@ -50,6 +50,7 @@ function piece(price: string, options: Record<string, string> = {}): Variant {
     quantity: { min: '1', max: null, step: '1' },
     options,
     active: true,
+    inStock: true,
   }
 }
 
@@ -152,7 +153,8 @@ export const sampleProducts: ProductDetail[] = [
     'Compact earbuds with a charging case.',
     [
       piece('8750.00', { Colour: 'Black' }),
-      piece('8750.00', { Colour: 'White' }),
+      // A sample of an out-of-stock choice
+      { ...piece('8750.00', { Colour: 'White' }), inStock: false },
     ],
   ),
   product(

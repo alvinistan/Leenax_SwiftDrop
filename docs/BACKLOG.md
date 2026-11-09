@@ -13,7 +13,7 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 3 | Spring Boot REST API and ResponseEntity | 1 | Done |
 | 4 | React Router and navigation | 2 | Done |
 | 5 | Axios and backend integration | 3, 4 | Done |
-| 6 | Authentication and administration (6A security + categories: done; 6B products, variants, inventory: in progress) | 5 | In progress |
+| 6 | Authentication and administration (6A done; 6B products, variants, stock: awaiting review) | 5 | Awaiting review |
 | 7 | AWS S3 product images | 6 | Not started |
 | 8 | Shopping cart and checkout (COD) | 6 | Not started |
 | 9 | Orders and payments | 8 | Not started |
@@ -53,7 +53,6 @@ Not in Phase 1: entities other than `sellers`, UI design, authentication, AWS.
 
 - Category image upload by the admin: form in Phase 6, S3 storage in Phase 7 (FR-1a)
 - Product variants (D-2 = yes): design in Phase 3, admin in Phase 6, stock per variant in Phase 8
-- Variant add/edit/delete endpoints and admin screens: Phase 6
 - Product text search (`?q=`): Phase 5 or later
 - Production hosting must fall back to index.html for client-side routes: Phases 12–14
 - "From" price rule for products mixing PIECE and KG variants: owner to decide
@@ -61,5 +60,7 @@ Not in Phase 1: entities other than `sellers`, UI design, authentication, AWS.
 - **Login rate limiting / lockout: required before going live (Phase 11)**
 - Admin password change and "forgot password": later
 - Audit log of admin actions: candidate for Phase 6B/11
+- Inventory history (stock movements) and low-stock alerts: later
+- Image upload via pre-signed S3 URLs: Phase 7 (design in the Phase 6B report)
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch

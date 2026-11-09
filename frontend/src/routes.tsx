@@ -83,6 +83,20 @@ export const routes: RouteObject[] = [
             .AdminProductsPage,
         }),
       },
+      {
+        path: 'products/new',
+        lazy: async () => ({
+          Component: (await import('./pages/admin/AdminProductFormPage'))
+            .AdminProductFormPage,
+        }),
+      },
+      {
+        path: 'products/:id/edit',
+        lazy: async () => ({
+          Component: (await import('./pages/admin/AdminProductFormPage'))
+            .AdminProductFormPage,
+        }),
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

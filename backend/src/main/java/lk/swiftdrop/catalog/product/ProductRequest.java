@@ -12,7 +12,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Body of POST /api/admin/products: a product together with its variants. */
+/**
+ * Body of POST /api/admin/products and PUT /api/admin/products/{id}: a product
+ * together with its variants. On PUT, variants with an id are updated, new ones
+ * are added, and existing variants missing from the list are removed.
+ */
 public record ProductRequest(
         @NotNull(message = "Category is required.")
         UUID categoryId,
@@ -37,6 +41,16 @@ public record ProductRequest(
         @NotEmpty(message = "A product needs at least one variant.")
         @Size(max = 100, message = "A product can have at most 100 variants.")
         List<@NotNull @Valid VariantRequest> variants) {
+
+    /** An ACTIVE product must have something customers can choose. Reported as "activeProductHasActiveVariant". */
+    @JsonIgnore
+    @AssertTrue(message = "An active product needs at least one active variant.")
+    public boolean isActiveProductHasActiveVariant() {
+        if (status != ProductStatus.ACTIVE || variants == null) {
+            return true;
+        }
+        return variants.stream().anyMatch(v -> v != null && !Boolean.FALSE.equals(v.active()));
+    }
 
     /** Cross-field rule: SKUs must be unique within the request. Reported as field "variantSkusUnique". */
     @JsonIgnore

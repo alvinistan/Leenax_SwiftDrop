@@ -46,6 +46,8 @@ export type Variant = {
   /** e.g. { Size: '1 kg' } */
   options: Record<string, string>
   active: boolean
+  /** Can at least the minimum quantity be bought? (Exact stock is admin-only.) */
+  inStock: boolean
 }
 
 /** A product in a list (GET /api/products). */
@@ -57,6 +59,8 @@ export type ProductSummary = {
   fromPrice: Money | null
   fromPriceUnit: SaleUnit | null
   status: ProductStatus
+  /** Can any active variant be bought? */
+  inStock: boolean
 }
 
 /** A full product (GET /api/products/{slug}). */

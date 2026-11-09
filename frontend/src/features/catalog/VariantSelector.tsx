@@ -38,14 +38,18 @@ export function VariantSelector({
               value={variant.id}
               checked={variant.id === selectedId}
               onChange={() => onSelect(variant.id)}
+              // Out-of-stock choices are shown (so customers know they exist) but can't be picked.
+              disabled={!variant.inStock}
               className="peer sr-only"
             />
-            <span className="flex h-full flex-col rounded-lg border border-slate-300 px-3 py-2 transition peer-checked:border-brand-700 peer-checked:bg-brand-50 peer-checked:ring-1 peer-checked:ring-brand-700 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-600 hover:border-slate-400">
+            <span className="flex h-full flex-col rounded-lg border border-slate-300 px-3 py-2 transition peer-disabled:cursor-not-allowed peer-disabled:bg-slate-50 peer-disabled:opacity-60 peer-checked:border-brand-700 peer-checked:bg-brand-50 peer-checked:ring-1 peer-checked:ring-brand-700 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-600 hover:border-slate-400">
               <span className="font-medium text-slate-900">
                 {variantLabel(variant)}
               </span>
               <span className="text-sm text-slate-600">
-                {formatUnitPrice(variant.price, variant.saleUnit)}
+                {variant.inStock
+                  ? formatUnitPrice(variant.price, variant.saleUnit)
+                  : 'Out of stock'}
               </span>
             </span>
           </label>

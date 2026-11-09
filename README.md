@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 6A (security). Admin login and category management are done; product management comes in Phase 6B. The store shows real data from the API.
+> **Status:** Phase 6 (administration). Admins log in and manage categories, products, variants (piece or by weight) and stock; the store shows real data. Next: product images (Phase 7).
 
 ## Planned stack
 

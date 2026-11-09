@@ -12,6 +12,7 @@ const product: ProductSummary = {
   fromPrice: { amount: '4200.00', currency: 'LKR' },
   fromPriceUnit: 'KG',
   status: 'ACTIVE',
+  inStock: true,
 }
 
 describe('ProductCard', () => {
@@ -27,6 +28,16 @@ describe('ProductCard', () => {
       screen.getByRole('link', { name: 'Chocolate Cake' }),
     ).toHaveAttribute('href', '/products/chocolate-cake')
     expect(screen.getByText(/LKR\s4,200\.00 \/ kg/)).toBeInTheDocument()
+  })
+
+  it('marks products that are out of stock', () => {
+    render(
+      <MemoryRouter>
+        <ProductCard product={{ ...product, inStock: false }} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Out of stock')).toBeInTheDocument()
   })
 
   it('shows the Sample badge only when asked', () => {

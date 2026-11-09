@@ -11,8 +11,12 @@ import jakarta.validation.constraints.AssertTrue;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 public record VariantRequest(
+        /** Set when editing an existing variant; empty for a new one. */
+        UUID id,
+
         @NotBlank(message = "SKU is required.")
         @Size(max = 64, message = "SKU must be at most 64 characters.")
         @Pattern(regexp = "^[A-Za-z0-9._-]+$",
@@ -47,7 +51,16 @@ public record VariantRequest(
         /** Optional; defaults: PIECE 1, KG 0.5. */
         @DecimalMin(value = "0.001", message = "Quantity step must be greater than 0.")
         @Digits(integer = 7, fraction = 3, message = "Quantity step can have at most 3 decimal places.")
-        BigDecimal quantityStep) {
+        BigDecimal quantityStep,
+
+        /** Optional; defaults to 0. Pieces, or kg for KG variants. */
+        @DecimalMin(value = "0", message = "Stock cannot be negative.")
+        @Digits(integer = 9, fraction = 3, message = "Stock can have at most 3 decimal places.")
+        BigDecimal stockQuantity) {
+
+    public BigDecimal effectiveStockQuantity() {
+        return Objects.requireNonNullElse(stockQuantity, BigDecimal.ZERO);
+    }
 
     public SaleUnit effectiveSaleUnit() {
         return Objects.requireNonNullElse(saleUnit, SaleUnit.PIECE);
@@ -66,6 +79,9 @@ public record VariantRequest(
     @JsonIgnore
     @AssertTrue(message = "Maximum must not be below minimum, and PIECE variants need whole-number quantities.")
     public boolean isQuantityRulesValid() {
+        if (effectiveSaleUnit() == SaleUnit.PIECE && !isWhole(effectiveStockQuantity())) {
+            return false;
+        }
         QuantityRules rules = effectiveQuantityRules();
         if (rules.maxQuantity() != null && rules.maxQuantity().compareTo(rules.minQuantity()) < 0) {
             return false;

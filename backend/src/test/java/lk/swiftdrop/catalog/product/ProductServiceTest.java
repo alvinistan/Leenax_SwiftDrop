@@ -50,7 +50,7 @@ class ProductServiceTest {
     }
 
     private static VariantRequest variant(String sku, String price, Map<String, String> options) {
-        return new VariantRequest(sku, new BigDecimal(price), options, null, null, null, null, null);
+        return new VariantRequest(null, sku, new BigDecimal(price), options, null, null, null, null, null, null);
     }
 
     @Test
@@ -78,6 +78,13 @@ class ProductServiceTest {
         assertThat(product.getVariants()).allMatch(v -> v.getSaleUnit() == SaleUnit.PIECE);
         assertThat(product.getVariants().getFirst().getQuantityRules())
                 .isEqualTo(new QuantityRules(BigDecimal.ONE, null, BigDecimal.ONE));
+    }
+
+    @Test
+    void searchTextIsEscapedSoLikeWildcardsAreLiteral() {
+        assertThat(ProductService.likePattern("  Cake ")).isEqualTo("%cake%");
+        assertThat(ProductService.likePattern("100%_off")).isEqualTo("%100\\%\\_off%");
+        assertThat(ProductService.likePattern("   ")).isNull();
     }
 
     @Test

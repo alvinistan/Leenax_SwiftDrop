@@ -72,7 +72,9 @@ function ProductView({ product }: { product: ProductDetail }) {
   const { addToCart } = useOutletContext<RootOutletContext>()
   const activeVariants = product.variants.filter((variant) => variant.active)
 
-  const [variantId, setVariantId] = useState(activeVariants[0]?.id ?? '')
+  // Start on the first choice that can actually be bought.
+  const firstChoice = activeVariants.find((v) => v.inStock) ?? activeVariants[0]
+  const [variantId, setVariantId] = useState(firstChoice?.id ?? '')
   const variant =
     activeVariants.find((v) => v.id === variantId) ?? activeVariants[0]
   const [quantity, setQuantity] = useState(variant?.quantity.min ?? '1')
@@ -173,12 +175,13 @@ function ProductView({ product }: { product: ProductDetail }) {
               <Button
                 size="lg"
                 className="w-full sm:w-auto"
+                disabled={!variant.inStock}
                 onClick={() => {
                   addToCart()
                   setAdded(true)
                 }}
               >
-                Add to cart
+                {variant.inStock ? 'Add to cart' : 'Out of stock'}
               </Button>
               {added && (
                 <p

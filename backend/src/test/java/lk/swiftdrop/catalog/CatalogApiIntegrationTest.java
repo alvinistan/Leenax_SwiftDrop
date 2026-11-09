@@ -271,8 +271,9 @@ class CatalogApiIntegrationTest {
         mockMvc.perform(put("/api/admin/products/{id}", id).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"categoryId": "%s", "name": "A5 Notebook", "slug": "%s", "status": "ARCHIVED"}
-                                """.formatted(category, slug)))
+                                {"categoryId": "%s", "name": "A5 Notebook", "slug": "%s", "status": "ARCHIVED",
+                                 "variants": [{"sku": "%s", "price": 450}]}
+                                """.formatted(category, slug, unique("SKU"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("A5 Notebook"))
                 .andExpect(jsonPath("$.status").value("ARCHIVED"));

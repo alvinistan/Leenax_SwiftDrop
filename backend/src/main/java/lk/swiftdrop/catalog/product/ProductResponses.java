@@ -16,7 +16,7 @@ public final class ProductResponses {
 
     public record CategoryRef(UUID id, String name, String slug) {
 
-        static CategoryRef from(Category category) {
+        public static CategoryRef from(Category category) {
             return new CategoryRef(category.getId(), category.getName(), category.getSlug());
         }
     }
@@ -31,7 +31,9 @@ public final class ProductResponses {
             MoneyResponse fromPrice,
             /** What fromPrice is per: PIECE or KG ("from LKR 4,500.00 / kg"). */
             SaleUnit fromPriceUnit,
-            ProductStatus status) {
+            ProductStatus status,
+            /** Can any active variant be bought? (Exact stock is never shown to customers.) */
+            boolean inStock) {
 
         static ProductSummary from(Product product) {
             var cheapest = product.cheapestActiveVariant();
@@ -42,18 +44,19 @@ public final class ProductResponses {
                     CategoryRef.from(product.getCategory()),
                     cheapest.map(v -> MoneyResponse.of(v.getPrice(), product.getCurrency())).orElse(null),
                     cheapest.map(ProductVariant::getSaleUnit).orElse(null),
-                    product.getStatus());
+                    product.getStatus(),
+                    product.isInStock());
         }
     }
 
     /** Allowed quantities, as decimal strings: {"min": "0.5", "max": "5", "step": "0.5"}. */
     public record QuantityResponse(String min, String max, String step) {
 
-        static QuantityResponse from(QuantityRules rules) {
+        public static QuantityResponse from(QuantityRules rules) {
             return new QuantityResponse(plain(rules.minQuantity()), plain(rules.maxQuantity()), plain(rules.step()));
         }
 
-        private static String plain(BigDecimal value) {
+        static String plain(BigDecimal value) {
             return value == null ? null : value.stripTrailingZeros().toPlainString();
         }
     }
@@ -67,7 +70,8 @@ public final class ProductResponses {
             QuantityResponse quantity,
             /** Sorted by option name so the JSON order is predictable. */
             Map<String, String> options,
-            boolean active) {
+            boolean active,
+            boolean inStock) {
 
         static VariantResponse from(ProductVariant variant, String currency) {
             return new VariantResponse(
@@ -77,7 +81,8 @@ public final class ProductResponses {
                     variant.getSaleUnit(),
                     QuantityResponse.from(variant.getQuantityRules()),
                     new TreeMap<>(variant.getOptions()),
-                    variant.isActive());
+                    variant.isActive(),
+                    variant.isInStock());
         }
     }
 
@@ -92,8 +97,8 @@ public final class ProductResponses {
             String currency,
             List<VariantResponse> variants) {
 
-        /** @param includeInactiveVariants true for admins; customers only see active variants. */
-        static ProductDetail from(Product product, boolean includeInactiveVariants) {
+        /** Customers only see active variants. (Admins use AdminProductResponses.) */
+        static ProductDetail from(Product product) {
             return new ProductDetail(
                     product.getId(),
                     product.getName(),
@@ -103,7 +108,7 @@ public final class ProductResponses {
                     product.getStatus(),
                     product.getCurrency(),
                     product.getVariants().stream()
-                            .filter(variant -> includeInactiveVariants || variant.isActive())
+                            .filter(ProductVariant::isActive)
                             .map(variant -> VariantResponse.from(variant, product.getCurrency()))
                             .toList());
         }

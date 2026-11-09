@@ -42,6 +42,9 @@ function toSummary(product: ProductDetail): ProductSummary {
     fromPrice: cheapest?.price ?? null,
     fromPriceUnit: cheapest?.saleUnit ?? null,
     status: product.status,
+    inStock: product.variants.some(
+      (variant) => variant.active && variant.inStock,
+    ),
   }
 }
 

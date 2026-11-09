@@ -1,11 +1,18 @@
 package lk.swiftdrop.catalog.product;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lk.swiftdrop.catalog.category.Category;
 import lk.swiftdrop.catalog.category.CategoryRepository;
+import lk.swiftdrop.catalog.product.AdminProductResponses.AdminProductDetail;
+import lk.swiftdrop.catalog.product.AdminProductResponses.AdminProductSummary;
 import lk.swiftdrop.catalog.product.ProductResponses.ProductDetail;
 import lk.swiftdrop.catalog.product.ProductResponses.ProductSummary;
 import lk.swiftdrop.common.error.ConflictException;
@@ -40,17 +47,19 @@ public class ProductService {
     public ProductDetail getVisibleBySlug(String slug) {
         Product product = products.findVisibleBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", slug));
-        return ProductDetail.from(product, false);
+        return ProductDetail.from(product);
     }
 
     // ---- Admin ----
 
-    public PageResponse<ProductSummary> listAll(Pageable pageable) {
-        return PageResponse.from(products.findAllBy(pageable), ProductSummary::from);
+    /** @param search part of the product name (optional); @param status optional filter */
+    public PageResponse<AdminProductSummary> listForAdmin(String search, ProductStatus status, Pageable pageable) {
+        return PageResponse.from(
+                products.searchForAdmin(status, likePattern(search), pageable), AdminProductSummary::from);
     }
 
-    public ProductDetail get(UUID id) {
-        return ProductDetail.from(find(id), true);
+    public AdminProductDetail get(UUID id) {
+        return AdminProductDetail.from(find(id));
     }
 
     /**
@@ -58,15 +67,11 @@ public class ProductService {
      * (if anything fails) none of them are.
      */
     @Transactional
-    public ProductDetail create(ProductRequest request) {
+    public AdminProductDetail create(ProductRequest request) {
         if (products.existsBySlug(request.slug())) {
             throw new ConflictException("A product with slug '" + request.slug() + "' already exists.");
         }
-        List<String> skus = request.variants().stream().map(VariantRequest::sku).toList();
-        List<String> takenSkus = variants.findExistingSkus(skus);
-        if (!takenSkus.isEmpty()) {
-            throw new ConflictException("These SKUs are already used: " + String.join(", ", takenSkus));
-        }
+        requireNoSkusTaken(variants.findExistingSkus(skusOf(request)));
 
         Product product = new Product(
                 StoreDefaults.DEFAULT_SELLER_ID,
@@ -79,31 +84,72 @@ public class ProductService {
 
         int position = 0;
         for (VariantRequest variant : request.variants()) {
-            product.addVariant(new ProductVariant(
-                    variant.sku(),
-                    variant.price(),
-                    variant.effectiveSaleUnit(),
-                    variant.effectiveQuantityRules(),
-                    Objects.requireNonNullElse(variant.options(), Map.of()),
-                    Objects.requireNonNullElse(variant.active(), true),
-                    position++));
+            if (variant.id() != null) {
+                throw new ResourceNotFoundException("Variant", variant.id()); // a new product has no variants yet
+            }
+            product.addVariant(newVariant(variant, position++));
         }
-        return ProductDetail.from(products.save(product), true);
+        return AdminProductDetail.from(products.save(product));
     }
 
+    /**
+     * Replaces the product and its variant list in ONE transaction:
+     * variants with an id are updated, new ones (no id) are added, and
+     * existing variants missing from the request are removed.
+     */
     @Transactional
-    public ProductDetail update(UUID id, ProductUpdateRequest request) {
+    public AdminProductDetail update(UUID id, ProductRequest request) {
         Product product = find(id);
         if (products.existsBySlugAndIdNot(request.slug(), id)) {
             throw new ConflictException("A product with slug '" + request.slug() + "' already exists.");
         }
+        requireNoSkusTaken(variants.findSkusUsedByOtherProducts(skusOf(request), id));
+
+        // Security: every variant id must belong to THIS product. Otherwise a crafted
+        // request could edit another product's variant by guessing its id ("IDOR").
+        Map<UUID, ProductVariant> existing = product.getVariants().stream()
+                .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
+        Set<UUID> keepIds = new HashSet<>();
+        for (VariantRequest variant : request.variants()) {
+            if (variant.id() != null) {
+                if (!existing.containsKey(variant.id())) {
+                    throw new ResourceNotFoundException("Variant", variant.id());
+                }
+                keepIds.add(variant.id());
+            }
+        }
+
         product.update(
                 findCategory(request.categoryId()),
                 request.name().trim(),
                 request.slug(),
                 request.description(),
                 request.status());
-        return ProductDetail.from(product, true);
+
+        // Remove first and write that to the database now, so a SKU freed by a removed
+        // variant can be reused by a new one in the same request (the database checks
+        // uniqueness on every statement).
+        product.removeVariantsExcept(keepIds);
+        products.flush();
+
+        int position = 0;
+        for (VariantRequest variant : request.variants()) {
+            if (variant.id() == null) {
+                product.addVariant(newVariant(variant, position));
+            } else {
+                existing.get(variant.id()).update(
+                        variant.sku(),
+                        variant.price(),
+                        variant.effectiveSaleUnit(),
+                        variant.effectiveQuantityRules(),
+                        Objects.requireNonNullElse(variant.options(), Map.of()),
+                        Objects.requireNonNullElse(variant.active(), true),
+                        position,
+                        variant.effectiveStockQuantity());
+            }
+            position++;
+        }
+        return AdminProductDetail.from(product);
     }
 
     /**
@@ -113,6 +159,44 @@ public class ProductService {
     @Transactional
     public void delete(UUID id) {
         products.delete(find(id));
+    }
+
+    private static ProductVariant newVariant(VariantRequest variant, int position) {
+        return new ProductVariant(
+                variant.sku(),
+                variant.price(),
+                variant.effectiveSaleUnit(),
+                variant.effectiveQuantityRules(),
+                Objects.requireNonNullElse(variant.options(), Map.of()),
+                Objects.requireNonNullElse(variant.active(), true),
+                position,
+                variant.effectiveStockQuantity());
+    }
+
+    private static List<String> skusOf(ProductRequest request) {
+        return request.variants().stream().map(VariantRequest::sku).toList();
+    }
+
+    private static void requireNoSkusTaken(List<String> takenSkus) {
+        if (!takenSkus.isEmpty()) {
+            throw new ConflictException("These SKUs are already used: " + String.join(", ", takenSkus));
+        }
+    }
+
+    /**
+     * "Cake" → "%cake%" for a case-insensitive LIKE search. The LIKE wildcards
+     * % and _ (and the escape character itself) are escaped, so they are
+     * searched for literally. null/blank → no filter.
+     */
+    static String likePattern(String search) {
+        if (search == null || search.isBlank()) {
+            return null;
+        }
+        String escaped = search.trim().toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     private Product find(UUID id) {

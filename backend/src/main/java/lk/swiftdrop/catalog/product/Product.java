@@ -110,6 +110,16 @@ public class Product {
         variants.add(variant);
     }
 
+    /** Removes the variants whose id is not in keepIds (orphanRemoval deletes their rows). */
+    public void removeVariantsExcept(java.util.Set<UUID> keepIds) {
+        variants.removeIf(variant -> !keepIds.contains(variant.getId()));
+    }
+
+    /** Is any active variant available to buy? */
+    public boolean isInStock() {
+        return variants.stream().anyMatch(v -> v.isActive() && v.isInStock());
+    }
+
     /** The active variant with the lowest price, used for "from LKR 1,450.00" on product cards. */
     public Optional<ProductVariant> cheapestActiveVariant() {
         return variants.stream()

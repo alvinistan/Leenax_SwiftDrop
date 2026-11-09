@@ -51,6 +51,10 @@ public class ProductVariant {
     @Embedded
     private QuantityRules quantityRules;
 
+    /** Pieces, or kilograms for KG variants. */
+    @Column(name = "stock_quantity", nullable = false, precision = 12, scale = 3)
+    private BigDecimal stockQuantity;
+
     @Column(nullable = false)
     private boolean active;
 
@@ -76,14 +80,28 @@ public class ProductVariant {
     }
 
     public ProductVariant(String sku, BigDecimal price, SaleUnit saleUnit, QuantityRules quantityRules,
-                          Map<String, String> options, boolean active, int sortOrder) {
+                          Map<String, String> options, boolean active, int sortOrder, BigDecimal stockQuantity) {
+        update(sku, price, saleUnit, quantityRules, options, active, sortOrder, stockQuantity);
+    }
+
+    /** The only way to change a variant, so every change goes through one place. */
+    public void update(String sku, BigDecimal price, SaleUnit saleUnit, QuantityRules quantityRules,
+                       Map<String, String> options, boolean active, int sortOrder, BigDecimal stockQuantity) {
         this.sku = sku;
         this.price = price;
         this.saleUnit = saleUnit;
         this.quantityRules = quantityRules;
-        this.options = new HashMap<>(options);
+        // Replace the contents (not the collection object), so Hibernate tracks the change.
+        this.options.clear();
+        this.options.putAll(options);
         this.active = active;
         this.sortOrder = sortOrder;
+        this.stockQuantity = stockQuantity;
+    }
+
+    /** Can at least the minimum order quantity be sold? */
+    public boolean isInStock() {
+        return stockQuantity.compareTo(quantityRules.minQuantity()) >= 0;
     }
 
     /** Called by Product.addVariant to keep both sides of the relationship in sync. */
@@ -109,6 +127,14 @@ public class ProductVariant {
 
     public QuantityRules getQuantityRules() {
         return quantityRules;
+    }
+
+    public BigDecimal getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public UUID getProductId() {
+        return product.getId();
     }
 
     public boolean isActive() {

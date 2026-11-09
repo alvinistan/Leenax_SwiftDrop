@@ -1,4 +1,8 @@
 import { http } from 'msw'
+import type {
+  AdminProductDetail,
+  ProductInput,
+} from '../features/admin/adminProductApi'
 import type { Category } from '../types/catalog'
 import { API, apiEmpty, apiJson, apiPreflight } from './apiResponses'
 
@@ -14,10 +18,52 @@ export const ADMIN = {
 
 let loggedIn = false
 let categories: Category[] = []
+let products: AdminProductDetail[] = []
+/** The body of the last product POST/PUT, so tests can check what the form sent. */
+export let lastProductRequest: ProductInput | undefined
 
 export function resetMockAdmin() {
   loggedIn = false
   categories = []
+  products = []
+  lastProductRequest = undefined
+}
+
+/** Turns what the form sends into what the API returns (the backend does this for real). */
+function toDetail(id: string, input: ProductInput): AdminProductDetail {
+  const category =
+    categories.find((c) => c.id === input.categoryId) ?? categories[0]
+  return {
+    id,
+    name: input.name,
+    slug: input.slug,
+    description: input.description,
+    category: { id: category.id, name: category.name, slug: category.slug },
+    status: input.status,
+    currency: 'LKR',
+    variants: input.variants.map((v, i) => ({
+      id:
+        v.id ?? `${id}-var-${i + 1}-${Math.random().toString(36).slice(2, 6)}`,
+      sku: v.sku,
+      price: { amount: Number(v.price).toFixed(2), currency: 'LKR' },
+      saleUnit: v.saleUnit,
+      quantity: {
+        min: v.minQuantity,
+        max: v.maxQuantity,
+        step: v.quantityStep,
+      },
+      options: v.options,
+      active: v.active,
+      stockQuantity: v.stockQuantity,
+      inStock: Number(v.stockQuantity) >= Number(v.minQuantity),
+    })),
+  }
+}
+
+export function seedProduct(input: ProductInput): AdminProductDetail {
+  const product = toDetail(`prod-${products.length + 1}`, input)
+  products.push(product)
+  return product
 }
 
 /** Starts a test already logged in as the admin. */
@@ -125,6 +171,81 @@ export const adminHandlers = [
       )
     }
     categories = categories.filter((c) => c.id !== params.id)
+    return apiEmpty(204)
+  }),
+
+  // ---- products ----
+
+  http.get(`${API}/api/admin/products`, ({ request }) => {
+    const denied = requireAdmin()
+    if (denied) return denied
+    const params = new URL(request.url).searchParams
+    const q = params.get('q')?.toLowerCase()
+    const status = params.get('status')
+    const found = products.filter(
+      (p) =>
+        (!q || p.name.toLowerCase().includes(q)) &&
+        (!status || p.status === status),
+    )
+    return apiJson({
+      content: found.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        category: p.category,
+        status: p.status,
+        variantCount: p.variants.length,
+        fromPrice: p.variants[0]?.price ?? null,
+        fromPriceUnit: p.variants[0]?.saleUnit ?? null,
+        inStock: p.variants.some((v) => v.active && v.inStock),
+      })),
+      page: 0,
+      size: 20,
+      totalElements: found.length,
+      totalPages: found.length > 0 ? 1 : 0,
+    })
+  }),
+
+  http.get(`${API}/api/admin/products/:id`, ({ params }) => {
+    const found = products.find((p) => p.id === params.id)
+    return (
+      requireAdmin() ??
+      (found ? apiJson(found) : problem(404, 'Not Found', 'Product not found'))
+    )
+  }),
+
+  http.post(`${API}/api/admin/products`, async ({ request }) => {
+    const denied = requireAdmin()
+    if (denied) return denied
+    const body = (await request.json()) as ProductInput
+    lastProductRequest = body
+    const taken = body.variants.filter((v) =>
+      products.some((p) => p.variants.some((pv) => pv.sku === v.sku)),
+    )
+    if (taken.length > 0) {
+      return problem(
+        409,
+        'Conflict',
+        `These SKUs are already used: ${taken.map((v) => v.sku).join(', ')}`,
+      )
+    }
+    return apiJson(seedProduct(body), { status: 201 })
+  }),
+
+  http.put(`${API}/api/admin/products/:id`, async ({ params, request }) => {
+    const denied = requireAdmin()
+    if (denied) return denied
+    const body = (await request.json()) as ProductInput
+    lastProductRequest = body
+    const updated = toDetail(String(params.id), body)
+    products = products.map((p) => (p.id === params.id ? updated : p))
+    return apiJson(updated)
+  }),
+
+  http.delete(`${API}/api/admin/products/:id`, ({ params }) => {
+    const denied = requireAdmin()
+    if (denied) return denied
+    products = products.filter((p) => p.id !== params.id)
     return apiEmpty(204)
   }),
 ]

@@ -13,6 +13,7 @@ const products: ProductSummary[] = [1, 2, 3].map((n) => ({
   fromPrice: { amount: '100.00', currency: 'LKR' },
   fromPriceUnit: 'PIECE',
   status: 'ACTIVE',
+  inStock: true,
 }))
 
 function renderGrid(ui: React.ReactElement) {

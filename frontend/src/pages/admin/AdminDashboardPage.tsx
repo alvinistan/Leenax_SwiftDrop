@@ -29,7 +29,7 @@ export function AdminDashboardPage() {
           <Package className="size-6 text-brand-700" aria-hidden="true" />
           <h2 className="mt-3 font-semibold text-slate-900">Products</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Coming in Phase 6B: products, variants and stock.
+            Products, variants (sizes, weights) and stock.
           </p>
         </Link>
       </div>

@@ -43,6 +43,17 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             """)
     Optional<Product> findVisibleBySlug(@Param("slug") String slug);
 
+    /**
+     * Admin list with optional filters. :pattern is a LIKE pattern built by the
+     * service with % and _ escaped (see ProductService.likePattern), so a search
+     * for "100%" finds "100%" instead of everything starting with "100".
+     */
     @EntityGraph(attributePaths = "category")
-    Page<Product> findAllBy(Pageable pageable);
+    @Query("""
+            SELECT p FROM Product p
+            WHERE (:status IS NULL OR p.status = :status)
+              AND (:pattern IS NULL OR LOWER(p.name) LIKE :pattern ESCAPE '\\')
+            """)
+    Page<Product> searchForAdmin(
+            @Param("status") ProductStatus status, @Param("pattern") String pattern, Pageable pageable);
 }

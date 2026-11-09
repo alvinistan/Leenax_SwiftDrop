@@ -137,6 +137,14 @@ describe('product details page', () => {
     expect(screen.getByText(/Added to cart/)).toBeInTheDocument()
   })
 
+  it('shows out-of-stock choices but does not let them be picked', async () => {
+    renderRoute('/products/wireless-earbuds')
+
+    expect(await screen.findByRole('radio', { name: /White/ })).toBeDisabled()
+    expect(screen.getByRole('radio', { name: /Black/ })).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Add to cart' })).toBeEnabled()
+  })
+
   it('does not ask for a choice when there is only one variant', async () => {
     renderRoute('/products/ceramic-coffee-mug')
 

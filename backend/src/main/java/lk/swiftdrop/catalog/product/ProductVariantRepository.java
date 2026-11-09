@@ -12,4 +12,9 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     /** Which of these SKUs are already used? One query instead of one per SKU. */
     @Query("SELECT v.sku FROM ProductVariant v WHERE v.sku IN :skus")
     List<String> findExistingSkus(@Param("skus") Collection<String> skus);
+
+    /** The same check when editing: SKUs used by any OTHER product. */
+    @Query("SELECT v.sku FROM ProductVariant v WHERE v.sku IN :skus AND v.product.id <> :productId")
+    List<String> findSkusUsedByOtherProducts(
+            @Param("skus") Collection<String> skus, @Param("productId") UUID productId);
 }
