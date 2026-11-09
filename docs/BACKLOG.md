@@ -12,8 +12,8 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 2 | React fundamentals and design system | 1 | Done |
 | 3 | Spring Boot REST API and ResponseEntity | 1 | Done |
 | 4 | React Router and navigation | 2 | Done |
-| 5 | Axios and backend integration | 3, 4 | Awaiting review |
-| 6 | Authentication and administration | 5 | Not started |
+| 5 | Axios and backend integration | 3, 4 | Done |
+| 6 | Authentication and administration (6A security + categories; 6B products, variants, inventory) | 5 | In progress |
 | 7 | AWS S3 product images | 6 | Not started |
 | 8 | Shopping cart and checkout (COD) | 6 | Not started |
 | 9 | Orders and payments | 8 | Not started |

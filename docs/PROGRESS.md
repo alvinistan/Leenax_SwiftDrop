@@ -4,7 +4,7 @@ Running log so work can resume at any time. Newest entry first.
 
 ## Phase 5 — Axios and backend integration
 
-- **Status:** Awaiting owner review
+- **Status:** Done (approved 2026-11-09, merged into `main`)
 - **Date:** 2026-10-30
 - **Branch:** `claude/create-projects-s4blmr`
 - **Done:**
@@ -15,7 +15,6 @@ Running log so work can resume at any time. Newest entry first.
   - MSW fake backend for frontend tests; 53 frontend + 29 backend tests passing
   - End-to-end verified in Chromium against a real backend and database, including the CORS block
 - **Note for the owner:** if `SERVER_PORT=8081` is set in the root `.env`, create `frontend/.env.local` with `VITE_API_URL=http://localhost:8081`
-- **Waiting on owner:** review, exercises, approval
 - **Report:** [phase-reports/phase-5-api-integration.md](phase-reports/phase-5-api-integration.md)
 
 ## Phase 4 — React Router and frontend navigation
