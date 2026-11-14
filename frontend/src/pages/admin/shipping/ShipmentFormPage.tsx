@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { ErrorState } from '../../../components/ui/ErrorState'
@@ -23,19 +23,31 @@ import {
   type ShipmentFormValues,
 } from '../../../features/shipping/shippingSchemas'
 import { useCountries } from '../../../features/shipping/useCountries'
+import {
+  adminGetOrder,
+  type AdminOrder,
+} from '../../../features/orders/ordersApi'
 import { useAsync } from '../../../hooks/useAsync'
 import { userMessage } from '../../../lib/errors'
 
 /** /admin/shipping/shipments/new and /admin/shipping/shipments/:id/edit */
 export function ShipmentFormPage() {
   const { id } = useParams()
+  // ?order=SD-001001: recording the parcel of a website order (details come from the order).
+  const [params] = useSearchParams()
+  const orderNumber = id ? null : params.get('order')
+  const order = useAsync(
+    (signal) =>
+      orderNumber ? adminGetOrder(orderNumber, signal) : Promise.resolve(null),
+    `sf-order-${orderNumber ?? ''}`,
+  )
   const providers = useAsync((signal) => listProviders(signal), 'sf-providers')
   const shipment = useAsync(
     (signal) => (id ? getShipment(id, signal) : Promise.resolve(null)),
     `sf-${id ?? 'new'}`,
   )
   const { state: countryState, countries } = useCountries()
-  const states = [providers.state, shipment.state, countryState]
+  const states = [providers.state, shipment.state, countryState, order.state]
   const failed = states.find((s) => s.status === 'error')
   const back = id
     ? `/admin/shipping/shipments/${id}`
@@ -73,8 +85,10 @@ export function ShipmentFormPage() {
       )}
       {providers.state.status === 'success' &&
         shipment.state.status === 'success' &&
-        countryState.status === 'success' && (
+        countryState.status === 'success' &&
+        order.state.status === 'success' && (
           <ShipmentForm
+            order={order.state.data}
             shipment={shipment.state.data}
             providers={providers.state.data}
             countries={countries}
@@ -85,12 +99,13 @@ export function ShipmentFormPage() {
 }
 
 type FormProps = {
+  order: AdminOrder | null
   shipment: ShipmentDetail | null
   providers: CourierProvider[]
   countries: { code: string; name: string }[]
 }
 
-function ShipmentForm({ shipment, providers, countries }: FormProps) {
+function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
   const navigate = useNavigate()
   const [error, setErrorMessage] = useState<string>()
   // Only couriers that are on and can be booked by hand (capabilities, not names).
@@ -117,17 +132,32 @@ function ShipmentForm({ shipment, providers, countries }: FormProps) {
           courierCost: shipment.courierCost?.amount ?? '',
           bookedAt: '',
         }
-      : {
-          providerId: bookable.length === 1 ? bookable[0].id : '',
-          serviceId: '',
-          orderReference: '',
-          awb: '',
-          destinationCountry: 'LK',
-          destinationCity: '',
-          weightKg: '',
-          courierCost: '',
-          bookedAt: '',
-        },
+      : order
+        ? {
+            // From the order: the courier and service the customer chose, and where it goes.
+            providerId:
+              bookable.find((p) => p.code === order.shipping.providerCode)
+                ?.id ?? '',
+            serviceId: '',
+            orderReference: order.orderNumber,
+            awb: '',
+            destinationCountry: order.address.countryCode,
+            destinationCity: order.address.city,
+            weightKg: order.shipping.chargeableWeightKg,
+            courierCost: '',
+            bookedAt: '',
+          }
+        : {
+            providerId: bookable.length === 1 ? bookable[0].id : '',
+            serviceId: '',
+            orderReference: '',
+            awb: '',
+            destinationCountry: 'LK',
+            destinationCity: '',
+            weightKg: '',
+            courierCost: '',
+            bookedAt: '',
+          },
   })
   const providerId = useWatch({ control, name: 'providerId' })
   const services =
@@ -151,6 +181,7 @@ function ShipmentForm({ shipment, providers, countries }: FormProps) {
         ? await updateShipment(shipment.id, details)
         : await createShipment({
             providerId: v.providerId,
+            orderNumber: order?.orderNumber ?? null,
             bookedAt: fromLocalInput(v.bookedAt),
             details,
           })
@@ -226,7 +257,12 @@ function ShipmentForm({ shipment, providers, countries }: FormProps) {
           />
           <Input
             label="Order reference"
-            hint="Your own order number, e.g. from WhatsApp or the phone order book."
+            hint={
+              order || shipment?.orderNumber
+                ? 'The website order this parcel belongs to.'
+                : 'Your own order number, e.g. from WhatsApp or the phone order book.'
+            }
+            readOnly={Boolean(order || shipment?.orderNumber)}
             error={errors.orderReference?.message}
             {...register('orderReference')}
           />

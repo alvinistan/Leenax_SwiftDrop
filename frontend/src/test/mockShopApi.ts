@@ -121,6 +121,7 @@ export function seedAdminOrder(
       },
     ],
     createdAt: '2026-11-14T08:00:00Z',
+    shipments: [],
     ...order,
   }
   orders.push(full)
@@ -176,6 +177,7 @@ function priceLine(variantId: string, quantity: string): PricedCartLine {
 
 function toCustomer(o: AdminOrder): CustomerOrder {
   return {
+    shipments: o.shipments,
     orderNumber: o.orderNumber,
     status: o.status,
     paymentMethod: o.paymentMethod,

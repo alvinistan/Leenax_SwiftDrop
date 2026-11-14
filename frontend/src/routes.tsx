@@ -160,6 +160,20 @@ export const routes: RouteObject[] = [
             }),
           },
           {
+            path: 'tracking',
+            lazy: async () => ({
+              Component: (await import('./pages/admin/shipping/TrackingPage'))
+                .TrackingPage,
+            }),
+          },
+          {
+            path: 'expenses',
+            lazy: async () => ({
+              Component: (await import('./pages/admin/shipping/ExpensesPage'))
+                .ExpensesPage,
+            }),
+          },
+          {
             path: 'shipments',
             lazy: async () => ({
               Component: (await import('./pages/admin/shipping/ShipmentsPage'))

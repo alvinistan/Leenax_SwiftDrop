@@ -446,3 +446,46 @@ Each phase follows the usual workflow (plan, implement, test, report, commit, wa
 1. Optional: copy the tracking page link format from DEX's official website into Couriers → DEX.
 2. Record your next DEX parcel and update it as DEX's tracking page changes.
 
+## 17. Phase F — shipments linked to orders, tracking, courier expenses (done 2026-11-14)
+
+![Customer tracking](../phase-reports/images/shipping-f-customer-tracking.png)
+
+**Built**
+- `V13__link_shipments_orders_expenses.sql`: `shipments.order_id` (NULL for orders taken outside the website), `courier_expenses`, and an index for the quote clean-up.
+- **Shipment for a website order:**
+  - On the admin order page, "Record shipment" opens the form already filled in: order number (read-only), the courier the customer chose, country, city and chargeable weight.
+  - Only **CONFIRMED** (or already SHIPPED, for a second parcel) orders can be shipped. Nothing is booked just because an order was placed.
+  - The destination must be the order's country.
+- **Order status follows the parcel:**
+  - picked up, in transit, customs or out for delivery → the order becomes **SHIPPED**;
+  - delivered → **DELIVERED**;
+  - returns are left to the owner.
+- **Customer tracking:** "My order" shows each parcel: courier, AWB, the "track on the courier's website" link and the steps with locations. It never shows courier costs, internal notes or staff names.
+- **Tracking page:** parcels still on their way, least recently updated first, with "No update for N days" from 2 days.
+- **Courier expenses:**
+  - The base charge is on the shipment. Extra charges are surcharge, return fee or adjustment (only an adjustment may be negative).
+  - Charges are never edited (correct with an adjustment) and are audited.
+  - **Report per period** (Sri Lankan dates, at most one year): delivery charged to customers vs courier costs = **gross shipping margin, not net profit**.
+  - An order's delivery charge is counted once, on its first parcel.
+  - Parcels without a courier charge are reported as missing, not as 0.
+- **Nightly clean-up** (03:15 Sri Lanka): deletes quotes that expired more than 7 days ago and that no order uses.
+- **Booking idempotency:** booking is still manual, and an AWB can only be recorded once per courier. API booking with idempotency keys and reconciliation comes with the first courier API (Phase D).
+
+![Courier expenses](../phase-reports/images/shipping-f-expenses.png)
+
+**Verified**
+- Backend: **128 tests**, including 4 integration tests:
+  - order → confirm → shipment → SHIPPED → DELIVERED, with the customer view free of notes, staff and costs;
+  - expenses: sign rule, future date, totals, report margin, delivery counted once, missing cost, period check, 403;
+  - the active tracking list;
+  - quote clean-up keeps quotes that orders use.
+- Frontend: **133 tests** (6 new). Lint, types and build are clean.
+- Browser against PostgreSQL (V13 on an existing V12 database):
+  - order SD-001002 confirmed, then shipped from the order page with prefilled details;
+  - pick-up made the order SHIPPED; LKR 100 surcharge added (total LKR 650); delivery made it DELIVERED;
+  - the customer saw the tracking with no staff email;
+  - the report showed 561 − 650 = −89;
+  - no console errors.
+
+**Next:** Phase G (dispatch rules: payment checks before shipping, customer notifications), then D (DHL, when access is ready) and H (reports with charts).
+

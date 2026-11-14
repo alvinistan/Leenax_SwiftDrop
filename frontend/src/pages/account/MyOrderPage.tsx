@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { ErrorState } from '../../components/ui/ErrorState'
 import { RequireCustomer } from '../../features/auth/RequireCustomer'
 import { OrderItemsTable } from '../../features/orders/OrderItemsTable'
+import { OrderShipments } from '../../features/orders/OrderShipments'
 import {
   cancelMyOrder,
   getMyOrder,
@@ -117,6 +118,19 @@ function MyOrder() {
               grandTotal={order.grandTotal}
             />
             <div className="space-y-6 text-sm">
+              {order.shipments.length > 0 && (
+                <section aria-labelledby="tracking-heading">
+                  <h2
+                    id="tracking-heading"
+                    className="font-semibold text-slate-900"
+                  >
+                    Delivery tracking
+                  </h2>
+                  <div className="mt-2">
+                    <OrderShipments shipments={order.shipments} />
+                  </div>
+                </section>
+              )}
               <section aria-labelledby="pay-heading">
                 <h2 id="pay-heading" className="font-semibold text-slate-900">
                   Payment

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { Link, useParams } from 'react-router'
 import { buttonClasses } from '../../../components/ui/buttonStyles'
 import { Button } from '../../../components/ui/Button'
@@ -15,7 +16,10 @@ import {
   fromLocalInput,
 } from '../../../features/shipping/dates'
 import {
+  addExpense,
   addTrackingUpdate,
+  EXPENSE_KIND_LABELS,
+  type ExpenseKind,
   getShipment,
   TRACKING_STATUS_LABELS,
   TRACKING_STATUSES,
@@ -129,8 +133,22 @@ function Shipment({
           <Row label="Weight">
             {shipment.weightKg ? `${shipment.weightKg} kg` : '—'}
           </Row>
-          <Row label="Courier charge">
+          <Row label="Courier charge (base)">
             {shipment.courierCost ? formatMoney(shipment.courierCost) : '—'}
+          </Row>
+          <Row label="Order">
+            {shipment.orderNumber ? (
+              <Link
+                to={`/admin/orders/${shipment.orderNumber}`}
+                className="font-semibold text-brand-800 hover:underline"
+              >
+                {shipment.orderNumber}
+              </Link>
+            ) : (
+              `${shipment.orderReference} (not a website order)`
+            )}
+            {shipment.deliveryCharged &&
+              ` · customer paid ${formatMoney(shipment.deliveryCharged)} for delivery`}
           </Row>
           <Row label="Booked">
             {shipment.bookingMethod === 'MANUAL'
@@ -180,6 +198,8 @@ function Shipment({
 
         <TrackingUpdateForm shipment={shipment} onUpdated={onUpdated} />
       </div>
+
+      <Expenses shipment={shipment} onUpdated={onUpdated} />
     </>
   )
 }
@@ -315,6 +335,151 @@ function TrackingUpdateForm({
         <Button type="submit" isLoading={isSubmitting}>
           Add update
         </Button>
+      </form>
+    </section>
+  )
+}
+
+const expenseSchema = z.object({
+  kind: z.enum(['SURCHARGE', 'RETURN', 'ADJUSTMENT']),
+  amount: z
+    .string()
+    .trim()
+    .regex(
+      /^-?\d{1,13}(\.\d{1,2})?$/,
+      'Enter an amount like 150 or -50 (adjustments only).',
+    ),
+  reference: z.string().trim().max(60, 'At most 60 characters.'),
+  incurredOn: z.string(),
+  note: z.string().trim().max(300, 'At most 300 characters.'),
+})
+type ExpenseValues = z.infer<typeof expenseSchema>
+
+/** Extra courier charges after booking. Never edited: correct with an adjustment. */
+function Expenses({
+  shipment,
+  onUpdated,
+}: {
+  shipment: ShipmentDetail
+  onUpdated: (s: ShipmentDetail) => void
+}) {
+  const [message, setMessage] = useState<Message>()
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<ExpenseValues>({
+    resolver: zodResolver(expenseSchema),
+    defaultValues: {
+      kind: 'SURCHARGE',
+      amount: '',
+      reference: '',
+      incurredOn: '',
+      note: '',
+    },
+  })
+
+  async function onSubmit(v: ExpenseValues) {
+    setMessage(undefined)
+    try {
+      onUpdated(
+        await addExpense(shipment.id, {
+          kind: v.kind,
+          amount: v.amount,
+          reference: v.reference || null,
+          incurredOn: v.incurredOn || null,
+          note: v.note || null,
+        }),
+      )
+      reset()
+      setMessage({ tone: 'success', text: 'Charge added.' })
+    } catch (e) {
+      if (!applyFieldErrors(e, setError))
+        setMessage({ tone: 'error', text: userMessage(e) })
+    }
+  }
+
+  return (
+    <section aria-labelledby="expenses-heading" className="mt-10">
+      <h2
+        id="expenses-heading"
+        className="text-lg font-semibold text-slate-900"
+      >
+        Courier charges
+      </h2>
+      <p className="mt-1 text-sm text-slate-600">
+        The base charge plus extra charges from the courier&apos;s invoice
+        (surcharges, return fees). Total:{' '}
+        <strong>{formatMoney(shipment.totalCourierCost)}</strong>
+      </p>
+      {shipment.expenses.length > 0 && (
+        <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white text-sm">
+          {shipment.expenses.map((e) => (
+            <li key={e.id} className="flex flex-wrap justify-between gap-2 p-3">
+              <span>
+                {EXPENSE_KIND_LABELS[e.kind]}
+                {e.reference && ` · ${e.reference}`}
+                {e.note && ` · ${e.note}`}
+                <span className="text-slate-500">
+                  {' '}
+                  · {e.incurredOn} · {e.recordedBy}
+                </span>
+              </span>
+              <span className="font-semibold">{formatMoney(e.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-4">
+        <fieldset className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
+          <legend className="px-1 font-semibold text-slate-900">
+            Add a charge
+          </legend>
+          <Select
+            label="Kind"
+            error={errors.kind?.message}
+            {...register('kind')}
+          >
+            {(Object.keys(EXPENSE_KIND_LABELS) as ExpenseKind[]).map((k) => (
+              <option key={k} value={k}>
+                {EXPENSE_KIND_LABELS[k]}
+              </option>
+            ))}
+          </Select>
+          <Input
+            label="Amount (LKR)"
+            inputMode="decimal"
+            error={errors.amount?.message}
+            {...register('amount')}
+          />
+          <Input
+            type="date"
+            label="Invoice date (optional)"
+            hint="Empty = today."
+            error={errors.incurredOn?.message}
+            {...register('incurredOn')}
+          />
+          <Input
+            label="Invoice number (optional)"
+            error={errors.reference?.message}
+            {...register('reference')}
+          />
+          <div className="sm:col-span-2">
+            <Input
+              label="Note (optional)"
+              error={errors.note?.message}
+              {...register('note')}
+            />
+          </div>
+          <div className="sm:col-span-3">
+            <StatusMessage message={message} className="mb-3" />
+            <Button type="submit" variant="secondary" isLoading={isSubmitting}>
+              Add charge
+            </Button>
+          </div>
+        </fieldset>
       </form>
     </section>
   )

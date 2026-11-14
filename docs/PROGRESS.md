@@ -2,9 +2,24 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Phase 8 — Shopping cart, checkout and orders
+## Shipping Phase F — Shipments linked to orders, tracking, courier expenses
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Done:**
+  - Flyway V13
+  - Record a shipment from a confirmed order (details prefilled); order status follows the parcel
+  - Customer tracking on "My order"
+  - Tracking page (stale parcels flagged)
+  - Courier charges and a gross shipping margin report (not net profit)
+  - Nightly clean-up of unused quotes
+  - 128 backend + 133 frontend tests; browser end-to-end verified
+- **Owner action:** enter the courier's charge on each shipment, so the report is complete
+- **Details:** [shipping/SHIPPING_DESIGN.md §17](shipping/SHIPPING_DESIGN.md)
+
+## Phase 8 — Shopping cart, checkout and orders
+
+- **Status:** Done (owner continued to Shipping Phase F)
 - **Date:** 2026-11-14
 - **Decided:** D-3 (Sri Lanka + countries with Tamil communities), D-5 (COD per product, Sri Lanka only; otherwise the owner arranges payment), D-8 (no guest checkout), D-9 (prices include tax, rate per product)
 - **Done:**

@@ -244,6 +244,10 @@ export function seedShipment(
     ],
     createdBy: 'owner@example.com',
     createdAt: '2026-11-14T08:00:00Z',
+    orderNumber: null,
+    deliveryCharged: null,
+    expenses: [],
+    totalCourierCost: { amount: '0.00', currency: 'LKR' },
     ...overrides,
   }
   shipments = [...shipments, shipment]
@@ -264,6 +268,8 @@ export const sent: {
   shipments: unknown[]
   tracking: unknown[]
   destinations: string[][]
+  expenses: unknown[]
+  reports: unknown[]
 } = {
   policies: [],
   rateCards: [],
@@ -273,6 +279,8 @@ export const sent: {
   shipments: [],
   tracking: [],
   destinations: [],
+  expenses: [],
+  reports: [],
 }
 
 /** What the simulator endpoint answers (tests may replace it). */
@@ -306,6 +314,8 @@ export function resetMockShipping() {
   sent.shipments = []
   sent.tracking = []
   sent.destinations = []
+  sent.expenses = []
+  sent.reports = []
 }
 
 const validation = (field: string, message: string) =>
@@ -434,21 +444,78 @@ export const shippingHandlers = [
     const url = new URL(request.url)
     const q = url.searchParams.get('q')?.toLowerCase()
     const status = url.searchParams.get('status')
+    const active = url.searchParams.get('active') === 'true'
     const content = shipments
       .filter((sh) => !status || sh.status === status)
+      .filter(
+        (sh) =>
+          !active ||
+          !['DELIVERED', 'RETURNED', 'CANCELLED'].includes(sh.status),
+      )
       .filter(
         (sh) =>
           !q ||
           sh.awb.toLowerCase().includes(q) ||
           sh.orderReference.toLowerCase().includes(q),
       )
-      .map((sh) => ({ ...sh, updatedAt: sh.createdAt }))
+      .map((sh) => ({
+        ...sh,
+        updatedAt: sh.createdAt,
+        websiteOrder: sh.orderNumber !== null,
+      }))
     return apiJson({
       content,
       page: 0,
       size: 20,
       totalElements: content.length,
       totalPages: 1,
+    })
+  }),
+  http.get(`${BASE}/shipments/expenses-report`, ({ request }) => {
+    const url = new URL(request.url)
+    sent.reports.push({
+      from: url.searchParams.get('from'),
+      to: url.searchParams.get('to'),
+    })
+    const money = (amount: string) => ({ amount, currency: 'LKR' })
+    return apiJson({
+      from: url.searchParams.get('from'),
+      to: url.searchParams.get('to'),
+      rows: [
+        {
+          shipmentId: 'ship-a',
+          createdAt: '2026-11-14T08:00:00Z',
+          orderReference: 'SD-001001',
+          websiteOrder: true,
+          providerName: 'DEX',
+          awb: 'DEX1',
+          status: 'DELIVERED',
+          deliveryCharged: money('561.00'),
+          courierBase: money('550.00'),
+          extraCharges: money('50.00'),
+          totalCourierCost: money('600.00'),
+          margin: money('-39.00'),
+        },
+        {
+          shipmentId: 'ship-b',
+          createdAt: '2026-11-14T09:00:00Z',
+          orderReference: 'WA-7',
+          websiteOrder: false,
+          providerName: 'DEX',
+          awb: 'DEX2',
+          status: 'BOOKED',
+          deliveryCharged: null,
+          courierBase: null,
+          extraCharges: money('0.00'),
+          totalCourierCost: null,
+          margin: null,
+        },
+      ],
+      shipmentCount: 2,
+      shipmentsWithoutCourierCost: 1,
+      deliveryCharged: money('561.00'),
+      courierCosts: money('600.00'),
+      grossMargin: money('-39.00'),
     })
   }),
   http.get(`${BASE}/shipments/:id`, ({ params }) => {
@@ -463,6 +530,7 @@ export const shippingHandlers = [
   http.post(`${BASE}/shipments`, async ({ request }) => {
     const body = (await request.json()) as {
       providerId: string
+      orderNumber: string | null
       details: {
         awb: string
         orderReference: string
@@ -491,6 +559,7 @@ export const shippingHandlers = [
         : null,
       awb,
       providerId: body.providerId,
+      orderNumber: body.orderNumber,
     } as Partial<ShipmentDetail>)
     return apiJson(created, { status: 201 })
   }),
@@ -518,6 +587,35 @@ export const shippingHandlers = [
           recordedBy: 'owner@example.com',
         },
       ],
+    }
+    shipments = shipments.map((sh) => (sh.id === updated.id ? updated : sh))
+    return apiJson(updated)
+  }),
+  http.post(`${BASE}/shipments/:id/expenses`, async ({ params, request }) => {
+    const body = (await request.json()) as {
+      kind: 'SURCHARGE'
+      amount: string
+      reference: string | null
+      note: string | null
+    }
+    sent.expenses.push(body)
+    const shipment = shipments.find((sh) => sh.id === params.id)!
+    const total = Number(shipment.totalCourierCost.amount) + Number(body.amount)
+    const updated: ShipmentDetail = {
+      ...shipment,
+      expenses: [
+        ...shipment.expenses,
+        {
+          id: `exp-${shipment.expenses.length + 1}`,
+          kind: body.kind,
+          amount: { amount: Number(body.amount).toFixed(2), currency: 'LKR' },
+          reference: body.reference,
+          incurredOn: '2026-11-14',
+          note: body.note,
+          recordedBy: 'owner@example.com',
+        },
+      ],
+      totalCourierCost: { amount: total.toFixed(2), currency: 'LKR' },
     }
     shipments = shipments.map((sh) => (sh.id === updated.id ? updated : sh))
     return apiJson(updated)

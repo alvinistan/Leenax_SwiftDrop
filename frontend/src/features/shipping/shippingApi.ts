@@ -387,6 +387,8 @@ export const TRACKING_STATUSES = Object.keys(
 export type ShipmentSummary = {
   id: string
   orderReference: string
+  /** true = linked to a website order (orderReference is its number) */
+  websiteOrder: boolean
   awb: string
   providerCode: string
   providerName: string
@@ -428,6 +430,63 @@ export type ShipmentDetail = {
   events: TrackingEvent[]
   createdBy: string
   createdAt: string
+  /** The linked website order, or null. */
+  orderNumber: string | null
+  /** What the customer paid for delivery (website orders only). */
+  deliveryCharged: Money | null
+  expenses: CourierExpense[]
+  /** Base charge + extra charges. */
+  totalCourierCost: Money
+}
+
+export type ExpenseKind = 'SURCHARGE' | 'RETURN' | 'ADJUSTMENT'
+
+export const EXPENSE_KIND_LABELS: Record<ExpenseKind, string> = {
+  SURCHARGE: 'Surcharge',
+  RETURN: 'Return fee',
+  ADJUSTMENT: 'Adjustment (+/−)',
+}
+
+export type CourierExpense = {
+  id: string
+  kind: ExpenseKind
+  amount: Money
+  reference: string | null
+  incurredOn: string
+  note: string | null
+  recordedBy: string
+}
+
+export type ExpenseInput = {
+  kind: ExpenseKind
+  amount: string
+  reference: string | null
+  incurredOn: string | null
+  note: string | null
+}
+
+export type ExpensesReport = {
+  from: string
+  to: string
+  rows: {
+    shipmentId: string
+    createdAt: string
+    orderReference: string
+    websiteOrder: boolean
+    providerName: string
+    awb: string
+    status: TrackingStatus
+    deliveryCharged: Money | null
+    courierBase: Money | null
+    extraCharges: Money
+    totalCourierCost: Money | null
+    margin: Money | null
+  }[]
+  shipmentCount: number
+  shipmentsWithoutCourierCost: number
+  deliveryCharged: Money
+  courierCosts: Money
+  grossMargin: Money
 }
 
 export type ShipmentDetailsInput = {
@@ -449,6 +508,28 @@ export type TrackingUpdateInput = {
 
 const SHIPMENTS = `${BASE}/shipments`
 
+export async function addExpense(shipmentId: string, input: ExpenseInput) {
+  return (
+    await http.post<ShipmentDetail>(
+      `${SHIPMENTS}/${encodeURIComponent(shipmentId)}/expenses`,
+      input,
+    )
+  ).data
+}
+
+export async function getExpensesReport(
+  from: string,
+  to: string,
+  signal?: AbortSignal,
+) {
+  return (
+    await http.get<ExpensesReport>(`${SHIPMENTS}/expenses-report`, {
+      params: { from, to },
+      signal,
+    })
+  ).data
+}
+
 export async function listShipments(
   query: {
     q?: string
@@ -456,16 +537,22 @@ export async function listShipments(
     providerId?: string
     page?: number
     size?: number
+    /** only parcels still on their way */
+    active?: boolean
+    /** 'updated' = least recently updated first */
+    order?: 'created' | 'updated'
   },
   signal?: AbortSignal,
 ) {
-  const { q, status, providerId, page = 0, size = 20 } = query
+  const { q, status, providerId, page = 0, size = 20, active, order } = query
   return (
     await http.get<Page<ShipmentSummary>>(SHIPMENTS, {
       params: {
         q: q || undefined,
         status: status || undefined,
         providerId: providerId || undefined,
+        active: active || undefined,
+        order: order || undefined,
         page,
         size,
       },
@@ -482,6 +569,7 @@ export async function getShipment(shipmentId: string, signal?: AbortSignal) {
 
 export async function createShipment(input: {
   providerId: string
+  orderNumber: string | null
   bookedAt: string | null
   details: ShipmentDetailsInput
 }) {

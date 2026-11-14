@@ -69,6 +69,19 @@ export type CustomerOrder = {
   history: HistoryEntry[]
   canCancel: boolean
   createdAt: string
+  /** The parcels of this order (courier, tracking number, steps). */
+  shipments: OrderShipment[]
+}
+
+export type OrderShipment = {
+  id: string
+  providerName: string
+  serviceName: string | null
+  awb: string
+  /** A tracking status, e.g. IN_TRANSIT */
+  status: string
+  trackingUrl: string | null
+  steps: { status: string; at: string; location: string | null }[]
 }
 
 export type OrderSummary = {

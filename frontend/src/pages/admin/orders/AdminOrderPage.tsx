@@ -5,7 +5,9 @@ import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { ErrorState } from '../../../components/ui/ErrorState'
 import { Input } from '../../../components/ui/Input'
+import { buttonClasses } from '../../../components/ui/buttonStyles'
 import { OrderItemsTable } from '../../../features/orders/OrderItemsTable'
+import { OrderShipments } from '../../../features/orders/OrderShipments'
 import {
   adminChangeStatus,
   adminGetOrder,
@@ -134,9 +136,48 @@ function OrderView({
               <dd>{s.chargeableWeightKg} kg</dd>
             </dl>
             <p className="mt-2 text-xs text-slate-500">
-              Book the parcel with {s.providerName}, then record it in Shipping
-              → Shipments with order reference {order.orderNumber}.
+              Confirm the order, book the parcel with {s.providerName}, then use
+              “Record shipment” below.
             </p>
+          </Card>
+          <Card className="p-5 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold text-slate-900">Shipments</h2>
+              {(order.status === 'CONFIRMED' || order.status === 'SHIPPED') && (
+                <Link
+                  to={`/admin/shipping/shipments/new?order=${encodeURIComponent(order.orderNumber)}`}
+                  className={buttonClasses({
+                    variant: 'secondary',
+                    size: 'sm',
+                  })}
+                >
+                  Record shipment
+                </Link>
+              )}
+            </div>
+            {order.shipments.length === 0 ? (
+              <p className="mt-2 text-slate-500">
+                {order.status === 'PLACED'
+                  ? 'Confirm the order before booking the courier.'
+                  : 'No parcel recorded yet.'}
+              </p>
+            ) : (
+              <div className="mt-3">
+                <OrderShipments shipments={order.shipments} />
+                <ul className="mt-2 space-y-1">
+                  {order.shipments.map((s) => (
+                    <li key={s.id}>
+                      <Link
+                        to={`/admin/shipping/shipments/${s.id}`}
+                        className="font-semibold text-brand-800 hover:underline"
+                      >
+                        Open shipment {s.awb}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </Card>
           <Card className="p-5 text-sm">
             <h2 className="font-semibold text-slate-900">History</h2>

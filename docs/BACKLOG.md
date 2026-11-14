@@ -15,7 +15,7 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 5 | Axios and backend integration | 3, 4 | Done |
 | 6 | Authentication and administration (6A + 6B) | 5 | Done |
 | 7 | AWS S3 product images | 6 | Awaiting review (real AWS awaiting approval) |
-| 8 | Shopping cart and checkout (COD) | 6 | Awaiting review |
+| 8 | Shopping cart and checkout (COD) | 6 | Done (owner continued) |
 | 9 | Orders and payments | 8 | Not started |
 | 10 | Delivery management | 9 | Not started |
 | 11 | Quality, security and performance | 10 | Not started |
@@ -59,7 +59,7 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 | B | Product shipping attributes (weight, dimensions, category, customs) | A | Done (owner continued to C) |
 | C | Settings, weight engine, markup rules + audit, rate cards, country restrictions, quote API | B | Done (owner continued to E) |
 | E | DEX manual provider: capabilities, manual shipments (AWB), manual tracking | C | Done (owner continued to Phase 8) |
-| F | Shipments, idempotent booking, tracking, expenses | master Phase 8 (orders) | Not started |
+| F | Shipments linked to orders, tracking, expenses (manual booking) | master Phase 8 (orders) | Awaiting review |
 | G | Dispatch eligibility and checkout integration | F, Phase 9 for card payments | Not started |
 | D | DHL Express (verified capabilities only) | DHL credentials + network access | Blocked |
 | H | Overview and report pages | F | Not started |
@@ -82,4 +82,3 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch
 - **Rate limiting for the public shipping quote endpoint: required before going live (Phase 11)**
-- Clean-up job for expired, unused shipping quotes (Shipping Phase F)
