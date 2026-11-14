@@ -157,6 +157,10 @@ public class ProductVariant {
         return stockQuantity;
     }
 
+    public Product getProduct() {
+        return product;
+    }
+
     public UUID getProductId() {
         return product.getId();
     }

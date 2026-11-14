@@ -43,6 +43,9 @@ public class SecurityConfig {
                         // The order matters: the first matching rule wins.
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/categories/**", "/api/products/**").permitAll()
+                        // Shipping quotes: guests may ask for a delivery price (prices are worked out on the server).
+                        .requestMatchers(HttpMethod.POST, "/api/shipping/quotes").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/shipping/quotes/*").permitAll()
                         .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/error").permitAll()
                         // API documentation (disable with API_DOCS_ENABLED=false in production)
