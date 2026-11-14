@@ -49,6 +49,22 @@ Project:
 
 Not in Phase 1: entities other than `sellers`, UI design, authentication, AWS.
 
+## Shipping and courier management (owner request 2026-11-14)
+
+Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
+
+| Sub-phase | Title | Depends on | Status |
+|---|---|---|---|
+| A | Repository audit and shipping design | — | Awaiting review |
+| B | Product shipping attributes (weight, dimensions, category, customs) | A | Not started |
+| C | Settings, weight engine, markup rules + audit, rate cards, quote API | B | Not started |
+| E | DEX manual provider (rate card, manual AWB/tracking) | C | Not started |
+| F | Shipments, idempotent booking, tracking, expenses | master Phase 8 (orders) | Not started |
+| G | Dispatch eligibility and checkout integration | F, Phase 9 for card payments | Not started |
+| D | DHL Express (verified capabilities only) | DHL credentials + network access | Blocked |
+| H | Overview and report pages | F | Not started |
+| I | Security review, documentation, regression | all | Not started |
+
 ## Items parked for later
 
 - Category image upload by the admin: form in Phase 6, S3 storage in Phase 7 (FR-1a)

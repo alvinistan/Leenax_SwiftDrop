@@ -2,6 +2,15 @@
 
 Running log so work can resume at any time. Newest entry first.
 
+## Shipping Phase A — Audit and design
+
+- **Status:** Awaiting owner review and decisions
+- **Date:** 2026-11-14
+- **Done:** repository audit (orders, cart, checkout, payments and delivery are not implemented yet); shipping design with tables, APIs, formulas, provider abstraction, security, phases, risks
+- **Not verified:** DHL MyDHL API details (documentation hosts blocked from this environment); DEX API availability
+- **Waiting on owner:** the 10 decisions in [shipping/SHIPPING_DESIGN.md §12](shipping/SHIPPING_DESIGN.md)
+- **Note:** Phase 7 is also still awaiting review
+
 ## Phase 7 — Product and category images (S3)
 
 - **Status:** Awaiting owner review (code complete and verified locally; real AWS awaiting approval)

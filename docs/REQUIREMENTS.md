@@ -55,6 +55,12 @@ It is also a learning project, so clarity is preferred over cleverness.
 - FR-19 Destructive actions need confirmation.
 - FR-20 Important admin actions are recorded in an audit log.
 
+### 3.5 Shipping and couriers (owner request 2026-11-14)
+- FR-21 Shipping prices are calculated on the server from product weights, packaging, dimensions (volumetric weight) and courier rules. See `docs/shipping/SHIPPING_DESIGN.md`.
+- FR-22 A configurable platform markup on courier quotes (default 2 %): percentage, fixed or combined, scoped by courier/country, with dates, min/max and an audit history. Orders keep a price snapshot.
+- FR-23 Couriers: DHL Express (international, API after verification) and DEX (domestic; manual fallback unless API access is verified).
+- FR-24 Shipments, AWB/labels, normalized tracking, courier expenses and gross shipping margin reports in the admin area.
+
 ## 4. International requirements
 
 - IR-1 **LKR** is the default currency.
