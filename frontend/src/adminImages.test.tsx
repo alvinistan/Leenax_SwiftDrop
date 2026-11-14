@@ -18,6 +18,10 @@ function seedCakeProduct() {
     name: 'Chocolate Cake',
     slug: 'chocolate-cake',
     description: null,
+    shippingCategory: 'GENERAL' as const,
+    hsCode: null,
+    countryOfOrigin: 'LK',
+    customsDescription: null,
     status: 'ACTIVE',
     variants: [
       {

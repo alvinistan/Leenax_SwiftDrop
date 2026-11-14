@@ -42,6 +42,10 @@ function toDetail(id: string, input: ProductInput): AdminProductDetail {
     status: input.status,
     currency: 'LKR',
     images: [],
+    shippingCategory: input.shippingCategory,
+    hsCode: input.hsCode,
+    countryOfOrigin: input.countryOfOrigin,
+    customsDescription: input.customsDescription,
     variants: input.variants.map((v, i) => ({
       id:
         v.id ?? `${id}-var-${i + 1}-${Math.random().toString(36).slice(2, 6)}`,
@@ -57,6 +61,11 @@ function toDetail(id: string, input: ProductInput): AdminProductDetail {
       active: v.active,
       stockQuantity: v.stockQuantity,
       inStock: Number(v.stockQuantity) >= Number(v.minQuantity),
+      shippingWeightKg: v.shippingWeightKg,
+      dimensions:
+        v.lengthCm && v.widthCm && v.heightCm
+          ? { lengthCm: v.lengthCm, widthCm: v.widthCm, heightCm: v.heightCm }
+          : null,
     })),
   }
 }
@@ -199,6 +208,9 @@ export const adminHandlers = [
         fromPrice: p.variants[0]?.price ?? null,
         fromPriceUnit: p.variants[0]?.saleUnit ?? null,
         inStock: p.variants.some((v) => v.active && v.inStock),
+        shippingReady: p.variants
+          .filter((v) => v.active)
+          .every((v) => v.shippingWeightKg),
       })),
       page: 0,
       size: 20,

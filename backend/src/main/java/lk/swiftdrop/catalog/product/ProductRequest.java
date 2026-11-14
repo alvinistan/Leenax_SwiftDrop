@@ -40,7 +40,30 @@ public record ProductRequest(
         /** @Valid: also validate every VariantRequest inside the list. */
         @NotEmpty(message = "A product needs at least one variant.")
         @Size(max = 100, message = "A product can have at most 100 variants.")
-        List<@NotNull @Valid VariantRequest> variants) {
+        List<@NotNull @Valid VariantRequest> variants,
+
+        /** Optional; defaults to GENERAL. */
+        ShippingCategory shippingCategory,
+
+        /** Harmonized System code for customs, e.g. 0305.59. Optional. */
+        @Pattern(regexp = "^[0-9]{4}(\\.?[0-9]{2}){1,3}$",
+                message = "Enter an HS code like 0305.59 or 1905.90.90 (6 to 10 digits).")
+        String hsCode,
+
+        /** Two-letter country code, e.g. LK. Optional; defaults to LK. */
+        @Pattern(regexp = "^[A-Z]{2}$", message = "Use a two-letter country code, e.g. LK.")
+        String countryOfOrigin,
+
+        @Size(max = 200, message = "Customs description must be at most 200 characters.")
+        String customsDescription) {
+
+    public ShippingCategory effectiveShippingCategory() {
+        return Objects.requireNonNullElse(shippingCategory, ShippingCategory.GENERAL);
+    }
+
+    public String effectiveCountryOfOrigin() {
+        return Objects.requireNonNullElse(countryOfOrigin, "LK");
+    }
 
     /** An ACTIVE product must have something customers can choose. Reported as "activeProductHasActiveVariant". */
     @JsonIgnore

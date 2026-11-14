@@ -1,7 +1,7 @@
 # Shipping and Courier Management: Audit and Design (Phase A)
 
 Date: 2026-11-14 · Branch: `claude/create-projects-s4blmr` (commit `8e54108`)
-Status: **proposal awaiting owner approval. No shipping code has been written.**
+Status: **approved 2026-11-14** (decisions in §13). Phase B implemented; see §14.
 
 This document answers the six questions of the shipping request: what exists,
 what's missing, which files change, which new files and tables are needed, how
@@ -261,3 +261,38 @@ Each phase follows the usual workflow (plan, implement, test, report, commit, wa
 8. **Currency:** if a courier quotes in USD, should we wait for an exchange-rate policy (recommended), or only offer LKR quotes?
 9. **Chart library:** approve adding Recharts for the admin charts (or plain SVG).
 10. **Network access:** allow this development environment to reach the DHL developer and API hosts (needed in Phase D).
+
+## 13. Owner decisions (2026-11-14)
+
+| # | Decision |
+|---|---|
+| 1 | ✅ Order of work approved: B → C → E → master Phase 8 → F → G → D → H → I |
+| 2 | ✅ Ship from the owner's pickup address. **The actual address is still needed** (Phase C) |
+| 3 | ❌ No DHL account or MyDHL credentials yet: Phase D blocked |
+| 4 | ❌ No DEX account, API documents or rate card yet: manual provider; rate card to be entered later |
+| 5 | **Rich cakes, sweets and dry fish should be sent abroad** → category `FOOD_SHELF_STABLE` (international allowed by default); fresh cakes `FOOD_PERISHABLE` (domestic only). **Food, especially dried fish (an animal product), is restricted by some destination countries and needs courier approval: the owner must confirm per country.** A per-country block list comes in Phase C |
+| 6 | ✅ Markup on the courier's total quote (including surcharges, excluding import duties) |
+| 7 | ⏳ **Open:** who pays import duties and taxes abroad |
+| 8 | ✅ Wait for an exchange-rate policy: LKR quotes only until then |
+| 9 | ✅ Add Recharts (in Phase H) |
+| 10 | Later (network access for DHL, Phase D) |
+
+## 14. Phase B — product shipping attributes (done 2026-11-14)
+
+![Shipping fields in the admin product form](../phase-reports/images/shipping-b-product-form.png)
+
+**Built**
+- `V8__add_product_shipping_attributes.sql`: variant `shipping_weight_kg`, `length_cm`, `width_cm`, `height_cm` (positive; all three sides or none); product `shipping_category` (`GENERAL`, `FOOD_SHELF_STABLE`, `FOOD_PERISHABLE`, `FRAGILE`), `hs_code` (format checked), `country_of_origin` (default `LK`), `customs_description`.
+- Meaning of the weight: **packed weight of one sale unit** (one piece, or one kg sold), so shipped weight = weight × quantity for both piece and kg selling.
+- Backend: `ShippingCategory` enum, `ParcelDimensions` embeddable, request validation (including "all three sides or none"), admin-only responses, `shippingReady` flag on the admin list. Older requests without these fields still work (safe defaults).
+- Admin UI: a "Shipping and customs" section with category help text (including the food warning), per-variant weight and packed size, and a **"Weight missing"** badge in the product list.
+- Public API unchanged: customs data and packing details stay internal.
+
+**Verified**
+- Backend `mvn verify`: **59 tests** (3 new: save/read, defaults + `shippingReady`, validation incl. HS code, country code, partial dimensions, unknown category).
+- Frontend `npm test`: **88 tests** (4 new: form saves all fields, validation messages, list badge, schema rules).
+- Lint, types, build clean. Browser end-to-end: dried fish product saved with HS `0305.59`, 1.05 kg per kg sold, 25 × 18 × 4.5 cm, reloaded unchanged; a product without weight shows "Weight missing"; 0 console errors.
+
+**Owner action:** enter the packed weight (and size, if known) for each variant. Products without a weight can't be quoted for shipping once Phase C is live.
+
+**Next: Phase C** needs the pickup address (decision 2) and uses package presets (box sizes) entered by the admin.

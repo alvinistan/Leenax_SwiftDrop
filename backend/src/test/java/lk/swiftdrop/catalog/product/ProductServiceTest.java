@@ -49,11 +49,13 @@ class ProductServiceTest {
     private ProductService productService;
 
     private static ProductRequest request(String slug, List<VariantRequest> variantRequests) {
-        return new ProductRequest(CATEGORY_ID, "  Cotton T-Shirt ", slug, null, ProductStatus.ACTIVE, variantRequests);
+        return new ProductRequest(CATEGORY_ID, "  Cotton T-Shirt ", slug, null, ProductStatus.ACTIVE, variantRequests,
+                null, null, null, null);
     }
 
     private static VariantRequest variant(String sku, String price, Map<String, String> options) {
-        return new VariantRequest(null, sku, new BigDecimal(price), options, null, null, null, null, null, null);
+        return new VariantRequest(null, sku, new BigDecimal(price), options, null, null, null, null, null, null,
+                null, null, null, null);
     }
 
     @Test
@@ -81,6 +83,10 @@ class ProductServiceTest {
         assertThat(product.getVariants()).allMatch(v -> v.getSaleUnit() == SaleUnit.PIECE);
         assertThat(product.getVariants().getFirst().getQuantityRules())
                 .isEqualTo(new QuantityRules(BigDecimal.ONE, null, BigDecimal.ONE));
+        // no shipping details given → safe defaults, and not ready for shipping quotes yet
+        assertThat(product.getShippingCategory()).isEqualTo(ShippingCategory.GENERAL);
+        assertThat(product.getCountryOfOrigin()).isEqualTo("LK");
+        assertThat(product.isShippingReady()).isFalse();
     }
 
     @Test

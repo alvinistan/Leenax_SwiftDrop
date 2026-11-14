@@ -55,6 +55,17 @@ public class ProductVariant {
     @Column(name = "stock_quantity", nullable = false, precision = 12, scale = 3)
     private BigDecimal stockQuantity;
 
+    /**
+     * Packed weight of ONE sale unit in kg: one piece, or one kg sold for KG
+     * variants. Shipped weight = shippingWeightKg × quantity. null = not set yet.
+     */
+    @Column(name = "shipping_weight_kg", precision = 10, scale = 3)
+    private BigDecimal shippingWeightKg;
+
+    /** Packed size of one unit, or null if unknown. */
+    @Embedded
+    private ParcelDimensions dimensions;
+
     @Column(nullable = false)
     private boolean active;
 
@@ -97,6 +108,19 @@ public class ProductVariant {
         this.active = active;
         this.sortOrder = sortOrder;
         this.stockQuantity = stockQuantity;
+    }
+
+    public void updateShipping(BigDecimal shippingWeightKg, ParcelDimensions dimensions) {
+        this.shippingWeightKg = shippingWeightKg;
+        this.dimensions = dimensions;
+    }
+
+    public BigDecimal getShippingWeightKg() {
+        return shippingWeightKg;
+    }
+
+    public ParcelDimensions getDimensions() {
+        return dimensions;
     }
 
     /** Can at least the minimum order quantity be sold? */

@@ -216,6 +216,11 @@ export function AdminProductsPage() {
                         ) : (
                           <Badge tone="danger">Out of stock</Badge>
                         )}
+                        {!product.shippingReady && (
+                          <Badge tone="warning" className="ml-1">
+                            Weight missing
+                          </Badge>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <Badge tone={STATUS_TONE[product.status]}>

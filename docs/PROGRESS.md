@@ -2,9 +2,17 @@
 
 Running log so work can resume at any time. Newest entry first.
 
+## Shipping Phase B — Product shipping attributes
+
+- **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Done:** Flyway V8 (variant packed weight and size; product shipping category, HS code, country of origin, customs description); admin form section and "Weight missing" badge; 59 backend + 88 frontend tests; browser end-to-end verified
+- **Owner action:** enter packed weights for products; send the pickup address before Phase C; decide who pays import duties (decision 7)
+- **Details:** [shipping/SHIPPING_DESIGN.md §13–14](shipping/SHIPPING_DESIGN.md)
+
 ## Shipping Phase A — Audit and design
 
-- **Status:** Awaiting owner review and decisions
+- **Status:** Done (approved 2026-11-14; decisions recorded in the design §13)
 - **Date:** 2026-11-14
 - **Done:** repository audit (orders, cart, checkout, payments and delivery are not implemented yet); shipping design with tables, APIs, formulas, provider abstraction, security, phases, risks
 - **Not verified:** DHL MyDHL API details (documentation hosts blocked from this environment); DEX API availability

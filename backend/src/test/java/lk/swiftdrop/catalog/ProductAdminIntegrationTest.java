@@ -149,6 +149,73 @@ class ProductAdminIntegrationTest {
     }
 
     @Test
+    void shippingAndCustomsDetailsAreSavedForAdminsOnly() throws Exception {
+        String slug = unique("dry-fish");
+        String created = createProduct("""
+                {"categoryId": "%s", "name": "Dried Fish", "slug": "%s", "status": "ACTIVE",
+                 "shippingCategory": "FOOD_SHELF_STABLE", "hsCode": "0305.59", "countryOfOrigin": "LK",
+                 "customsDescription": "Dried fish, vacuum packed",
+                 "variants": [
+                   {"sku": "%s", "price": 3500, "saleUnit": "KG", "minQuantity": 0.5, "quantityStep": 0.5,
+                    "stockQuantity": 20, "shippingWeightKg": 1.05, "lengthCm": 25, "widthCm": 18, "heightCm": 4.5}
+                 ]}
+                """.formatted(createCategory(), slug, unique("FISH")));
+
+        mockMvc.perform(get("/api/admin/products/{id}", (String) JsonPath.read(created, "$.id")))
+                .andExpect(jsonPath("$.shippingCategory").value("FOOD_SHELF_STABLE"))
+                .andExpect(jsonPath("$.hsCode").value("0305.59"))
+                .andExpect(jsonPath("$.customsDescription").value("Dried fish, vacuum packed"))
+                .andExpect(jsonPath("$.variants[0].shippingWeightKg").value("1.05"))
+                .andExpect(jsonPath("$.variants[0].dimensions.heightCm").value("4.5"));
+        mockMvc.perform(get("/api/admin/products").param("q", "Dried Fish"))
+                .andExpect(jsonPath("$.content[0].shippingReady").value(true));
+
+        // Not part of the public API (customs data and packing details are internal)
+        mockMvc.perform(get("/api/products/{slug}", slug))
+                .andExpect(jsonPath("$.hsCode").doesNotExist())
+                .andExpect(jsonPath("$.variants[0].shippingWeightKg").doesNotExist());
+    }
+
+    @Test
+    void productsWithoutShippingDetailsGetSafeDefaultsAndAreNotShippingReady() throws Exception {
+        String created = createProduct(productJson(createCategory(), unique("mug"), unique("MUG")));
+
+        mockMvc.perform(get("/api/admin/products/{id}", (String) JsonPath.read(created, "$.id")))
+                .andExpect(jsonPath("$.shippingCategory").value("GENERAL"))
+                .andExpect(jsonPath("$.countryOfOrigin").value("LK"))
+                .andExpect(jsonPath("$.variants[0].shippingWeightKg").doesNotExist())
+                .andExpect(jsonPath("$.variants[0].dimensions").doesNotExist());
+        mockMvc.perform(get("/api/admin/products").param("q", (String) JsonPath.read(created, "$.name")).param("size", "100"))
+                .andExpect(jsonPath("$.content[?(@.id == '%s')].shippingReady".formatted((String) JsonPath.read(created, "$.id")))
+                        .value(false));
+    }
+
+    @Test
+    void shippingDetailsAreValidated() throws Exception {
+        String category = createCategory();
+
+        mockMvc.perform(post("/api/admin/products").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoryId": "%s", "name": "Box", "slug": "%s", "status": "DRAFT",
+                                 "hsCode": "12AB", "countryOfOrigin": "Sri Lanka", "shippingCategory": "GENERAL",
+                                 "variants": [{"sku": "%s", "price": 10, "shippingWeightKg": 0, "lengthCm": 10}]}
+                                """.formatted(category, unique("box"), unique("BOX"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[*].field", containsInAnyOrder(
+                        "hsCode", "countryOfOrigin", "variants[0].shippingWeightKg", "variants[0].dimensionsComplete")));
+
+        // an unknown category is not valid JSON for the enum → 400
+        mockMvc.perform(post("/api/admin/products").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoryId": "%s", "name": "Box", "slug": "%s", "status": "DRAFT",
+                                 "shippingCategory": "LIVE_ANIMALS", "variants": [{"sku": "%s", "price": 10}]}
+                                """.formatted(category, unique("box"), unique("BOX"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void stockRulesAreValidated() throws Exception {
         String category = createCategory();
 

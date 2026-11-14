@@ -7,6 +7,10 @@ const base = {
   slug: 'chocolate-cake',
   description: '',
   status: 'ACTIVE' as const,
+  shippingCategory: 'GENERAL' as const,
+  hsCode: '',
+  countryOfOrigin: 'LK',
+  customsDescription: '',
   variants: [{ ...newVariant(), sku: 'CAKE-1', price: '1200' }],
 }
 
@@ -56,6 +60,23 @@ describe('productSchema', () => {
       'variants.0.stockQuantity: Pieces cannot be split: use a whole number.',
       'variants.1.price: Enter a price like 1250 or 1250.50.',
       'variants.1.sku: This SKU is already used above.',
+    ])
+  })
+
+  it('checks shipping details: all three sides or none, positive weight, HS code format', () => {
+    expect(
+      messages({
+        ...base,
+        hsCode: '12AB',
+        variants: [
+          { ...base.variants[0], shippingWeightKg: '0', lengthCm: '25' },
+        ],
+      }),
+    ).toEqual([
+      'hsCode: Enter an HS code like 0305.59 or 1905.90.90 (6 to 10 digits).',
+      'variants.0.shippingWeightKg: Shipping weight must be more than 0.',
+      'variants.0.widthCm: Enter length, width and height together, or leave all three empty.',
+      'variants.0.heightCm: Enter length, width and height together, or leave all three empty.',
     ])
   })
 

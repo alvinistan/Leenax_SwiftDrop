@@ -43,6 +43,10 @@ const EMPTY: ProductFormValues = {
   description: '',
   status: 'DRAFT',
   variants: [newVariant()],
+  shippingCategory: 'GENERAL',
+  hsCode: '',
+  countryOfOrigin: 'LK',
+  customsDescription: '',
 }
 
 /** The API's product → the form's values (numbers stay exact text). */
@@ -62,16 +66,24 @@ function toFormValues(product: AdminProductDetail): ProductFormValues {
       maxQuantity: v.quantity.max ?? '',
       quantityStep: v.quantity.step,
       stockQuantity: v.stockQuantity,
+      shippingWeightKg: v.shippingWeightKg ?? '',
+      lengthCm: v.dimensions?.lengthCm ?? '',
+      widthCm: v.dimensions?.widthCm ?? '',
+      heightCm: v.dimensions?.heightCm ?? '',
       options: Object.entries(v.options).map(([name, value]) => ({
         name,
         value,
       })),
       active: v.active,
     })),
+    shippingCategory: product.shippingCategory,
+    hsCode: product.hsCode ?? '',
+    countryOfOrigin: product.countryOfOrigin,
+    customsDescription: product.customsDescription ?? '',
   }
 }
 
-/** The form's values → what the API expects. */
+/** The form's values → what the API expects. Empty optional fields become null. */
 function toInput(values: ProductFormValues): ProductInput {
   return {
     categoryId: values.categoryId,
@@ -88,11 +100,19 @@ function toInput(values: ProductFormValues): ProductInput {
       maxQuantity: v.maxQuantity || null,
       quantityStep: v.quantityStep,
       stockQuantity: v.stockQuantity,
+      shippingWeightKg: v.shippingWeightKg || null,
+      lengthCm: v.lengthCm || null,
+      widthCm: v.widthCm || null,
+      heightCm: v.heightCm || null,
       options: Object.fromEntries(
         v.options.map((o) => [o.name.trim(), o.value.trim()]),
       ),
       active: v.active,
     })),
+    shippingCategory: values.shippingCategory,
+    hsCode: values.hsCode.trim() || null,
+    countryOfOrigin: values.countryOfOrigin.trim(),
+    customsDescription: values.customsDescription.trim() || null,
   }
 }
 
@@ -301,6 +321,12 @@ function ProductForm({ productId, initial, categories }: ProductFormProps) {
           />
         </section>
 
+        <ShippingDetailsSection
+          register={register}
+          errors={errors}
+          control={control}
+        />
+
         <section aria-labelledby="variants-heading" className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -464,6 +490,38 @@ function VariantFields({
         />
       </div>
 
+      <div className="mt-5 grid gap-5 sm:grid-cols-4">
+        <Input
+          label={
+            saleUnit === 'KG'
+              ? 'Shipping weight per kg sold (kg)'
+              : 'Shipping weight per piece (kg)'
+          }
+          hint="Packed weight, including the box or bag."
+          inputMode="decimal"
+          error={e?.shippingWeightKg?.message}
+          {...register(`variants.${index}.shippingWeightKg`)}
+        />
+        <Input
+          label="Packed length (cm)"
+          inputMode="decimal"
+          error={e?.lengthCm?.message}
+          {...register(`variants.${index}.lengthCm`)}
+        />
+        <Input
+          label="Packed width (cm)"
+          inputMode="decimal"
+          error={e?.widthCm?.message}
+          {...register(`variants.${index}.widthCm`)}
+        />
+        <Input
+          label="Packed height (cm)"
+          inputMode="decimal"
+          error={e?.heightCm?.message}
+          {...register(`variants.${index}.heightCm`)}
+        />
+      </div>
+
       <div className="mt-5">
         <p className="text-sm font-medium text-slate-800">
           Options (e.g. Size: 1 kg)
@@ -515,5 +573,82 @@ function VariantFields({
         />
       </div>
     </fieldset>
+  )
+}
+
+const CATEGORY_HELP: Record<ProductFormValues['shippingCategory'], string> = {
+  GENERAL: 'Ordinary goods. Can be shipped within Sri Lanka and abroad.',
+  FOOD_SHELF_STABLE:
+    'Packed food that keeps for weeks (rich cake, sweets, dried fish). Can go abroad, but couriers and destination countries restrict food, especially animal products: confirm before shipping.',
+  FOOD_PERISHABLE: 'Food that spoils quickly (fresh cakes). Sri Lanka only.',
+  FRAGILE: 'Breakable items. Needs careful packing.',
+}
+
+type ShippingDetailsProps = {
+  register: UseFormRegister<ProductFormValues>
+  errors: FieldErrors<ProductFormValues>
+  control: Control<ProductFormValues>
+}
+
+/** Product-level shipping and customs details (each variant has its own weight and size). */
+function ShippingDetailsSection({
+  register,
+  errors,
+  control,
+}: ShippingDetailsProps) {
+  const category = useWatch({ control, name: 'shippingCategory' })
+  return (
+    <section
+      aria-labelledby="shipping-heading"
+      className="space-y-5 rounded-xl border border-slate-200 bg-white p-6"
+    >
+      <div>
+        <h2
+          id="shipping-heading"
+          className="text-lg font-semibold text-slate-900"
+        >
+          Shipping and customs
+        </h2>
+        <p className="text-sm text-slate-600">
+          Used to calculate shipping prices and for international parcels.
+        </p>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Select
+          label="Shipping category"
+          hint={CATEGORY_HELP[category]}
+          error={errors.shippingCategory?.message}
+          {...register('shippingCategory')}
+        >
+          <option value="GENERAL">General goods</option>
+          <option value="FOOD_SHELF_STABLE">
+            Shelf-stable food (can go abroad)
+          </option>
+          <option value="FOOD_PERISHABLE">
+            Perishable food (Sri Lanka only)
+          </option>
+          <option value="FRAGILE">Fragile</option>
+        </Select>
+        <Input
+          label="Country of origin"
+          hint="Two-letter code, e.g. LK for Sri Lanka."
+          maxLength={2}
+          error={errors.countryOfOrigin?.message}
+          {...register('countryOfOrigin')}
+        />
+        <Input
+          label="HS code (optional)"
+          hint="Customs code, e.g. 0305.59 for dried fish. Needed before shipping abroad."
+          error={errors.hsCode?.message}
+          {...register('hsCode')}
+        />
+        <Input
+          label="Customs description (optional)"
+          hint='Plain words, e.g. "Dried fish, vacuum packed".'
+          error={errors.customsDescription?.message}
+          {...register('customsDescription')}
+        />
+      </div>
+    </section>
   )
 }

@@ -55,8 +55,8 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 
 | Sub-phase | Title | Depends on | Status |
 |---|---|---|---|
-| A | Repository audit and shipping design | — | Awaiting review |
-| B | Product shipping attributes (weight, dimensions, category, customs) | A | Not started |
+| A | Repository audit and shipping design | — | Done (approved 2026-11-14) |
+| B | Product shipping attributes (weight, dimensions, category, customs) | A | Awaiting review |
 | C | Settings, weight engine, markup rules + audit, rate cards, quote API | B | Not started |
 | E | DEX manual provider (rate card, manual AWB/tracking) | C | Not started |
 | F | Shipments, idempotent booking, tracking, expenses | master Phase 8 (orders) | Not started |

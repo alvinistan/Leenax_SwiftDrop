@@ -87,6 +87,8 @@ public class ProductService {
                 request.status(),
                 StoreDefaults.DEFAULT_CURRENCY);
 
+        applyShippingDetails(product, request);
+
         int position = 0;
         for (VariantRequest variant : request.variants()) {
             if (variant.id() != null) {
@@ -131,6 +133,8 @@ public class ProductService {
                 request.description(),
                 request.status());
 
+        applyShippingDetails(product, request);
+
         // Remove first and write that to the database now, so a SKU freed by a removed
         // variant can be reused by a new one in the same request (the database checks
         // uniqueness on every statement).
@@ -151,6 +155,7 @@ public class ProductService {
                         Objects.requireNonNullElse(variant.active(), true),
                         position,
                         variant.effectiveStockQuantity());
+                existing.get(variant.id()).updateShipping(variant.shippingWeightKg(), variant.dimensions());
             }
             position++;
         }
@@ -169,7 +174,25 @@ public class ProductService {
         products.delete(product);
     }
 
-    private static ProductVariant newVariant(VariantRequest variant, int position) {
+    private static void applyShippingDetails(Product product, ProductRequest request) {
+        product.updateShippingDetails(
+                request.effectiveShippingCategory(),
+                blankToNull(request.hsCode()),
+                request.effectiveCountryOfOrigin(),
+                blankToNull(request.customsDescription()));
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static ProductVariant newVariant(VariantRequest request, int position) {
+        ProductVariant variant = createVariant(request, position);
+        variant.updateShipping(request.shippingWeightKg(), request.dimensions());
+        return variant;
+    }
+
+    private static ProductVariant createVariant(VariantRequest variant, int position) {
         return new ProductVariant(
                 variant.sku(),
                 variant.price(),

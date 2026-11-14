@@ -29,7 +29,9 @@ public final class AdminProductResponses {
             MoneyResponse fromPrice,
             SaleUnit fromPriceUnit,
             boolean inStock,
-            String imageUrl) {
+            String imageUrl,
+            /** Every active variant has a shipping weight (needed for shipping quotes). */
+            boolean shippingReady) {
 
         static AdminProductSummary from(Product product, Function<String, String> imageUrl) {
             var cheapest = product.cheapestActiveVariant();
@@ -43,7 +45,8 @@ public final class AdminProductResponses {
                     cheapest.map(v -> MoneyResponse.of(v.getPrice(), product.getCurrency())).orElse(null),
                     cheapest.map(ProductVariant::getSaleUnit).orElse(null),
                     product.isInStock(),
-                    product.mainImageKey().map(imageUrl).orElse(null));
+                    product.mainImageKey().map(imageUrl).orElse(null),
+                    product.isShippingReady());
         }
     }
 
@@ -57,7 +60,11 @@ public final class AdminProductResponses {
             boolean active,
             /** Exact stock, e.g. "12" pieces or "3.5" kg. Admin only. */
             String stockQuantity,
-            boolean inStock) {
+            boolean inStock,
+            /** Packed weight of one sale unit in kg, or null if not set. */
+            String shippingWeightKg,
+            /** Packed size of one unit in cm, or null. */
+            DimensionsResponse dimensions) {
 
         static AdminVariant from(ProductVariant variant, String currency) {
             return new AdminVariant(
@@ -69,7 +76,20 @@ public final class AdminProductResponses {
                     new TreeMap<>(variant.getOptions()),
                     variant.isActive(),
                     QuantityResponse.plain(variant.getStockQuantity()),
-                    variant.isInStock());
+                    variant.isInStock(),
+                    QuantityResponse.plain(variant.getShippingWeightKg()),
+                    DimensionsResponse.from(variant.getDimensions()));
+        }
+    }
+
+    /** e.g. {"lengthCm": "30", "widthCm": "20", "heightCm": "15"} */
+    public record DimensionsResponse(String lengthCm, String widthCm, String heightCm) {
+
+        static DimensionsResponse from(ParcelDimensions d) {
+            return d == null ? null : new DimensionsResponse(
+                    QuantityResponse.plain(d.lengthCm()),
+                    QuantityResponse.plain(d.widthCm()),
+                    QuantityResponse.plain(d.heightCm()));
         }
     }
 
@@ -91,7 +111,11 @@ public final class AdminProductResponses {
             String currency,
             /** All variants, including inactive ones. */
             List<AdminVariant> variants,
-            List<AdminImage> images) {
+            List<AdminImage> images,
+            ShippingCategory shippingCategory,
+            String hsCode,
+            String countryOfOrigin,
+            String customsDescription) {
 
         static AdminProductDetail from(Product product, Function<String, String> imageUrl) {
             return new AdminProductDetail(
@@ -105,7 +129,11 @@ public final class AdminProductResponses {
                     product.getVariants().stream()
                             .map(v -> AdminVariant.from(v, product.getCurrency()))
                             .toList(),
-                    product.getImages().stream().map(i -> AdminImage.from(i, imageUrl)).toList());
+                    product.getImages().stream().map(i -> AdminImage.from(i, imageUrl)).toList(),
+                    product.getShippingCategory(),
+                    product.getHsCode(),
+                    product.getCountryOfOrigin(),
+                    product.getCustomsDescription());
         }
     }
 }

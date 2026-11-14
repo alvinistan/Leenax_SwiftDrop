@@ -66,6 +66,22 @@ public class Product {
     @Column(nullable = false, length = 3, updatable = false)
     private String currency;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shipping_category", nullable = false, length = 30)
+    private ShippingCategory shippingCategory = ShippingCategory.GENERAL;
+
+    /** Harmonized System code for customs, e.g. "0305.59"; null if not set. */
+    @Column(name = "hs_code", length = 13)
+    private String hsCode;
+
+    /** ISO 3166 country code, e.g. "LK". CHAR(2) in the database. */
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "country_of_origin", nullable = false, length = 2)
+    private String countryOfOrigin = "LK";
+
+    @Column(name = "customs_description", length = 200)
+    private String customsDescription;
+
     /**
      * Optimistic locking: Hibernate adds "WHERE version = ?" to every UPDATE. If
      * another transaction changed the row first, the update fails instead of
@@ -108,6 +124,35 @@ public class Product {
         this.slug = slug;
         this.description = description;
         this.status = status;
+    }
+
+    public void updateShippingDetails(
+            ShippingCategory shippingCategory, String hsCode, String countryOfOrigin, String customsDescription) {
+        this.shippingCategory = shippingCategory;
+        this.hsCode = hsCode;
+        this.countryOfOrigin = countryOfOrigin;
+        this.customsDescription = customsDescription;
+    }
+
+    /** Ready for shipping quotes: every active variant has a shipping weight. */
+    public boolean isShippingReady() {
+        return variants.stream().filter(ProductVariant::isActive).allMatch(v -> v.getShippingWeightKg() != null);
+    }
+
+    public ShippingCategory getShippingCategory() {
+        return shippingCategory;
+    }
+
+    public String getHsCode() {
+        return hsCode;
+    }
+
+    public String getCountryOfOrigin() {
+        return countryOfOrigin;
+    }
+
+    public String getCustomsDescription() {
+        return customsDescription;
     }
 
     public void addVariant(ProductVariant variant) {

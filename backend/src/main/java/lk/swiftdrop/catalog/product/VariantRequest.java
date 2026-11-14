@@ -56,7 +56,37 @@ public record VariantRequest(
         /** Optional; defaults to 0. Pieces, or kg for KG variants. */
         @DecimalMin(value = "0", message = "Stock cannot be negative.")
         @Digits(integer = 9, fraction = 3, message = "Stock can have at most 3 decimal places.")
-        BigDecimal stockQuantity) {
+        BigDecimal stockQuantity,
+
+        /** Packed weight of one sale unit in kg (one piece, or one kg sold). Optional for now. */
+        @DecimalMin(value = "0.001", message = "Shipping weight must be more than 0.")
+        @Digits(integer = 7, fraction = 3, message = "Shipping weight can have at most 3 decimal places.")
+        BigDecimal shippingWeightKg,
+
+        /** Packed size of one unit in cm. Optional: all three or none. */
+        @DecimalMin(value = "0.1", message = "Length must be more than 0.")
+        @Digits(integer = 7, fraction = 1, message = "Length can have at most 1 decimal place.")
+        BigDecimal lengthCm,
+
+        @DecimalMin(value = "0.1", message = "Width must be more than 0.")
+        @Digits(integer = 7, fraction = 1, message = "Width can have at most 1 decimal place.")
+        BigDecimal widthCm,
+
+        @DecimalMin(value = "0.1", message = "Height must be more than 0.")
+        @Digits(integer = 7, fraction = 1, message = "Height can have at most 1 decimal place.")
+        BigDecimal heightCm) {
+
+    /** Cross-field rule: give all three sides or none. Reported as "variants[i].dimensionsComplete". */
+    @JsonIgnore
+    @AssertTrue(message = "Enter length, width and height together, or leave all three empty.")
+    public boolean isDimensionsComplete() {
+        int given = (lengthCm != null ? 1 : 0) + (widthCm != null ? 1 : 0) + (heightCm != null ? 1 : 0);
+        return given == 0 || given == 3;
+    }
+
+    public ParcelDimensions dimensions() {
+        return ParcelDimensions.ofNullable(lengthCm, widthCm, heightCm);
+    }
 
     public BigDecimal effectiveStockQuantity() {
         return Objects.requireNonNullElse(stockQuantity, BigDecimal.ZERO);

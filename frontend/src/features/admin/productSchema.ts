@@ -10,6 +10,7 @@ import { toScaled } from '../../lib/decimal'
  */
 
 const QUANTITY = /^\d{1,7}(\.\d{1,3})?$/
+const CM = /^\d{1,6}(\.\d)?$/
 const isWhole = (value: string) => toScaled(value, 3) % 1000n === 0n
 const compare = (a: string, b: string) => {
   const difference = toScaled(a, 3) - toScaled(b, 3)
@@ -47,6 +48,23 @@ export const variantSchema = z
     maxQuantity: z.union([z.literal(''), quantity('Maximum')]),
     quantityStep: quantity('Step'),
     stockQuantity: quantity('Stock'),
+    /** Packed weight of one sale unit in kg. Optional for now; needed for shipping quotes. */
+    shippingWeightKg: z.union([z.literal(''), quantity('Shipping weight')]),
+    lengthCm: z.union([
+      z.literal(''),
+      z
+        .string()
+        .trim()
+        .regex(CM, 'Length: enter centimetres, e.g. 30 or 12.5.'),
+    ]),
+    widthCm: z.union([
+      z.literal(''),
+      z.string().trim().regex(CM, 'Width: enter centimetres, e.g. 20 or 12.5.'),
+    ]),
+    heightCm: z.union([
+      z.literal(''),
+      z.string().trim().regex(CM, 'Height: enter centimetres, e.g. 15 or 4.5.'),
+    ]),
     options: z
       .array(
         z.object({
@@ -93,6 +111,24 @@ export const variantSchema = z
       check(!v.maxQuantity || isWhole(v.maxQuantity), 'maxQuantity', whole)
       check(isWhole(v.stockQuantity), 'stockQuantity', whole)
     }
+    if (v.shippingWeightKg && QUANTITY.test(v.shippingWeightKg)) {
+      check(
+        compare(v.shippingWeightKg, '0') > 0,
+        'shippingWeightKg',
+        'Shipping weight must be more than 0.',
+      )
+    }
+    const sides = [v.lengthCm, v.widthCm, v.heightCm].filter(Boolean).length
+    if (sides !== 0 && sides !== 3) {
+      for (const side of ['lengthCm', 'widthCm', 'heightCm'] as const) {
+        if (!v[side])
+          check(
+            false,
+            side,
+            'Enter length, width and height together, or leave all three empty.',
+          )
+      }
+    }
     const names = v.options.map((o) => o.name.trim().toLowerCase())
     names.forEach((name, i) => {
       if (name && names.indexOf(name) !== i) {
@@ -124,6 +160,32 @@ export const productSchema = z
     description: z
       .string()
       .max(5000, 'Description must be at most 5000 characters.'),
+    shippingCategory: z.enum([
+      'GENERAL',
+      'FOOD_SHELF_STABLE',
+      'FOOD_PERISHABLE',
+      'FRAGILE',
+    ]),
+    hsCode: z.union([
+      z.literal(''),
+      z
+        .string()
+        .trim()
+        .regex(
+          /^[0-9]{4}(\.?[0-9]{2}){1,3}$/,
+          'Enter an HS code like 0305.59 or 1905.90.90 (6 to 10 digits).',
+        ),
+    ]),
+    countryOfOrigin: z
+      .string()
+      .trim()
+      .regex(
+        /^[A-Z]{2}$/,
+        'Use a two-letter country code in capitals, e.g. LK.',
+      ),
+    customsDescription: z
+      .string()
+      .max(200, 'Customs description must be at most 200 characters.'),
     status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']),
     variants: z
       .array(variantSchema)
@@ -165,6 +227,10 @@ export function newVariant(
     maxQuantity: '',
     quantityStep: saleUnit === 'KG' ? '0.5' : '1',
     stockQuantity: '0',
+    shippingWeightKg: '',
+    lengthCm: '',
+    widthCm: '',
+    heightCm: '',
     options: [],
     active: true,
   }
