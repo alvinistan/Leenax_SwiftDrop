@@ -9,6 +9,7 @@ import {
 import { NotFoundError } from '../lib/errors'
 import { API, apiJson } from './apiResponses'
 import { adminHandlers } from './mockAdminApi'
+import { shippingHandlers } from './mockShippingApi'
 
 /**
  * A fake backend for tests, using MSW (Mock Service Worker). It intercepts the
@@ -53,8 +54,12 @@ export const handlers = [
   }),
 ]
 
-// Catalogue handlers plus the login/admin handlers from mockAdminApi.ts.
-export const server = setupServer(...handlers, ...adminHandlers)
+// Catalogue handlers plus the login/admin handlers (mockAdminApi.ts) and shipping (mockShippingApi.ts).
+export const server = setupServer(
+  ...handlers,
+  ...adminHandlers,
+  ...shippingHandlers,
+)
 
 // Re-exported so tests can import everything about the fake API from one place.
 export { API, apiEmpty, apiJson, FRONTEND_ORIGIN } from './apiResponses'

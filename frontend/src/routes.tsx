@@ -97,6 +97,111 @@ export const routes: RouteObject[] = [
             .AdminProductFormPage,
         }),
       },
+      {
+        // Shipping management (Shipping Phase C): its own sub-menu layout.
+        path: 'shipping',
+        lazy: async () => ({
+          Component: (await import('./pages/admin/shipping/ShippingLayout'))
+            .ShippingLayout,
+        }),
+        children: [
+          {
+            index: true,
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/ShippingOverviewPage')
+              ).ShippingOverviewPage,
+            }),
+          },
+          {
+            path: 'providers',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/CourierProvidersPage')
+              ).CourierProvidersPage,
+            }),
+          },
+          {
+            path: 'rate-cards',
+            lazy: async () => ({
+              Component: (await import('./pages/admin/shipping/RateCardsPage'))
+                .RateCardsPage,
+            }),
+          },
+          {
+            path: 'rate-cards/new',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/RateCardFormPage')
+              ).RateCardFormPage,
+            }),
+          },
+          {
+            path: 'rate-cards/:id/edit',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/RateCardFormPage')
+              ).RateCardFormPage,
+            }),
+          },
+          {
+            path: 'markup',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/MarkupRulesPage')
+              ).MarkupRulesPage,
+            }),
+          },
+          {
+            path: 'markup/new',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/MarkupRuleFormPage')
+              ).MarkupRuleFormPage,
+            }),
+          },
+          {
+            path: 'markup/:id/edit',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/MarkupRuleFormPage')
+              ).MarkupRuleFormPage,
+            }),
+          },
+          {
+            path: 'restrictions',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/CountryRestrictionsPage')
+              ).CountryRestrictionsPage,
+            }),
+          },
+          {
+            path: 'settings',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/ShippingSettingsPage')
+              ).ShippingSettingsPage,
+            }),
+          },
+          {
+            path: 'simulator',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/QuoteSimulatorPage')
+              ).QuoteSimulatorPage,
+            }),
+          },
+          {
+            path: 'history',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/ShippingHistoryPage')
+              ).ShippingHistoryPage,
+            }),
+          },
+        ],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -577,10 +577,10 @@ function VariantFields({
 }
 
 const CATEGORY_HELP: Record<ProductFormValues['shippingCategory'], string> = {
-  GENERAL: 'Ordinary goods. Can be shipped within Sri Lanka and abroad.',
+  GENERAL: 'Ordinary goods (clothes, kitchenware…).',
   FOOD_SHELF_STABLE:
-    'Packed food that keeps for weeks (rich cake, sweets, dried fish). Can go abroad, but couriers and destination countries restrict food, especially animal products: confirm before shipping.',
-  FOOD_PERISHABLE: 'Food that spoils quickly (fresh cakes). Sri Lanka only.',
+    'Packed food that keeps for weeks (rich cake, sweets, dried fish). Couriers and destination countries restrict food, especially animal products: confirm before shipping.',
+  FOOD_PERISHABLE: 'Food that spoils quickly (fresh cakes).',
   FRAGILE: 'Breakable items. Needs careful packing.',
 }
 
@@ -616,17 +616,13 @@ function ShippingDetailsSection({
       <div className="grid gap-5 sm:grid-cols-2">
         <Select
           label="Shipping category"
-          hint={CATEGORY_HELP[category]}
+          hint={`${CATEGORY_HELP[category]} Where each category may be sent is set in Shipping → Country restrictions.`}
           error={errors.shippingCategory?.message}
           {...register('shippingCategory')}
         >
           <option value="GENERAL">General goods</option>
-          <option value="FOOD_SHELF_STABLE">
-            Shelf-stable food (can go abroad)
-          </option>
-          <option value="FOOD_PERISHABLE">
-            Perishable food (Sri Lanka only)
-          </option>
+          <option value="FOOD_SHELF_STABLE">Shelf-stable food</option>
+          <option value="FOOD_PERISHABLE">Perishable food</option>
           <option value="FRAGILE">Fragile</option>
         </Select>
         <Input

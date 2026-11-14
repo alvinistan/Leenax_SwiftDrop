@@ -60,6 +60,7 @@ It is also a learning project, so clarity is preferred over cleverness.
 - FR-22 A configurable platform markup on courier quotes (default 2 %): percentage, fixed or combined, scoped by courier/country, with dates, min/max and an audit history. Orders keep a price snapshot.
 - FR-23 Couriers: DHL Express (international, API after verification) and DEX (domestic; manual fallback unless API access is verified).
 - FR-24 Shipments, AWB/labels, normalized tracking, courier expenses and gross shipping margin reports in the admin area.
+- FR-25 The admin chooses, per shipping category, whether international shipping is allowed and which individual countries are blocked (Shipping Phase C). Import duties abroad are paid by the receiver (configurable).
 
 ## 4. International requirements
 

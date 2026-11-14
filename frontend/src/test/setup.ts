@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 import { server } from './mockApi'
 import { resetMockAdmin } from './mockAdminApi'
+import { resetMockShipping } from './mockShippingApi'
 
 // Start the fake API before all tests. Any request without a handler fails the
 // test, so tests can never accidentally call a real server.
@@ -14,6 +15,7 @@ afterEach(() => {
   cleanup()
   server.resetHandlers()
   resetMockAdmin()
+  resetMockShipping()
 })
 
 afterAll(() => server.close())

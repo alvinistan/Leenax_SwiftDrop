@@ -27,6 +27,7 @@ It is also a step-by-step programming-learning project.
 - [Learning roadmap](docs/LEARNING_ROADMAP.md): what to study for each phase
 - [Progress](docs/PROGRESS.md): what has been completed
 - [AWS setup](docs/AWS_SETUP.md): S3 for images: costs, budget alert, least-privilege IAM (needs approval)
+- [Shipping design](docs/shipping/SHIPPING_DESIGN.md): couriers, weights, platform fee, country restrictions; admin pages under **Admin → Shipping**
 - [Phase reports](docs/phase-reports/)
 
 ## Project layout

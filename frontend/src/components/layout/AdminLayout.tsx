@@ -1,4 +1,11 @@
-import { LayoutDashboard, LogOut, Package, Store, Tags } from 'lucide-react'
+import {
+  LayoutDashboard,
+  LogOut,
+  Package,
+  Store,
+  Tags,
+  Truck,
+} from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { cn } from '../../lib/cn'
 import { useAuth } from '../../features/auth/AuthContext'
@@ -8,6 +15,7 @@ const adminLinks = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/categories', label: 'Categories', icon: Tags, end: false },
   { to: '/admin/products', label: 'Products', icon: Package, end: false },
+  { to: '/admin/shipping', label: 'Shipping', icon: Truck, end: false },
 ]
 
 /** The admin area's frame: only admins get past RequireAdmin. */

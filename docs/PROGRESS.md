@@ -2,9 +2,22 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Shipping Phase B — Product shipping attributes
+## Shipping Phase C — Settings, country restrictions, platform fee, rate cards, quotes
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Done:**
+  - Flyway V9: pickup address in Jaffna (placeholder) with the receiver paying duties; couriers; example boxes; per-category country restrictions; 2 % default platform fee; rate cards; quotes; audit log
+  - Parcel, chargeable-weight and fee engines
+  - Admin "Shipping" menu with 8 pages, including **Country restrictions**
+  - Public quote API that shows the customer price only
+  - 92 backend + 102 frontend tests; browser end-to-end verified
+- **Owner action:** enter the real DEX price list; replace the example boxes; confirm courier weight rules; block countries that refuse food imports
+- **Details:** [shipping/SHIPPING_DESIGN.md §15](shipping/SHIPPING_DESIGN.md)
+
+## Shipping Phase B — Product shipping attributes
+
+- **Status:** Done (owner continued to Phase C; pickup address and duties decided)
 - **Date:** 2026-11-14
 - **Done:** Flyway V8 (variant packed weight and size; product shipping category, HS code, country of origin, customs description); admin form section and "Weight missing" badge; 59 backend + 88 frontend tests; browser end-to-end verified
 - **Owner action:** enter packed weights for products; send the pickup address before Phase C; decide who pays import duties (decision 7)

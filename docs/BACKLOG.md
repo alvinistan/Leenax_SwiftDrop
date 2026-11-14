@@ -56,8 +56,8 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 | Sub-phase | Title | Depends on | Status |
 |---|---|---|---|
 | A | Repository audit and shipping design | — | Done (approved 2026-11-14) |
-| B | Product shipping attributes (weight, dimensions, category, customs) | A | Awaiting review |
-| C | Settings, weight engine, markup rules + audit, rate cards, quote API | B | Not started |
+| B | Product shipping attributes (weight, dimensions, category, customs) | A | Done (owner continued to C) |
+| C | Settings, weight engine, markup rules + audit, rate cards, country restrictions, quote API | B | Awaiting review |
 | E | DEX manual provider (rate card, manual AWB/tracking) | C | Not started |
 | F | Shipments, idempotent booking, tracking, expenses | master Phase 8 (orders) | Not started |
 | G | Dispatch eligibility and checkout integration | F, Phase 9 for card payments | Not started |
@@ -81,3 +81,5 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 - Reorder photos / edit alt text; CloudFront for images (Phase 14); orphaned-file clean-up job
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch
+- **Rate limiting for the public shipping quote endpoint: required before going live (Phase 11)**
+- Clean-up job for expired, unused shipping quotes (Shipping Phase F)

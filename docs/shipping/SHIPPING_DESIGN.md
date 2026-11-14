@@ -267,12 +267,12 @@ Each phase follows the usual workflow (plan, implement, test, report, commit, wa
 | # | Decision |
 |---|---|
 | 1 | ✅ Order of work approved: B → C → E → master Phase 8 → F → G → D → H → I |
-| 2 | ✅ Ship from the owner's pickup address. **The actual address is still needed** (Phase C) |
+| 2 | ✅ Pickup address: **Sillalai South, Pandatharippu, Jaffna 40000, Sri Lanka** (placeholder until confirmed; the admin can change it in Shipping → Pickup & boxes) |
 | 3 | ❌ No DHL account or MyDHL credentials yet: Phase D blocked |
 | 4 | ❌ No DEX account, API documents or rate card yet: manual provider; rate card to be entered later |
-| 5 | **Rich cakes, sweets and dry fish should be sent abroad** → category `FOOD_SHELF_STABLE` (international allowed by default); fresh cakes `FOOD_PERISHABLE` (domestic only). **Food, especially dried fish (an animal product), is restricted by some destination countries and needs courier approval: the owner must confirm per country.** A per-country block list comes in Phase C |
+| 5 | **Rich cakes, sweets and dry fish should be sent abroad** → category `FOOD_SHELF_STABLE` (international allowed by default); fresh cakes `FOOD_PERISHABLE` (domestic only). **Food, especially dried fish (an animal product), is restricted by some destination countries and needs courier approval: the owner must confirm per country.** A per-country block list per category is in Phase C (Shipping → Country restrictions) |
 | 6 | ✅ Markup on the courier's total quote (including surcharges, excluding import duties) |
-| 7 | ⏳ **Open:** who pays import duties and taxes abroad |
+| 7 | ✅ **The receiver pays** import duties and taxes abroad (setting `dutiesPaidBy = RECEIVER`, changeable by the admin) |
 | 8 | ✅ Wait for an exchange-rate policy: LKR quotes only until then |
 | 9 | ✅ Add Recharts (in Phase H) |
 | 10 | Later (network access for DHL, Phase D) |
@@ -296,3 +296,72 @@ Each phase follows the usual workflow (plan, implement, test, report, commit, wa
 **Owner action:** enter the packed weight (and size, if known) for each variant. Products without a weight can't be quoted for shipping once Phase C is live.
 
 **Next: Phase C** needs the pickup address (decision 2) and uses package presets (box sizes) entered by the admin.
+
+## 15. Phase C — settings, weight engine, platform fee, rate cards, quotes (done 2026-11-14)
+
+![Country restrictions per shipping category](../phase-reports/images/shipping-c-country-restrictions.png)
+
+**Built (backend)**
+- `V9__create_shipping_configuration.sql`:
+  - `shipping_settings`: one row holding the pickup address (Jaffna placeholder), the default packaging weight (0.25 kg) and who pays duties (`RECEIVER`).
+  - `courier_providers` and `courier_services`:
+    - DHL Express: off, rates from the API (not connected), divisor 5000 and 0.5 kg steps, **marked not verified**.
+    - DEX: on, rates from a rate card, no volumetric divisor, 1 kg steps, **not verified**.
+  - `package_presets`: three boxes named "(example)" for the owner to replace.
+  - `shipping_category_policies` and `shipping_category_blocked_countries`: international on/off plus blocked countries per category.
+  - `shipping_markup_rules`: a default **2 %** rule.
+  - `courier_rate_cards` and `courier_rate_card_bands`: LKR only, and they **start empty**, so no prices are invented.
+  - `shipping_quotes` and `shipping_quote_options`: snapshots of each quote, with the courier price, fee and customer price stored separately.
+  - `shipping_audit_log`.
+- Pure engines, unit tested:
+  - `ParcelCalculator`: picks the smallest box that fits, using an 80 % packing efficiency, rotation and weight limits; if nothing fits it flags "manual quote".
+  - `ChargeableWeight`: volumetric weight = L×W×H ÷ the courier's own divisor; chargeable weight = max(actual, volumetric) rounded **up** to the courier's step.
+  - `MarkupCalculator` and `MarkupRuleSelector`: the most specific rule wins (courier + country, then courier, then country, then the default), ties go to priority and then the newest start; min/max limits apply; HALF_UP to 2 decimals.
+- `QuoteService` loads variants **from the database** and accepts no prices from the browser. It then checks:
+  - that each product is for sale and the quantity is allowed
+  - the category's country rules
+  - that every item has a weight
+  - the parcel, the courier rate card and the fee
+
+  It saves the quote for 30 minutes when at least one option is available.
+- APIs:
+  - Admin, under `/api/admin/shipping/**` (ADMIN only): `settings`, `countries`, `providers`, `presets`, `category-policies`, `markup-rules`, `rate-cards`, `quotes/simulate`, `audit`.
+  - Public: `POST /api/shipping/quotes` and `GET /api/shipping/quotes/{id}` return the **customer price only**, never the courier cost or the fee, and the POST needs the CSRF token.
+- Every configuration change writes a before/after row to `shipping_audit_log`, in the same transaction, with the admin's email as the actor.
+- JSON decimals are now exact strings (`"1.4"`, `"0.25"`) for all `BigDecimal` values.
+
+**Built (admin UI, Shipping menu)**
+- Overview: a set-up checklist plus the pages coming in Phases D, F and H.
+- **Couriers**: no API keys are ever shown or stored here.
+- **Rate cards**: list and editor with weight bands.
+- **Platform fee**: rules list and form; it is described as a fee, not profit.
+- **Country restrictions**: per category, an international on/off switch and blocked countries chosen by search and shown as chips.
+- **Pickup & boxes**: the address, duties, packaging and box sizes.
+- **Quote simulator**: the full breakdown, also for draft products.
+- **Change history**: before and after for every change.
+
+**Verified**
+- Backend `mvn verify`: **92 tests**. 33 are new:
+  - unit tests for the parcel, weight, fee and rule-selection engines
+  - 13 integration tests: settings and audit, the DEX quote (550 + 11 = 561), customer view without cost or fee, DHL not connected, perishable food abroad, blocking one country, unknown codes, draft products, quantity rules, fee validation and audit, rate-card validation and 409, 401/403, CSRF
+- Frontend: **102 tests** (14 new). Lint, types and build are clean.
+- Browser end-to-end against PostgreSQL:
+  - block Australia for shelf-stable food
+  - enter the DEX Sri Lanka rate card (test prices)
+  - simulate a 1 kg rich cake: 1.2 kg + 0.2 kg Small box = 1.4 kg, chargeable 2 kg, LKR 550 + LKR 11 fee = **LKR 561**
+  - Australia shows "cannot be shipped"; the United Kingdom shows DHL "turned off"
+  - the public quote shows only LKR 561
+  - the history lists both changes
+  - phone width: no sideways scrolling
+
+**Not built yet / limits**
+- DHL live rates (Phase D). Until then, customers abroad get "contact us".
+- Courier rules are placeholders until the owner confirms them with each courier.
+- The public quote endpoint has no rate limiting yet (Phase 11). Old unused quotes are not cleaned up yet (a job in Phase F).
+- Prices are in LKR only (decision 8).
+
+**Owner actions**
+1. Enter the real DEX price list in Rate cards. The test prices used in the checks were **not** saved to your data.
+2. Replace the "(example)" boxes with your real box sizes.
+3. Confirm the volumetric divisor and rounding with DEX (and DHL later), then tick "confirmed".
+4. Check the pickup address. Block countries that refuse food imports (especially dried fish) for shelf-stable food.
