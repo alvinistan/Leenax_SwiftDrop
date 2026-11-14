@@ -97,6 +97,7 @@ class ShippingIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.originCity").value("Jaffna"))
                 .andExpect(jsonPath("$.originCountry").value("LK"))
+                .andExpect(jsonPath("$.defaultPackagingKg").value("0.25")) // exact decimal string
                 .andExpect(jsonPath("$.dutiesPaidBy").value("RECEIVER"))
                 .andReturn().getResponse().getContentAsString();
         try {
@@ -131,8 +132,8 @@ class ShippingIntegrationTest {
                         .content(quoteJson("LK", variant, "1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.domestic").value(true))
-                .andExpect(jsonPath("$.parcel.actualWeightKg").value(1.4))
-                .andExpect(jsonPath("$.options[?(@.providerCode == 'DEX')].chargeableWeightKg").value(hasItem(2.0)))
+                .andExpect(jsonPath("$.parcel.actualWeightKg").value("1.4"))
+                .andExpect(jsonPath("$.options[?(@.providerCode == 'DEX')].chargeableWeightKg").value(hasItem("2")))
                 .andExpect(jsonPath("$.options[?(@.providerCode == 'DEX')].courierPrice.amount").value(hasItem("550.00")))
                 .andExpect(jsonPath("$.options[?(@.providerCode == 'DEX')].platformFee.amount").value(hasItem("11.00")))
                 .andExpect(jsonPath("$.options[?(@.providerCode == 'DEX')].customerPrice.amount").value(hasItem("561.00")));
