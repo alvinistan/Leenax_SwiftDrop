@@ -438,3 +438,23 @@ describe('change history', () => {
     expect(within(entry).getByText(/"AU"/)).toBeVisible()
   })
 })
+
+describe('couriers', () => {
+  it('shows what can be done with each courier and checks the tracking link', async () => {
+    logInMockAdmin()
+    renderRoute('/admin/shipping/providers')
+
+    const dex = await screen.findByRole('list', { name: 'DEX capabilities' })
+    expect(
+      within(dex).getByText('Book on courier portal, record AWB here'),
+    ).toBeInTheDocument()
+    expect(
+      within(dex).getByText('Tracking updates entered by hand'),
+    ).toBeInTheDocument()
+
+    const link = screen.getAllByLabelText('Tracking link format (optional)')[0]
+    await userEvent.type(link, 'http://dex.example/track')
+    await userEvent.click(screen.getByRole('button', { name: 'Save DEX' }))
+    expect(link).toHaveAccessibleDescription(/Use a secure link \(https:\/\/\)/)
+  })
+})

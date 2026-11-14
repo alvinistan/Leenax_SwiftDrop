@@ -2,9 +2,22 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Shipping Phase C — Settings, country restrictions, platform fee, rate cards, quotes
+## Shipping Phase E — DEX manual courier: manual booking and tracking
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Done:**
+  - Courier capabilities as data
+  - Flyway V11: shipments (your order reference + AWB, no customer personal data) and tracking events
+  - Tracking statuses with allowed steps
+  - Admin pages: Shipments list, record shipment, shipment page with timeline and updates; Couriers page shows capabilities and a tracking link format
+  - 110 backend + 112 frontend tests; browser end-to-end verified
+- **Owner action:** optionally add DEX's tracking link format; record real DEX parcels
+- **Details:** [shipping/SHIPPING_DESIGN.md §16](shipping/SHIPPING_DESIGN.md)
+
+## Shipping Phase C — Settings, country restrictions, platform fee, rate cards, quotes
+
+- **Status:** Done (owner continued to Phase E)
 - **Date:** 2026-11-14
 - **Done:**
   - Flyway V9: pickup address in Jaffna (placeholder) with the receiver paying duties; couriers; example boxes; per-category country restrictions; 2 % default platform fee; rate cards; quotes; audit log

@@ -17,8 +17,11 @@ import { userMessage } from '../../../lib/errors'
 type Step = { done: boolean; title: string; detail: ReactNode; to: string }
 
 const COMING_LATER = [
-  ['Shipments and labels', 'Shipping Phase F, after orders exist'],
-  ['Tracking', 'Shipping Phase F'],
+  [
+    'Shipments linked to website orders',
+    'Shipping Phase F, after checkout exists',
+  ],
+  ['Labels and automatic booking', 'Shipping Phase D (DHL API) and F'],
   ['Courier expenses', 'Shipping Phase F'],
   ['Revenue and margin reports', 'Shipping Phase H'],
   ['Integration logs', 'Shipping Phase D (DHL API)'],

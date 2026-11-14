@@ -16,6 +16,7 @@ import {
   listProviders,
   updateProvider,
   type CourierProvider,
+  type ProviderCapability,
 } from '../../../features/shipping/shippingApi'
 import {
   StatusMessage,
@@ -42,8 +43,27 @@ const providerSchema = z.object({
   rulesVerified: z.boolean(),
   notes: z.string().max(500, 'At most 500 characters.'),
   services: z.array(z.object({ id: z.string(), enabled: z.boolean() })),
+  trackingUrlTemplate: z.union([
+    z.literal(''),
+    z
+      .string()
+      .trim()
+      .max(300, 'At most 300 characters.')
+      .regex(
+        /^https:\/\/\S*\{awb\}\S*$/,
+        'Use a secure link (https://) that contains {awb}, e.g. https://courier.example/track?awb={awb}.',
+      ),
+  ]),
 })
 type ProviderFormValues = z.infer<typeof providerSchema>
+
+const CAPABILITY_LABELS: Record<ProviderCapability, string> = {
+  RATE_CARD: 'Prices from our rate card',
+  LIVE_RATES: 'Live prices (API)',
+  MANUAL_BOOKING: 'Book on courier portal, record AWB here',
+  MANUAL_TRACKING: 'Tracking updates entered by hand',
+  TRACKING_LINK: 'Link to courier tracking page',
+}
 
 /**
  * Couriers: on/off, where prices come from, and the weight rules. Courier API
@@ -96,6 +116,7 @@ function toForm(p: CourierProvider): ProviderFormValues {
     rulesVerified: p.rulesVerified,
     notes: p.notes ?? '',
     services: p.services.map((s) => ({ id: s.id, enabled: s.enabled })),
+    trackingUrlTemplate: p.trackingUrlTemplate ?? '',
   }
 }
 
@@ -125,6 +146,7 @@ function ProviderCard({ provider }: { provider: CourierProvider }) {
             ? null
             : Number(values.volumetricDivisor),
         notes: values.notes.trim() || null,
+        trackingUrlTemplate: values.trackingUrlTemplate || null,
       })
       setCurrent(saved)
       reset(toForm(saved))
@@ -154,6 +176,22 @@ function ProviderCard({ provider }: { provider: CourierProvider }) {
           {!current.rulesVerified && (
             <Badge tone="warning">Rules not verified</Badge>
           )}
+        </div>
+
+        <div className="mt-3">
+          <p className="text-sm font-medium text-slate-700">
+            What SwiftDrop can do with {current.name}
+          </p>
+          <ul
+            className="mt-1 flex flex-wrap gap-2"
+            aria-label={`${current.name} capabilities`}
+          >
+            {current.capabilities.map((capability) => (
+              <li key={capability}>
+                <Badge tone="brand">{CAPABILITY_LABELS[capability]}</Badge>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
@@ -194,6 +232,15 @@ function ProviderCard({ provider }: { provider: CourierProvider }) {
             <Checkbox
               label="I have confirmed these rules with the courier"
               {...register('rulesVerified')}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Input
+              label="Tracking link format (optional)"
+              hint="Copy it from the courier's official website and put {awb} where the tracking number goes. Shipments then get a “track on the courier's website” link."
+              placeholder="https://…{awb}…"
+              error={errors.trackingUrlTemplate?.message}
+              {...register('trackingUrlTemplate')}
             />
           </div>
           <div className="sm:col-span-2">

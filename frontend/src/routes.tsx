@@ -114,6 +114,37 @@ export const routes: RouteObject[] = [
             }),
           },
           {
+            path: 'shipments',
+            lazy: async () => ({
+              Component: (await import('./pages/admin/shipping/ShipmentsPage'))
+                .ShipmentsPage,
+            }),
+          },
+          {
+            path: 'shipments/new',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/ShipmentFormPage')
+              ).ShipmentFormPage,
+            }),
+          },
+          {
+            path: 'shipments/:id',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/ShipmentDetailPage')
+              ).ShipmentDetailPage,
+            }),
+          },
+          {
+            path: 'shipments/:id/edit',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/shipping/ShipmentFormPage')
+              ).ShipmentFormPage,
+            }),
+          },
+          {
             path: 'providers',
             lazy: async () => ({
               Component: (

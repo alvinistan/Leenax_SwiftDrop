@@ -8,13 +8,17 @@ import { ApiError } from '../../lib/errors'
 export function applyFieldErrors<T extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<T>,
+  /** Turns a server field path into the form's, e.g. drop a "details." prefix. */
+  mapField: (field: string) => string = (field) => field,
 ): boolean {
   if (!(error instanceof ApiError) || error.fieldErrors.length === 0) {
     return false
   }
   for (const { field, message } of error.fieldErrors) {
     // "bands[1].price" → "bands.1.price" (React Hook Form path)
-    setError(field.replace(/\[(\d+)\]/g, '.$1') as Path<T>, { message })
+    setError(mapField(field).replace(/\[(\d+)\]/g, '.$1') as Path<T>, {
+      message,
+    })
   }
   return true
 }

@@ -57,8 +57,8 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 |---|---|---|---|
 | A | Repository audit and shipping design | — | Done (approved 2026-11-14) |
 | B | Product shipping attributes (weight, dimensions, category, customs) | A | Done (owner continued to C) |
-| C | Settings, weight engine, markup rules + audit, rate cards, country restrictions, quote API | B | Awaiting review |
-| E | DEX manual provider (rate card, manual AWB/tracking) | C | Not started |
+| C | Settings, weight engine, markup rules + audit, rate cards, country restrictions, quote API | B | Done (owner continued to E) |
+| E | DEX manual provider: capabilities, manual shipments (AWB), manual tracking | C | Awaiting review |
 | F | Shipments, idempotent booking, tracking, expenses | master Phase 8 (orders) | Not started |
 | G | Dispatch eligibility and checkout integration | F, Phase 9 for card payments | Not started |
 | D | DHL Express (verified capabilities only) | DHL credentials + network access | Blocked |

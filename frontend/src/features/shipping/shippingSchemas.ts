@@ -212,3 +212,41 @@ export const rateCardSchema = z
     })
   })
 export type RateCardFormValues = z.infer<typeof rateCardSchema>
+
+// ---- shipments ----
+
+export const shipmentSchema = z.object({
+  providerId: z.string().min(1, 'Choose the courier.'),
+  serviceId: z.string(),
+  orderReference: z
+    .string()
+    .trim()
+    .min(1, 'Order reference is required.')
+    .max(60, 'At most 60 characters.'),
+  awb: z
+    .string()
+    .trim()
+    .regex(
+      /^[A-Za-z0-9-]{4,40}$/,
+      'Enter the tracking number (AWB): 4 to 40 letters, digits or hyphens.',
+    ),
+  destinationCountry: z
+    .string()
+    .regex(COUNTRY, 'Choose the destination country.'),
+  destinationCity: z.string().trim().max(100, 'At most 100 characters.'),
+  weightKg: optional(KG, 'Enter kilograms, e.g. 1.4.').refine(
+    (v) => v === '' || positive(v, 3),
+    'Weight must be more than 0.',
+  ),
+  courierCost: optional(MONEY, 'Enter an amount like 550 or 550.50.'),
+  bookedAt: z.string(),
+})
+export type ShipmentFormValues = z.infer<typeof shipmentSchema>
+
+export const trackingUpdateSchema = z.object({
+  status: z.string().min(1, 'Choose the new status.'),
+  occurredAt: z.string(),
+  location: z.string().trim().max(100, 'At most 100 characters.'),
+  note: z.string().trim().max(500, 'At most 500 characters.'),
+})
+export type TrackingUpdateFormValues = z.infer<typeof trackingUpdateSchema>

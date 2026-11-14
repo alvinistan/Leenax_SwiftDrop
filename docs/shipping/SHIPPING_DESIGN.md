@@ -381,3 +381,68 @@ Each phase follows the usual workflow (plan, implement, test, report, commit, wa
 2. Replace the "(example)" boxes with your real box sizes.
 3. Confirm the volumetric divisor and rounding with DEX (and DHL later), then tick "confirmed".
 4. Check the pickup address. Block countries that refuse food imports (especially dried fish) for shelf-stable food.
+
+## 16. Phase E — DEX manual courier: manual booking and tracking (done 2026-11-14)
+
+![A shipment with its tracking history](../phase-reports/images/shipping-e-shipment-detail.png)
+
+**Why it is shaped this way**
+- Orders don't exist yet (master Phase 8), so a shipment carries the owner's **own order reference as text**, e.g. from WhatsApp or phone orders. Phase F will link shipments to real orders.
+- **No customer name, phone or address** is stored. That stays in the courier's portal.
+- Nothing is sent to DEX and no booking is ever claimed by SwiftDrop: the admin books on the courier's portal or at its office, then records the AWB here.
+- No DEX tracking address is assumed. The admin may paste the link format from the courier's official website, with `{awb}` where the number goes.
+
+**Built (backend)**
+- **Courier capabilities as data:**
+  - `ProviderCapability` values: `RATE_CARD`, `LIVE_RATES`, `MANUAL_BOOKING`, `MANUAL_TRACKING`, `TRACKING_LINK`.
+  - The `CourierProvider` interface, with `DexManualProvider` and `DhlExpressProvider`, plus `CourierProviderRegistry`.
+  - Both couriers are manual until an API is verified. In Phase D, DHL adds its verified capabilities in one place.
+- `V11__create_shipments.sql`:
+  - `courier_providers.tracking_url_template`: must be https and contain `{awb}`.
+  - `shipments`: the AWB is unique per courier, stored in capitals, 4–40 letters, digits or hyphens. Also courier cost, `booking_method`, and `@Version` optimistic locking.
+  - `shipment_tracking_events`: never edited.
+- **`TrackingStatus` steps** (the same status may repeat, e.g. a new "in transit" location):
+  - BOOKED / LABEL_CREATED → label, pick-up, exception or **cancelled**.
+  - Once **picked up**, a parcel can only move on (in transit, customs, out for delivery, delivered, exception) or be **returned**. It can't be cancelled.
+  - DELIVERED, RETURNED and CANCELLED are final.
+  - Updates must be in **time order** and can't be in the future (5-minute allowance).
+- Admin API `/api/admin/shipping/shipments`:
+  - search (order reference or AWB, status, courier; paged, newest first)
+  - get, record (POST), correct details (PUT)
+  - `POST /{id}/tracking`
+  - The courier must be turned on and capable of manual booking. A service must belong to that courier.
+  - Duplicate AWB → 409. Two people saving at the same moment → 409 (nothing is overwritten).
+- Shipment creation and corrections are recorded in Change history. Tracking events are their own history and record who entered them.
+
+**Built (admin UI)**
+- **Shipments**: a list with search, a status filter and paging.
+- **Record shipment**: only couriers that are on and can be booked by hand.
+- **Shipment page**:
+  - details, with a "Track on the courier's website" link when a link format is set;
+  - the tracking history timeline;
+  - the "Add a tracking update" form, which offers only the statuses allowed next.
+- **Couriers**: shows "What SwiftDrop can do" for each courier, and has the tracking link format field.
+
+![Courier capabilities](../phase-reports/images/shipping-e-courier-capabilities.png)
+
+**Verified**
+- Backend: **110 tests**. New ones:
+  - 7 unit tests for the tracking rules;
+  - 8 integration tests: the full DEX flow to delivered, duplicate AWB, a corrected AWB is audited, a turned-off courier is refused, input checks (AWB format, unknown country, future time, another courier's service), time order, capabilities and tracking link, 403/404.
+- Frontend: **112 tests**. Lint, types and build are clean.
+- Browser against PostgreSQL (V11 applied on an existing V10 database):
+  - set the link format, record a shipment (lower-case AWB stored in capitals), mark it picked up, then in transit;
+  - "Cancelled" is no longer offered after pick-up; delivered closes the form;
+  - a duplicate AWB is refused with a clear message;
+  - phone width has no sideways scrolling;
+  - the only console error is the expected 409.
+
+**Not built yet**
+- Linking to website orders, customer tracking page, automatic booking and dispatch rules (Phases F/G).
+- Labels and API booking/tracking (Phase D for DHL; DEX only if DEX grants API access).
+- Courier invoices and margin reports (Phases F/H). The courier charge per shipment is stored now for them.
+
+**Owner actions**
+1. Optional: copy the tracking page link format from DEX's official website into Couriers → DEX.
+2. Record your next DEX parcel and update it as DEX's tracking page changes.
+

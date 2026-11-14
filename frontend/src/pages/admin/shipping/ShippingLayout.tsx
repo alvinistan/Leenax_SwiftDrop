@@ -3,6 +3,7 @@ import { cn } from '../../../lib/cn'
 
 const links = [
   { to: '/admin/shipping', label: 'Overview', end: true },
+  { to: '/admin/shipping/shipments', label: 'Shipments' },
   { to: '/admin/shipping/providers', label: 'Couriers' },
   { to: '/admin/shipping/rate-cards', label: 'Rate cards' },
   { to: '/admin/shipping/markup', label: 'Platform fee' },

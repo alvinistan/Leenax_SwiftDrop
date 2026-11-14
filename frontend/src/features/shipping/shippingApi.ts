@@ -45,11 +45,22 @@ export type CourierProvider = {
   rulesVerified: boolean
   notes: string | null
   services: CourierService[]
+  /** "Track on the courier's website" link format with {awb}, or null. */
+  trackingUrlTemplate: string | null
+  /** What SwiftDrop can do with this courier. */
+  capabilities: ProviderCapability[]
 }
+
+export type ProviderCapability =
+  | 'RATE_CARD'
+  | 'LIVE_RATES'
+  | 'MANUAL_BOOKING'
+  | 'MANUAL_TRACKING'
+  | 'TRACKING_LINK'
 
 export type ProviderInput = Omit<
   CourierProvider,
-  'id' | 'code' | 'name' | 'services'
+  'id' | 'code' | 'name' | 'services' | 'capabilities'
 > & { services: { id: string; enabled: boolean }[] }
 
 export type BoxPreset = {
@@ -328,6 +339,163 @@ export async function listAudit(
       params: { page, size, entityType: entityType || undefined },
       signal,
     })
+  ).data
+}
+
+// ---- shipments (manual booking and tracking) ----
+
+export type TrackingStatus =
+  | 'BOOKED'
+  | 'LABEL_CREATED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'CUSTOMS_CLEARANCE'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'EXCEPTION'
+  | 'RETURNED'
+  | 'CANCELLED'
+
+export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
+  BOOKED: 'Booked',
+  LABEL_CREATED: 'Label created',
+  PICKED_UP: 'Picked up',
+  IN_TRANSIT: 'In transit',
+  CUSTOMS_CLEARANCE: 'Customs clearance',
+  OUT_FOR_DELIVERY: 'Out for delivery',
+  DELIVERED: 'Delivered',
+  EXCEPTION: 'Problem (exception)',
+  RETURNED: 'Returned',
+  CANCELLED: 'Cancelled',
+}
+
+/** Display order for menus (the server decides which ones are allowed). */
+export const TRACKING_STATUSES = Object.keys(
+  TRACKING_STATUS_LABELS,
+) as TrackingStatus[]
+
+export type ShipmentSummary = {
+  id: string
+  orderReference: string
+  awb: string
+  providerCode: string
+  providerName: string
+  destinationCountry: string
+  destinationCity: string | null
+  status: TrackingStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export type TrackingEvent = {
+  id: string
+  status: TrackingStatus
+  occurredAt: string
+  location: string | null
+  note: string | null
+  source: 'MANUAL' | 'API'
+  recordedBy: string
+}
+
+export type ShipmentDetail = {
+  id: string
+  providerId: string
+  providerCode: string
+  providerName: string
+  serviceId: string | null
+  serviceName: string | null
+  orderReference: string
+  awb: string
+  destinationCountry: string
+  destinationCity: string | null
+  weightKg: string | null
+  courierCost: Money | null
+  status: TrackingStatus
+  bookingMethod: 'MANUAL' | 'API'
+  trackingUrl: string | null
+  allowedNextStatuses: TrackingStatus[]
+  manualTracking: boolean
+  events: TrackingEvent[]
+  createdBy: string
+  createdAt: string
+}
+
+export type ShipmentDetailsInput = {
+  serviceId: string | null
+  orderReference: string
+  awb: string
+  destinationCountry: string
+  destinationCity: string | null
+  weightKg: string | null
+  courierCost: string | null
+}
+
+export type TrackingUpdateInput = {
+  status: TrackingStatus
+  occurredAt: string | null
+  location: string | null
+  note: string | null
+}
+
+const SHIPMENTS = `${BASE}/shipments`
+
+export async function listShipments(
+  query: {
+    q?: string
+    status?: TrackingStatus
+    providerId?: string
+    page?: number
+    size?: number
+  },
+  signal?: AbortSignal,
+) {
+  const { q, status, providerId, page = 0, size = 20 } = query
+  return (
+    await http.get<Page<ShipmentSummary>>(SHIPMENTS, {
+      params: {
+        q: q || undefined,
+        status: status || undefined,
+        providerId: providerId || undefined,
+        page,
+        size,
+      },
+      signal,
+    })
+  ).data
+}
+
+export async function getShipment(shipmentId: string, signal?: AbortSignal) {
+  return (
+    await http.get<ShipmentDetail>(`${SHIPMENTS}/${id(shipmentId)}`, { signal })
+  ).data
+}
+
+export async function createShipment(input: {
+  providerId: string
+  bookedAt: string | null
+  details: ShipmentDetailsInput
+}) {
+  return (await http.post<ShipmentDetail>(SHIPMENTS, input)).data
+}
+
+export async function updateShipment(
+  shipmentId: string,
+  input: ShipmentDetailsInput,
+) {
+  return (
+    await http.put<ShipmentDetail>(`${SHIPMENTS}/${id(shipmentId)}`, input)
+  ).data
+}
+
+export async function addTrackingUpdate(
+  shipmentId: string,
+  input: TrackingUpdateInput,
+) {
+  return (
+    await http.post<ShipmentDetail>(
+      `${SHIPMENTS}/${id(shipmentId)}/tracking`,
+      input,
+    )
   ).data
 }
 

@@ -9,7 +9,9 @@ import type {
   QuoteRequest,
   RateCard,
   RateCardInput,
+  ShipmentDetail,
   ShippingSettings,
+  TrackingStatus,
   SimulatedQuote,
 } from '../features/shipping/shippingApi'
 import { API, apiEmpty, apiJson } from './apiResponses'
@@ -48,6 +50,8 @@ function initialProviders(): CourierProvider[] {
       weightRoundingIncrementKg: '1',
       rulesVerified: false,
       notes: null,
+      trackingUrlTemplate: null,
+      capabilities: ['MANUAL_BOOKING', 'MANUAL_TRACKING', 'RATE_CARD'],
       services: [
         {
           id: DEX_SERVICE_ID,
@@ -68,6 +72,8 @@ function initialProviders(): CourierProvider[] {
       weightRoundingIncrementKg: '0.5',
       rulesVerified: false,
       notes: null,
+      trackingUrlTemplate: null,
+      capabilities: ['MANUAL_BOOKING', 'MANUAL_TRACKING'],
       services: [
         {
           id: 'svc-dhl-intl',
@@ -151,6 +157,97 @@ let boxes = initialBoxes()
 let cards: RateCard[] = []
 let audit: AuditEntry[] = []
 let productRestrictions: ProductRestriction[] = []
+let shipments: ShipmentDetail[] = []
+
+/** Same steps as the server's TrackingStatus.allowedNext(). */
+const NEXT: Record<TrackingStatus, TrackingStatus[]> = {
+  BOOKED: ['BOOKED', 'LABEL_CREATED', 'PICKED_UP', 'EXCEPTION', 'CANCELLED'],
+  LABEL_CREATED: ['LABEL_CREATED', 'PICKED_UP', 'EXCEPTION', 'CANCELLED'],
+  PICKED_UP: [
+    'IN_TRANSIT',
+    'CUSTOMS_CLEARANCE',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+    'EXCEPTION',
+    'RETURNED',
+  ],
+  IN_TRANSIT: [
+    'IN_TRANSIT',
+    'CUSTOMS_CLEARANCE',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+    'EXCEPTION',
+    'RETURNED',
+  ],
+  CUSTOMS_CLEARANCE: [
+    'IN_TRANSIT',
+    'CUSTOMS_CLEARANCE',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+    'EXCEPTION',
+    'RETURNED',
+  ],
+  OUT_FOR_DELIVERY: [
+    'IN_TRANSIT',
+    'CUSTOMS_CLEARANCE',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+    'EXCEPTION',
+    'RETURNED',
+  ],
+  EXCEPTION: [
+    'IN_TRANSIT',
+    'CUSTOMS_CLEARANCE',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+    'EXCEPTION',
+    'RETURNED',
+  ],
+  DELIVERED: [],
+  RETURNED: [],
+  CANCELLED: [],
+}
+
+/** Adds a shipment as the server would store it; returns it. */
+export function seedShipment(
+  overrides: Partial<ShipmentDetail> = {},
+): ShipmentDetail {
+  const shipment: ShipmentDetail = {
+    id: `ship-${shipments.length + 1}`,
+    providerId: 'prov-dex',
+    providerCode: 'DEX',
+    providerName: 'DEX',
+    serviceId: null,
+    serviceName: null,
+    orderReference: 'WA-1001',
+    awb: 'DEX12345',
+    destinationCountry: 'LK',
+    destinationCity: 'Colombo',
+    weightKg: '1.4',
+    courierCost: null,
+    status: 'BOOKED',
+    bookingMethod: 'MANUAL',
+    trackingUrl: null,
+    allowedNextStatuses: NEXT.BOOKED,
+    manualTracking: true,
+    events: [
+      {
+        id: 'ev-1',
+        status: 'BOOKED',
+        occurredAt: '2026-11-14T08:00:00Z',
+        location: null,
+        note: "Booked on the courier's portal",
+        source: 'MANUAL',
+        recordedBy: 'owner@example.com',
+      },
+    ],
+    createdBy: 'owner@example.com',
+    createdAt: '2026-11-14T08:00:00Z',
+    ...overrides,
+  }
+  shipments = [...shipments, shipment]
+  return shipment
+}
 
 export function seedProductRestrictions(list: ProductRestriction[]) {
   productRestrictions = list
@@ -163,7 +260,17 @@ export const sent: {
   markupRules: unknown[]
   settings: ShippingSettings[]
   quotes: QuoteRequest[]
-} = { policies: [], rateCards: [], markupRules: [], settings: [], quotes: [] }
+  shipments: unknown[]
+  tracking: unknown[]
+} = {
+  policies: [],
+  rateCards: [],
+  markupRules: [],
+  settings: [],
+  quotes: [],
+  shipments: [],
+  tracking: [],
+}
 
 /** What the simulator endpoint answers (tests may replace it). */
 export let simulatedQuote: SimulatedQuote | undefined
@@ -185,12 +292,15 @@ export function resetMockShipping() {
   cards = []
   audit = []
   productRestrictions = []
+  shipments = []
   simulatedQuote = undefined
   sent.policies = []
   sent.rateCards = []
   sent.markupRules = []
   sent.settings = []
   sent.quotes = []
+  sent.shipments = []
+  sent.tracking = []
 }
 
 const validation = (field: string, message: string) =>
@@ -307,5 +417,97 @@ export const shippingHandlers = [
       totalElements: content.length,
       totalPages: 1,
     })
+  }),
+  http.get(`${BASE}/shipments`, ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q')?.toLowerCase()
+    const status = url.searchParams.get('status')
+    const content = shipments
+      .filter((sh) => !status || sh.status === status)
+      .filter(
+        (sh) =>
+          !q ||
+          sh.awb.toLowerCase().includes(q) ||
+          sh.orderReference.toLowerCase().includes(q),
+      )
+      .map((sh) => ({ ...sh, updatedAt: sh.createdAt }))
+    return apiJson({
+      content,
+      page: 0,
+      size: 20,
+      totalElements: content.length,
+      totalPages: 1,
+    })
+  }),
+  http.get(`${BASE}/shipments/:id`, ({ params }) => {
+    const found = shipments.find((sh) => sh.id === params.id)
+    return found
+      ? apiJson(found)
+      : apiJson(
+          { title: 'Not Found', status: 404, detail: 'Shipment not found' },
+          { status: 404 },
+        )
+  }),
+  http.post(`${BASE}/shipments`, async ({ request }) => {
+    const body = (await request.json()) as {
+      providerId: string
+      details: {
+        awb: string
+        orderReference: string
+        destinationCountry: string
+      }
+    }
+    sent.shipments.push(body)
+    const awb = body.details.awb.toUpperCase()
+    if (shipments.some((sh) => sh.awb === awb)) {
+      return apiJson(
+        {
+          title: 'Conflict',
+          status: 409,
+          detail: 'This DEX tracking number is already recorded.',
+        },
+        { status: 409 },
+      )
+    }
+    const { courierCost, ...details } = body.details as typeof body.details & {
+      courierCost: string | null
+    }
+    const created = seedShipment({
+      ...details,
+      courierCost: courierCost
+        ? { amount: Number(courierCost).toFixed(2), currency: 'LKR' }
+        : null,
+      awb,
+      providerId: body.providerId,
+    } as Partial<ShipmentDetail>)
+    return apiJson(created, { status: 201 })
+  }),
+  http.post(`${BASE}/shipments/:id/tracking`, async ({ params, request }) => {
+    const body = (await request.json()) as {
+      status: TrackingStatus
+      location: string | null
+      note: string | null
+    }
+    sent.tracking.push(body)
+    const shipment = shipments.find((sh) => sh.id === params.id)!
+    const updated: ShipmentDetail = {
+      ...shipment,
+      status: body.status,
+      allowedNextStatuses: NEXT[body.status],
+      events: [
+        ...shipment.events,
+        {
+          id: `ev-${shipment.events.length + 1}`,
+          status: body.status,
+          occurredAt: '2026-11-14T10:00:00Z',
+          location: body.location,
+          note: body.note,
+          source: 'MANUAL',
+          recordedBy: 'owner@example.com',
+        },
+      ],
+    }
+    shipments = shipments.map((sh) => (sh.id === updated.id ? updated : sh))
+    return apiJson(updated)
   }),
 ]
