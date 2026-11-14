@@ -1,5 +1,6 @@
-import { Ban, Globe2, Search, X } from 'lucide-react'
-import { useId, useMemo, useState } from 'react'
+import { Globe2 } from 'lucide-react'
+import { useId, useState } from 'react'
+import { Link } from 'react-router'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
@@ -8,11 +9,13 @@ import { ErrorState } from '../../../components/ui/ErrorState'
 import type { ShippingCategory } from '../../../features/admin/adminProductApi'
 import {
   listCategoryPolicies,
+  listProductRestrictions,
   SHIPPING_CATEGORY_LABELS,
   updateCategoryPolicy,
   type CategoryPolicy,
   type Country,
 } from '../../../features/shipping/shippingApi'
+import { CountryBlockPicker } from '../../../features/shipping/CountryBlockPicker'
 import {
   StatusMessage,
   type Message,
@@ -20,8 +23,6 @@ import {
 import { useCountries } from '../../../features/shipping/useCountries'
 import { useAsync } from '../../../hooks/useAsync'
 import { userMessage } from '../../../lib/errors'
-
-const MAX_RESULTS = 8
 
 /**
  * Where each kind of product may be sent: international on/off, plus
@@ -75,6 +76,10 @@ export function CountryRestrictionsPage() {
             />
           ))}
       </div>
+
+      {countryState.status === 'success' && (
+        <ProductRestrictions nameOf={nameOf} />
+      )}
     </>
   )
 }
@@ -93,38 +98,14 @@ function PolicyCard({ policy, countries, nameOf }: PolicyCardProps) {
   const [blocked, setBlocked] = useState<string[]>(
     [...policy.blockedCountries].sort(),
   )
-  const [query, setQuery] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<Message>()
   const headingId = useId()
-  const searchId = useId()
   const label = SHIPPING_CATEGORY_LABELS[policy.category as ShippingCategory]
 
   const isDirty =
     international !== saved.internationalAllowed ||
     blocked.join() !== [...saved.blockedCountries].sort().join()
-
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return countries
-      .filter((c) => c.code !== 'LK' && !blocked.includes(c.code))
-      .filter(
-        (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase() === q,
-      )
-      .slice(0, MAX_RESULTS)
-  }, [countries, blocked, query])
-
-  function block(code: string) {
-    setBlocked((current) => [...current, code].sort())
-    setQuery('')
-    setMessage(undefined)
-  }
-
-  function unblock(code: string) {
-    setBlocked((current) => current.filter((c) => c !== code))
-    setMessage(undefined)
-  }
 
   async function save() {
     setIsSaving(true)
@@ -148,7 +129,6 @@ function PolicyCard({ policy, countries, nameOf }: PolicyCardProps) {
   function reset() {
     setInternational(saved.internationalAllowed)
     setBlocked([...saved.blockedCountries].sort())
-    setQuery('')
     setMessage(undefined)
   }
 
@@ -191,79 +171,16 @@ function PolicyCard({ policy, countries, nameOf }: PolicyCardProps) {
         )}
 
         {international && (
-          <div className="relative mt-2 max-w-md">
-            <label htmlFor={searchId} className="sr-only">
-              Find a country to block for {label}
-            </label>
-            <Search
-              className="pointer-events-none absolute top-3 left-3 size-5 text-slate-400"
-              aria-hidden="true"
-            />
-            <input
-              id={searchId}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Find a country to block…"
-              autoComplete="off"
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white pr-3 pl-10 text-slate-900 placeholder:text-slate-400"
-            />
-            {query.trim() && (
-              <ul
-                aria-label="Matching countries"
-                className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white"
-              >
-                {results.length === 0 && (
-                  <li className="px-3 py-2 text-sm text-slate-500">
-                    No matching country (or it is already blocked).
-                  </li>
-                )}
-                {results.map((country) => (
-                  <li key={country.code}>
-                    <button
-                      type="button"
-                      onClick={() => block(country.code)}
-                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50"
-                    >
-                      <span>
-                        {country.name}{' '}
-                        <span className="text-slate-500">({country.code})</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-semibold text-red-700">
-                        <Ban className="size-4" aria-hidden="true" />
-                        Block <span className="sr-only">{country.name}</span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {blocked.length === 0 ? (
-          international && (
-            <p className="mt-3 text-sm text-slate-500">No countries blocked.</p>
-          )
-        ) : (
-          <ul className="mt-3 flex flex-wrap gap-2" aria-label="Blocked">
-            {blocked.map((code) => (
-              <li
-                key={code}
-                className="inline-flex items-center gap-1 rounded-full bg-red-50 py-1 pr-1 pl-3 text-sm font-medium text-red-800"
-              >
-                {nameOf(code)}
-                <button
-                  type="button"
-                  onClick={() => unblock(code)}
-                  aria-label={`Unblock ${nameOf(code)}`}
-                  className="rounded-full p-1 hover:bg-red-100 disabled:opacity-50"
-                >
-                  <X className="size-3.5" aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <CountryBlockPicker
+            value={blocked}
+            onChange={(codes) => {
+              setBlocked(codes)
+              setMessage(undefined)
+            }}
+            countries={countries}
+            nameOf={nameOf}
+            subject={label}
+          />
         )}
       </fieldset>
 
@@ -285,5 +202,70 @@ function PolicyCard({ policy, countries, nameOf }: PolicyCardProps) {
         )}
       </div>
     </Card>
+  )
+}
+
+/** Products restricted one by one (edited in the product form, not here). */
+function ProductRestrictions({ nameOf }: { nameOf: (code: string) => string }) {
+  const { state, retry } = useAsync(
+    (signal) => listProductRestrictions(signal),
+    'shipping-product-restrictions',
+  )
+  return (
+    <section aria-labelledby="product-restrictions-heading" className="mt-10">
+      <h2
+        id="product-restrictions-heading"
+        className="text-lg font-semibold text-slate-900"
+      >
+        Products with their own restrictions
+      </h2>
+      <p className="mt-1 max-w-3xl text-sm text-slate-600">
+        When only some products in a category are refused by a country (for
+        example dried fish but not rich cake), restrict those products instead
+        of the whole category: open the product and use &quot;Where this product
+        may be sent&quot;. A product can only add restrictions to its
+        category&apos;s rules.
+      </p>
+      <div className="mt-4">
+        {state.status === 'loading' && (
+          <p className="text-slate-600">Loading products…</p>
+        )}
+        {state.status === 'error' && (
+          <ErrorState description={userMessage(state.error)} onRetry={retry} />
+        )}
+        {state.status === 'success' && state.data.length === 0 && (
+          <p className="text-sm text-slate-500">
+            No product has its own restrictions.
+          </p>
+        )}
+        {state.status === 'success' && state.data.length > 0 && (
+          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+            {state.data.map((p) => (
+              <li
+                key={p.productId}
+                className="flex flex-wrap items-center justify-between gap-3 p-4"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900">
+                    {p.productName}
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    {p.domesticOnly
+                      ? 'Sri Lanka only'
+                      : `Blocked: ${p.blockedCountries.map(nameOf).join(', ')}`}
+                  </p>
+                </div>
+                <Link
+                  to={`/admin/products/${p.productId}/edit`}
+                  className="text-sm font-semibold text-brand-800 hover:underline"
+                >
+                  Edit <span className="sr-only">{p.productName}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   )
 }

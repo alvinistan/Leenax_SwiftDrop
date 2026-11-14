@@ -5,6 +5,7 @@ import { logInMockAdmin, seedCategory, seedProduct } from './test/mockAdminApi'
 import {
   DEX_SERVICE_ID,
   seedAudit,
+  seedProductRestrictions,
   sent,
   setSimulatedQuote,
 } from './test/mockShippingApi'
@@ -132,6 +133,32 @@ describe('country restrictions', () => {
 
     expect(within(card).getByText('Blocked countries (0)')).toBeInTheDocument()
     expect(sent.policies).toHaveLength(0)
+  })
+})
+
+describe('product restrictions on the country restrictions page', () => {
+  it('lists products that have their own restrictions', async () => {
+    logInMockAdmin()
+    seedProductRestrictions([
+      {
+        productId: 'prod-9',
+        productName: 'Dried fish',
+        category: 'FOOD_SHELF_STABLE',
+        domesticOnly: false,
+        blockedCountries: ['AU', 'CA'],
+      },
+    ])
+    renderRoute('/admin/shipping/restrictions')
+
+    const section = await screen.findByRole('region', {
+      name: 'Products with their own restrictions',
+    })
+    expect(
+      await within(section).findByText('Blocked: Australia, Canada'),
+    ).toBeInTheDocument()
+    expect(
+      within(section).getByRole('link', { name: 'Edit Dried fish' }),
+    ).toHaveAttribute('href', '/admin/products/prod-9/edit')
   })
 })
 

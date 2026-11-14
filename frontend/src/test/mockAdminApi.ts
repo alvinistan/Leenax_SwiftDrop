@@ -46,6 +46,8 @@ function toDetail(id: string, input: ProductInput): AdminProductDetail {
     hsCode: input.hsCode,
     countryOfOrigin: input.countryOfOrigin,
     customsDescription: input.customsDescription,
+    shippingDomesticOnly: input.shippingDomesticOnly ?? false,
+    shippingBlockedCountries: input.shippingBlockedCountries ?? [],
     variants: input.variants.map((v, i) => ({
       id:
         v.id ?? `${id}-var-${i + 1}-${Math.random().toString(36).slice(2, 6)}`,

@@ -1,7 +1,9 @@
 package lk.swiftdrop.catalog.product;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,10 +19,13 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import lk.swiftdrop.catalog.category.Category;
 import org.hibernate.annotations.CreationTimestamp;
@@ -82,6 +87,16 @@ public class Product {
     @Column(name = "customs_description", length = 200)
     private String customsDescription;
 
+    /** This product goes to the origin country (Sri Lanka) only, whatever its shipping category allows. */
+    @Column(name = "shipping_domestic_only", nullable = false)
+    private boolean shippingDomesticOnly;
+
+    /** Countries this product may not be sent to, on top of its shipping category's blocked countries. */
+    @ElementCollection
+    @CollectionTable(name = "product_shipping_blocked_countries", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "country_code", length = 2, nullable = false)
+    private Set<String> shippingBlockedCountries = new TreeSet<>();
+
     /**
      * Optimistic locking: Hibernate adds "WHERE version = ?" to every UPDATE. If
      * another transaction changed the row first, the update fails instead of
@@ -132,6 +147,30 @@ public class Product {
         this.hsCode = hsCode;
         this.countryOfOrigin = countryOfOrigin;
         this.customsDescription = customsDescription;
+    }
+
+    /** Product-level restrictions. They only ADD to the category's rules. */
+    public void updateShippingRestrictions(boolean domesticOnly, Collection<String> blockedCountries) {
+        this.shippingDomesticOnly = domesticOnly;
+        this.shippingBlockedCountries.clear();
+        this.shippingBlockedCountries.addAll(blockedCountries);
+    }
+
+    /** May this product (by its own rules) be delivered to the destination? */
+    public boolean shippingAllows(String destinationCountry, boolean domestic) {
+        if (domestic) {
+            return true;
+        }
+        return !shippingDomesticOnly && !shippingBlockedCountries.contains(destinationCountry);
+    }
+
+    public boolean isShippingDomesticOnly() {
+        return shippingDomesticOnly;
+    }
+
+    /** Sorted A–Z. */
+    public List<String> getShippingBlockedCountries() {
+        return List.copyOf(new TreeSet<>(shippingBlockedCountries));
     }
 
     /** Ready for shipping quotes: every active variant has a shipping weight. */

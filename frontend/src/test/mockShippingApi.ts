@@ -5,6 +5,7 @@ import type {
   CategoryPolicy,
   CourierProvider,
   MarkupRule,
+  ProductRestriction,
   QuoteRequest,
   RateCard,
   RateCardInput,
@@ -149,6 +150,11 @@ let rules = initialRules()
 let boxes = initialBoxes()
 let cards: RateCard[] = []
 let audit: AuditEntry[] = []
+let productRestrictions: ProductRestriction[] = []
+
+export function seedProductRestrictions(list: ProductRestriction[]) {
+  productRestrictions = list
+}
 
 /** Bodies of requests the pages sent, newest last. */
 export const sent: {
@@ -178,6 +184,7 @@ export function resetMockShipping() {
   boxes = initialBoxes()
   cards = []
   audit = []
+  productRestrictions = []
   simulatedQuote = undefined
   sent.policies = []
   sent.rateCards = []
@@ -206,6 +213,7 @@ export const shippingHandlers = [
     return apiJson(settings)
   }),
   http.get(`${BASE}/countries`, () => apiJson(COUNTRIES)),
+  http.get(`${BASE}/product-restrictions`, () => apiJson(productRestrictions)),
   http.get(`${BASE}/providers`, () => apiJson(providers)),
   http.put(`${BASE}/providers/:id`, async ({ params, request }) => {
     const body = (await request.json()) as CourierProvider

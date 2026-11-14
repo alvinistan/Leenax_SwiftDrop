@@ -169,6 +169,64 @@ describe('admin products', () => {
     })
   })
 
+  it('restricts one product without restricting its whole category', async () => {
+    setUp()
+    const product = mock.seedProduct(cake())
+    renderRoute(`/admin/products/${product.id}/edit`)
+
+    const where = await screen.findByRole('group', {
+      name: 'Where this product may be sent',
+    })
+    await userEvent.type(
+      within(where).getByLabelText(/Find a country to block/),
+      'austral',
+    )
+    await userEvent.click(
+      within(where).getByRole('button', { name: /Block Australia/ }),
+    )
+    expect(
+      within(where).getByRole('button', { name: 'Unblock Australia' }),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() =>
+      expect(mock.lastProductRequest).toMatchObject({
+        shippingDomesticOnly: false,
+        shippingBlockedCountries: ['AU'],
+      }),
+    )
+  })
+
+  it('can make one product Sri Lanka only', async () => {
+    setUp()
+    const product = mock.seedProduct({
+      ...cake(),
+      shippingBlockedCountries: ['AU'],
+    })
+    renderRoute(`/admin/products/${product.id}/edit`)
+
+    const where = await screen.findByRole('group', {
+      name: 'Where this product may be sent',
+    })
+    await userEvent.click(
+      within(where).getByRole('checkbox', {
+        name: 'Sri Lanka only (this product)',
+      }),
+    )
+    // The country list is not needed any more
+    expect(
+      within(where).queryByLabelText(/Find a country to block/),
+    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() =>
+      expect(mock.lastProductRequest).toMatchObject({
+        shippingDomesticOnly: true,
+        shippingBlockedCountries: [],
+      }),
+    )
+  })
+
   it('shows the server explanation when a SKU is taken by another product', async () => {
     setUp()
     mock.seedProduct(cake())

@@ -61,6 +61,10 @@ export type AdminProductDetail = {
   hsCode: string | null
   countryOfOrigin: string
   customsDescription: string | null
+  /** Sri Lanka only for this product, whatever its category allows. */
+  shippingDomesticOnly: boolean
+  /** Extra blocked countries for this product (on top of its category's). */
+  shippingBlockedCountries: string[]
 }
 
 /**
@@ -94,6 +98,10 @@ export type ProductInput = {
   hsCode: string | null
   countryOfOrigin: string
   customsDescription: string | null
+  /** Sri Lanka only for this product, whatever its category allows. */
+  shippingDomesticOnly?: boolean
+  /** Extra blocked countries for this product (on top of its category's). */
+  shippingBlockedCountries?: string[]
 }
 
 export type AdminProductQuery = {

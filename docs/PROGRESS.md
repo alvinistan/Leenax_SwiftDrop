@@ -11,7 +11,8 @@ Running log so work can resume at any time. Newest entry first.
   - Parcel, chargeable-weight and fee engines
   - Admin "Shipping" menu with 8 pages, including **Country restrictions**
   - Public quote API that shows the customer price only
-  - 92 backend + 102 frontend tests; browser end-to-end verified
+  - Owner feedback: restrictions for single products (Sri Lanka only, or extra blocked countries) on top of the category rules (Flyway V10)
+  - 95 backend + 105 frontend tests; browser end-to-end verified
 - **Owner action:** enter the real DEX price list; replace the example boxes; confirm courier weight rules; block countries that refuse food imports
 - **Details:** [shipping/SHIPPING_DESIGN.md §15](shipping/SHIPPING_DESIGN.md)
 

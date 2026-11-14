@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lk.swiftdrop.catalog.product.ProductRepository;
 import lk.swiftdrop.catalog.product.ShippingCategory;
 import lk.swiftdrop.common.error.BadRequestException;
 import lk.swiftdrop.common.error.ConflictException;
@@ -17,6 +18,7 @@ import lk.swiftdrop.shipping.config.ShippingConfigDtos.CategoryPolicyRequest;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.CategoryPolicyResponse;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.PresetRequest;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.PresetResponse;
+import lk.swiftdrop.shipping.config.ShippingConfigDtos.ProductRestrictionResponse;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.ProviderResponse;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.ProviderUpdateRequest;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.ServiceToggle;
@@ -35,10 +37,12 @@ public class ShippingConfigService {
     private final PackagePresetRepository presets;
     private final ShippingCategoryPolicyRepository policies;
     private final ShippingAuditService audit;
+    private final ProductRepository products;
 
     public ShippingConfigService(ShippingSettingsRepository settings, CourierProviderRepository providers,
                                  PackagePresetRepository presets, ShippingCategoryPolicyRepository policies,
-                                 ShippingAuditService audit) {
+                                 ShippingAuditService audit, ProductRepository products) {
+        this.products = products;
         this.settings = settings;
         this.providers = providers;
         this.presets = presets;
@@ -155,6 +159,14 @@ public class ShippingConfigService {
         CategoryPolicyResponse after = CategoryPolicyResponse.from(policy);
         audit.record("COUNTRY_RESTRICTIONS", category, Action.UPDATE, before, after);
         return after;
+    }
+
+    /** Products whose own rules restrict them further (edited in the product form). */
+    public List<ProductRestrictionResponse> listProductRestrictions() {
+        return products.findWithOwnShippingRestrictions().stream()
+                .map(p -> new ProductRestrictionResponse(p.getId(), p.getName(), p.getShippingCategory(),
+                        p.isShippingDomesticOnly(), p.getShippingBlockedCountries()))
+                .toList();
     }
 
     static void requireCountry(String code) {

@@ -17,6 +17,7 @@ import lk.swiftdrop.shipping.config.ShippingConfigDtos.CategoryPolicyRequest;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.CategoryPolicyResponse;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.PresetRequest;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.PresetResponse;
+import lk.swiftdrop.shipping.config.ShippingConfigDtos.ProductRestrictionResponse;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.ProviderResponse;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.ProviderUpdateRequest;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.SettingsRequest;
@@ -145,6 +146,11 @@ public class AdminShippingController {
     public ResponseEntity<CategoryPolicyResponse> updateCategoryPolicy(@PathVariable ShippingCategory category,
                                                                        @Valid @RequestBody CategoryPolicyRequest request) {
         return ResponseEntity.ok(config.updateCategoryPolicy(category, request));
+    }
+
+    @GetMapping("/product-restrictions")
+    public ResponseEntity<List<ProductRestrictionResponse>> productRestrictions() {
+        return ResponseEntity.ok(config.listProductRestrictions());
     }
 
     // ---- platform fee ----

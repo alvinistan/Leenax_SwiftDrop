@@ -249,6 +249,23 @@ export async function updateCategoryPolicy(
   ).data
 }
 
+/** A product with its own restrictions, on top of its category's (set in the product form). */
+export type ProductRestriction = {
+  productId: string
+  productName: string
+  category: ShippingCategory
+  domesticOnly: boolean
+  blockedCountries: string[]
+}
+
+export async function listProductRestrictions(signal?: AbortSignal) {
+  return (
+    await http.get<ProductRestriction[]>(`${BASE}/product-restrictions`, {
+      signal,
+    })
+  ).data
+}
+
 // ---- platform fee ----
 
 export async function listMarkupRules(signal?: AbortSignal) {

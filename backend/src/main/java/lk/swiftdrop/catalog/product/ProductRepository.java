@@ -1,5 +1,6 @@
 package lk.swiftdrop.catalog.product;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -56,4 +57,13 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             """)
     Page<Product> searchForAdmin(
             @Param("status") ProductStatus status, @Param("pattern") String pattern, Pageable pageable);
+
+    /** Products with their own shipping restrictions (Sri Lanka only, or extra blocked countries). */
+    @EntityGraph(attributePaths = "shippingBlockedCountries")
+    @Query("""
+            SELECT p FROM Product p
+            WHERE p.shippingDomesticOnly = true OR p.shippingBlockedCountries IS NOT EMPTY
+            ORDER BY p.name
+            """)
+    List<Product> findWithOwnShippingRestrictions();
 }

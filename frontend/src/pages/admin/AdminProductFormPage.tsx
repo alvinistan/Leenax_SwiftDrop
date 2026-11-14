@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import {
+  Controller,
   useFieldArray,
   useForm,
   useWatch,
@@ -30,6 +31,8 @@ import {
   productSchema,
   type ProductFormValues,
 } from '../../features/admin/productSchema'
+import { CountryBlockPicker } from '../../features/shipping/CountryBlockPicker'
+import { useCountries } from '../../features/shipping/useCountries'
 import { useAsync } from '../../hooks/useAsync'
 import { ApiError, NotFoundError, userMessage } from '../../lib/errors'
 import { ProductImagesSection } from '../../features/admin/ProductImagesSection'
@@ -47,6 +50,8 @@ const EMPTY: ProductFormValues = {
   hsCode: '',
   countryOfOrigin: 'LK',
   customsDescription: '',
+  shippingDomesticOnly: false,
+  shippingBlockedCountries: [],
 }
 
 /** The API's product → the form's values (numbers stay exact text). */
@@ -80,6 +85,8 @@ function toFormValues(product: AdminProductDetail): ProductFormValues {
     hsCode: product.hsCode ?? '',
     countryOfOrigin: product.countryOfOrigin,
     customsDescription: product.customsDescription ?? '',
+    shippingDomesticOnly: product.shippingDomesticOnly,
+    shippingBlockedCountries: product.shippingBlockedCountries,
   }
 }
 
@@ -113,6 +120,10 @@ function toInput(values: ProductFormValues): ProductInput {
     hsCode: values.hsCode.trim() || null,
     countryOfOrigin: values.countryOfOrigin.trim(),
     customsDescription: values.customsDescription.trim() || null,
+    shippingDomesticOnly: values.shippingDomesticOnly,
+    shippingBlockedCountries: values.shippingDomesticOnly
+      ? []
+      : values.shippingBlockedCountries,
   }
 }
 
@@ -645,6 +656,66 @@ function ShippingDetailsSection({
           {...register('customsDescription')}
         />
       </div>
+      <ProductShippingRestrictions control={control} register={register} />
     </section>
+  )
+}
+
+/**
+ * Restrictions for THIS product only, on top of its category's rules: for
+ * example dried fish blocked for Australia while rich cake (same category)
+ * may still go there.
+ */
+function ProductShippingRestrictions({
+  control,
+  register,
+}: Pick<ShippingDetailsProps, 'control' | 'register'>) {
+  const domesticOnly = useWatch({ control, name: 'shippingDomesticOnly' })
+  const name = useWatch({ control, name: 'name' })
+  const { state, countries, nameOf } = useCountries()
+  return (
+    <fieldset className="border-t border-slate-100 pt-5">
+      <legend className="font-semibold text-slate-900">
+        Where this product may be sent
+      </legend>
+      <p className="text-sm text-slate-600">
+        This product follows its shipping category&apos;s country rules. Add
+        restrictions here only if this product is refused where others in the
+        category are allowed.
+      </p>
+      <div className="mt-3">
+        <Checkbox
+          label="Sri Lanka only (this product)"
+          hint="Never offer delivery abroad for this product."
+          {...register('shippingDomesticOnly')}
+        />
+      </div>
+      {!domesticOnly && (
+        <div className="mt-4">
+          <p className="text-sm font-medium text-slate-800">
+            Also blocked for this product
+          </p>
+          {state.status === 'error' ? (
+            <p role="alert" className="mt-1 text-sm text-red-700">
+              {userMessage(state.error)}
+            </p>
+          ) : (
+            <Controller
+              control={control}
+              name="shippingBlockedCountries"
+              render={({ field }) => (
+                <CountryBlockPicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  countries={countries}
+                  nameOf={nameOf}
+                  subject={name || 'this product'}
+                />
+              )}
+            />
+          )}
+        </div>
+      )}
+    </fieldset>
   )
 }

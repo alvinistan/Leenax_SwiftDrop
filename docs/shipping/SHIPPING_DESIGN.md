@@ -354,6 +354,22 @@ Each phase follows the usual workflow (plan, implement, test, report, commit, wa
   - the history lists both changes
   - phone width: no sideways scrolling
 
+**Owner feedback: restrict single products, not only whole categories (2026-11-14)**
+
+![Restrictions for one product](../phase-reports/images/shipping-c-product-restriction.png)
+
+- `V10__add_product_shipping_restrictions.sql`:
+  - `products.shipping_domestic_only`
+  - `product_shipping_blocked_countries`
+- In the product form, under **"Where this product may be sent"**:
+  - "Sri Lanka only (this product)";
+  - "Also blocked for this product", using the same country search and chips.
+- The rule: a product **follows its category** and can only **add** restrictions. A country is refused when the category blocks it **or** the product blocks it. A product can never unblock what its category blocks (the safer choice).
+- Example: dried fish blocked for Australia, while rich cake (same category) can still go there. This was verified in the browser and by integration tests.
+- The **Country restrictions** page lists "Products with their own restrictions", with Edit links.
+- Changes are recorded in Change history as "Product restrictions".
+- Tests: backend **95**, frontend **105**.
+
 **Not built yet / limits**
 - DHL live rates (Phase D). Until then, customers abroad get "contact us".
 - Courier rules are placeholders until the owner confirms them with each courier.

@@ -111,4 +111,9 @@ public final class ShippingConfigDtos {
             return new CategoryPolicyResponse(p.getCategory(), p.isInternationalAllowed(), List.copyOf(p.getBlockedCountries()));
         }
     }
+
+    /** A product that has its own restrictions on top of its category's. */
+    public record ProductRestrictionResponse(UUID productId, String productName, ShippingCategory category,
+                                             boolean domesticOnly, List<String> blockedCountries) {
+    }
 }

@@ -115,7 +115,11 @@ public final class AdminProductResponses {
             ShippingCategory shippingCategory,
             String hsCode,
             String countryOfOrigin,
-            String customsDescription) {
+            String customsDescription,
+            /** Sri Lanka only for this product (on top of the category's rules). */
+            boolean shippingDomesticOnly,
+            /** Extra blocked countries for this product, A–Z. */
+            List<String> shippingBlockedCountries) {
 
         static AdminProductDetail from(Product product, Function<String, String> imageUrl) {
             return new AdminProductDetail(
@@ -133,7 +137,9 @@ public final class AdminProductResponses {
                     product.getShippingCategory(),
                     product.getHsCode(),
                     product.getCountryOfOrigin(),
-                    product.getCustomsDescription());
+                    product.getCustomsDescription(),
+                    product.isShippingDomesticOnly(),
+                    product.getShippingBlockedCountries());
         }
     }
 }

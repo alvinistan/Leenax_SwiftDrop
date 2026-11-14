@@ -15,10 +15,14 @@ import lk.swiftdrop.catalog.product.AdminProductResponses.AdminProductDetail;
 import lk.swiftdrop.catalog.product.AdminProductResponses.AdminProductSummary;
 import lk.swiftdrop.catalog.product.ProductResponses.ProductDetail;
 import lk.swiftdrop.catalog.product.ProductResponses.ProductSummary;
+import lk.swiftdrop.common.error.BadRequestException;
 import lk.swiftdrop.common.error.ConflictException;
 import lk.swiftdrop.common.error.ResourceNotFoundException;
 import lk.swiftdrop.common.web.PageResponse;
 import lk.swiftdrop.media.ImageUploads;
+import lk.swiftdrop.shipping.audit.ShippingAuditService.Action;
+import lk.swiftdrop.shipping.audit.ShippingAuditService;
+import lk.swiftdrop.shipping.config.Countries;
 import lk.swiftdrop.store.StoreDefaults;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,13 +36,29 @@ public class ProductService {
     private final ProductVariantRepository variants;
     private final CategoryRepository categories;
     private final ImageUploads imageUploads;
+    private final ShippingAuditService shippingAudit;
 
     public ProductService(ProductRepository products, ProductVariantRepository variants,
-                          CategoryRepository categories, ImageUploads imageUploads) {
+                          CategoryRepository categories, ImageUploads imageUploads,
+                          ShippingAuditService shippingAudit) {
         this.products = products;
         this.variants = variants;
         this.categories = categories;
         this.imageUploads = imageUploads;
+        this.shippingAudit = shippingAudit;
+    }
+
+    /** What the shipping change history shows for a product's own restrictions. */
+    record ShippingRestrictions(String product, boolean domesticOnly, List<String> blockedCountries) {
+
+        static ShippingRestrictions of(Product product) {
+            return new ShippingRestrictions(product.getName(), product.isShippingDomesticOnly(),
+                    product.getShippingBlockedCountries());
+        }
+
+        boolean isEmpty() {
+            return !domesticOnly && blockedCountries.isEmpty();
+        }
     }
 
     // ---- Storefront (customers) ----
@@ -96,7 +116,12 @@ public class ProductService {
             }
             product.addVariant(newVariant(variant, position++));
         }
-        return AdminProductDetail.from(products.save(product), imageUploads::urlFor);
+        Product saved = products.save(product);
+        ShippingRestrictions restrictions = ShippingRestrictions.of(saved);
+        if (!restrictions.isEmpty()) {
+            shippingAudit.record("PRODUCT_RESTRICTIONS", saved.getId(), Action.CREATE, null, restrictions);
+        }
+        return AdminProductDetail.from(saved, imageUploads::urlFor);
     }
 
     /**
@@ -133,7 +158,12 @@ public class ProductService {
                 request.description(),
                 request.status());
 
+        ShippingRestrictions before = ShippingRestrictions.of(product);
         applyShippingDetails(product, request);
+        ShippingRestrictions after = ShippingRestrictions.of(product);
+        if (!before.equals(after)) {
+            shippingAudit.record("PRODUCT_RESTRICTIONS", product.getId(), Action.UPDATE, before, after);
+        }
 
         // Remove first and write that to the database now, so a SKU freed by a removed
         // variant can be reused by a new one in the same request (the database checks
@@ -180,6 +210,13 @@ public class ProductService {
                 blankToNull(request.hsCode()),
                 request.effectiveCountryOfOrigin(),
                 blankToNull(request.customsDescription()));
+        for (String country : request.effectiveShippingBlockedCountries()) {
+            if (!Countries.isValid(country)) {
+                throw new BadRequestException("Unknown country code: " + country);
+            }
+        }
+        product.updateShippingRestrictions(
+                request.effectiveShippingDomesticOnly(), request.effectiveShippingBlockedCountries());
     }
 
     private static String blankToNull(String value) {

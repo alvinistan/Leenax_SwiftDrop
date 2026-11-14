@@ -53,14 +53,20 @@ class ShippingIntegrationTest {
 
     /** An ACTIVE product with one variant: 1.2 kg packed, 10×10×10 cm. Returns the variant id. */
     private String createProduct(String shippingCategory, String status) throws Exception {
+        return createProduct("Rich cake", shippingCategory, status, "");
+    }
+
+    /** @param extraJson extra product fields, e.g. ", \"shippingDomesticOnly\": true" */
+    private String createProduct(String name, String shippingCategory, String status, String extraJson)
+            throws Exception {
         String category = JsonPath.read(send(post("/api/admin/categories"),
                 "{\"name\": \"Shipping test\", \"slug\": \"" + unique("ship") + "\"}", 201), "$.id");
         String product = send(post("/api/admin/products"), """
-                {"categoryId": "%s", "name": "Rich cake", "slug": "%s", "status": "%s",
-                 "shippingCategory": "%s",
+                {"categoryId": "%s", "name": "%s", "slug": "%s", "status": "%s",
+                 "shippingCategory": "%s"%s,
                  "variants": [{"sku": "%s", "price": 2500, "stockQuantity": 10,
                                "shippingWeightKg": 1.2, "lengthCm": 10, "widthCm": 10, "heightCm": 10}]}
-                """.formatted(category, unique("cake"), status, shippingCategory, unique("RC")), 201);
+                """.formatted(category, name, unique("cake"), status, shippingCategory, extraJson, unique("RC")), 201);
         return JsonPath.read(product, "$.variants[0].id");
     }
 
@@ -299,5 +305,51 @@ class ShippingIntegrationTest {
         mockMvc.perform(post("/api/shipping/quotes").with(anonymous())
                         .contentType(MediaType.APPLICATION_JSON).content(quoteJson("LK", UUID.randomUUID().toString(), "1")))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void oneProductCanBeRestrictedWithoutRestrictingItsWholeCategory() throws Exception {
+        // Same category (shelf-stable food); only the dried fish is blocked for Australia.
+        String driedFish = createProduct("Dried fish", "FOOD_SHELF_STABLE", "ACTIVE",
+                ", \"shippingBlockedCountries\": [\"AU\"]");
+        String richCake = createProduct("Rich cake", "FOOD_SHELF_STABLE", "ACTIVE", "");
+
+        mockMvc.perform(post(ADMIN + "/quotes/simulate").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(quoteJson("AU", driedFish, "1")))
+                .andExpect(jsonPath("$.problems[0]").value("Dried fish cannot be shipped to Australia."));
+        mockMvc.perform(post(ADMIN + "/quotes/simulate").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(quoteJson("AU", richCake, "1")))
+                .andExpect(jsonPath("$.problems").isEmpty());
+        // Dried fish may still go to other countries
+        mockMvc.perform(post(ADMIN + "/quotes/simulate").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(quoteJson("CA", driedFish, "1")))
+                .andExpect(jsonPath("$.problems").isEmpty());
+
+        mockMvc.perform(get(ADMIN + "/product-restrictions"))
+                .andExpect(jsonPath("$[?(@.productName == 'Dried fish')].blockedCountries[0]").value(hasItem("AU")));
+        mockMvc.perform(get(ADMIN + "/audit").param("entityType", "PRODUCT_RESTRICTIONS"))
+                .andExpect(jsonPath("$.content[0].action").value("CREATE"))
+                .andExpect(jsonPath("$.content[0].afterJson").value(org.hamcrest.Matchers.containsString("Dried fish")));
+    }
+
+    @Test
+    void aProductCanBeSriLankaOnlyEvenIfItsCategoryGoesAbroad() throws Exception {
+        String variant = createProduct("Fresh-style sweet", "GENERAL", "ACTIVE", ", \"shippingDomesticOnly\": true");
+        mockMvc.perform(post(ADMIN + "/quotes/simulate").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(quoteJson("GB", variant, "1")))
+                .andExpect(jsonPath("$.problems[0]").value("Fresh-style sweet cannot be shipped to United Kingdom."));
+        mockMvc.perform(post(ADMIN + "/quotes/simulate").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(quoteJson("LK", variant, "1")))
+                .andExpect(jsonPath("$.problems").isEmpty());
+    }
+
+    @Test
+    void aProductCannotBlockAnUnknownCountry() throws Exception {
+        String category = JsonPath.read(send(post("/api/admin/categories"),
+                "{\"name\": \"x\", \"slug\": \"" + unique("x") + "\"}", 201), "$.id");
+        send(post("/api/admin/products"), """
+                {"categoryId": "%s", "name": "X", "slug": "%s", "status": "DRAFT",
+                 "shippingBlockedCountries": ["ZZ"], "variants": [{"sku": "%s", "price": 1}]}
+                """.formatted(category, unique("x"), unique("X")), 400);
     }
 }

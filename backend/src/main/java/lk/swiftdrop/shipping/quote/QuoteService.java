@@ -183,7 +183,9 @@ public class QuoteService {
             }
             String problem = null;
             ShippingCategoryPolicy policy = policyMap.get(product.getShippingCategory());
-            if (policy == null || !policy.allows(calc.country, calc.domestic)) {
+            // The category's rules first, then the product's own (which can only add restrictions).
+            if (policy == null || !policy.allows(calc.country, calc.domestic)
+                    || !product.shippingAllows(calc.country, calc.domestic)) {
                 problem = product.getName() + " cannot be shipped to " + countryName(calc.country) + ".";
             } else if (variant.getShippingWeightKg() == null) {
                 problem = product.getName() + " has no shipping weight yet, so delivery cannot be priced.";

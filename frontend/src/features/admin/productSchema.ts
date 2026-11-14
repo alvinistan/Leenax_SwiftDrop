@@ -186,6 +186,10 @@ export const productSchema = z
     customsDescription: z
       .string()
       .max(200, 'Customs description must be at most 200 characters.'),
+    /** Sri Lanka only for this product (on top of its category's rules). */
+    shippingDomesticOnly: z.boolean(),
+    /** Extra blocked countries for this product. */
+    shippingBlockedCountries: z.array(z.string().regex(/^[A-Z]{2}$/)).max(300),
     status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']),
     variants: z
       .array(variantSchema)

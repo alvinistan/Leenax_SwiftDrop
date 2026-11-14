@@ -55,10 +55,26 @@ public record ProductRequest(
         String countryOfOrigin,
 
         @Size(max = 200, message = "Customs description must be at most 200 characters.")
-        String customsDescription) {
+        String customsDescription,
+
+        /** Optional; true = Sri Lanka only for this product, whatever its category allows. */
+        Boolean shippingDomesticOnly,
+
+        /** Optional; countries this product may not be sent to (on top of its category's list). */
+        @Size(max = 300, message = "At most 300 blocked countries.")
+        List<@NotNull @Pattern(regexp = "^[A-Z]{2}$", message = "Use two-letter country codes, e.g. AU.") String>
+                shippingBlockedCountries) {
 
     public ShippingCategory effectiveShippingCategory() {
         return Objects.requireNonNullElse(shippingCategory, ShippingCategory.GENERAL);
+    }
+
+    public boolean effectiveShippingDomesticOnly() {
+        return Boolean.TRUE.equals(shippingDomesticOnly);
+    }
+
+    public List<String> effectiveShippingBlockedCountries() {
+        return Objects.requireNonNullElse(shippingBlockedCountries, List.of());
     }
 
     public String effectiveCountryOfOrigin() {

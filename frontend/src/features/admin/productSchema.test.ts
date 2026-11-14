@@ -11,6 +11,8 @@ const base = {
   hsCode: '',
   countryOfOrigin: 'LK',
   customsDescription: '',
+  shippingDomesticOnly: false,
+  shippingBlockedCountries: [] as string[],
   variants: [{ ...newVariant(), sku: 'CAKE-1', price: '1200' }],
 }
 
