@@ -60,9 +60,9 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 | C | Settings, weight engine, markup rules + audit, rate cards, country restrictions, quote API | B | Done (owner continued to E) |
 | E | DEX manual provider: capabilities, manual shipments (AWB), manual tracking | C | Done (owner continued to Phase 8) |
 | F | Shipments linked to orders, tracking, expenses (manual booking) | master Phase 8 (orders) | Done (owner continued to G) |
-| G | Dispatch rules and dispatch queue (card-payment rules with Phase 9; emails need D-13) | F | Awaiting review |
+| G | Dispatch rules and dispatch queue (card-payment rules with Phase 9; emails need D-13) | F | Done (owner continued to H) |
 | D | DHL Express (verified capabilities only) | DHL credentials + network access | Blocked |
-| H | Overview and report pages | F | Not started |
+| H | Overview and report pages (charts) | F | Awaiting review |
 | I | Security review, documentation, regression | all | Not started |
 
 ## Items parked for later

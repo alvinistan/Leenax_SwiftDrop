@@ -1,5 +1,5 @@
 import { CheckCircle2, Circle, Clock } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Card } from '../../../components/ui/Card'
 import { ErrorState } from '../../../components/ui/ErrorState'
@@ -11,6 +11,8 @@ import {
   listProviders,
   listRateCards,
 } from '../../../features/shipping/shippingApi'
+import { KpiTiles } from '../../../features/shipping/charts/KpiTiles'
+import { getSummaryReport } from '../../../features/shipping/shippingApi'
 import { useAsync } from '../../../hooks/useAsync'
 import { userMessage } from '../../../lib/errors'
 
@@ -19,7 +21,6 @@ type Step = { done: boolean; title: string; detail: ReactNode; to: string }
 const COMING_LATER = [
   ['Payment rules before dispatch, customer notifications', 'Shipping Phase G'],
   ['Labels and automatic booking', 'Shipping Phase D (DHL API)'],
-  ['Revenue and margin reports', 'Shipping Phase H'],
   ['Integration logs', 'Shipping Phase D (DHL API)'],
 ] as const
 
@@ -46,7 +47,11 @@ export function ShippingOverviewPage() {
         Set-up checklist. Customers can get a delivery price only when the steps
         for that destination are done.
       </p>
-      <div className="mt-6">
+      <ThisMonth />
+      <h2 className="mt-10 text-lg font-semibold text-slate-900">
+        Set-up checklist
+      </h2>
+      <div className="mt-3">
         {state.status === 'loading' && (
           <p className="text-slate-600">Checking shipping set-up…</p>
         )}
@@ -225,5 +230,46 @@ function Checklist({
         </li>
       </ol>
     </Card>
+  )
+}
+
+/** This month so far: the headline numbers, with a link to the full reports. */
+function ThisMonth() {
+  const [period] = useState(() => {
+    const today = new Date()
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return {
+      from: iso(new Date(today.getFullYear(), today.getMonth(), 1)),
+      to: iso(today),
+    }
+  })
+  const { state } = useAsync(
+    (signal) => getSummaryReport(period.from, period.to, 'DAY', signal),
+    `overview-${period.from}`,
+  )
+  return (
+    <section aria-labelledby="this-month" className="mt-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="this-month" className="text-lg font-semibold text-slate-900">
+          This month so far
+        </h2>
+        <Link
+          to="/admin/shipping/reports"
+          className="text-sm font-semibold text-brand-800 hover:underline"
+        >
+          Open reports
+        </Link>
+      </div>
+      <div className="mt-3">
+        {state.status === 'loading' && (
+          <p className="text-slate-600">Loading…</p>
+        )}
+        {state.status === 'error' && (
+          <p className="text-sm text-red-700">{userMessage(state.error)}</p>
+        )}
+        {state.status === 'success' && <KpiTiles totals={state.data.totals} />}
+      </div>
+    </section>
   )
 }

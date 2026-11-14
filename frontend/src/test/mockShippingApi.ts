@@ -471,6 +471,60 @@ export const shippingHandlers = [
       totalPages: 1,
     })
   }),
+  http.get(`${BASE}/shipments/summary-report`, ({ request }) => {
+    const url = new URL(request.url)
+    sent.reports.push({
+      kind: 'summary',
+      from: url.searchParams.get('from'),
+      to: url.searchParams.get('to'),
+      groupBy: url.searchParams.get('groupBy'),
+    })
+    const money = (amount: string) => ({ amount, currency: 'LKR' })
+    return apiJson({
+      from: url.searchParams.get('from'),
+      to: url.searchParams.get('to'),
+      grouping: url.searchParams.get('groupBy'),
+      totals: {
+        shipments: 3,
+        delivered: 2,
+        returned: 0,
+        withoutCourierCost: 1,
+        deliveryCharged: money('1122.00'),
+        courierCosts: money('1150.00'),
+        grossMargin: money('-28.00'),
+        averageDeliveryCharged: money('561.00'),
+        averageDaysToDeliver: '1.5',
+      },
+      series: [
+        {
+          period: '2026-11-13',
+          shipments: 1,
+          deliveryCharged: money('561.00'),
+          courierCosts: money('500.00'),
+          grossMargin: money('61.00'),
+        },
+        {
+          period: '2026-11-14',
+          shipments: 2,
+          deliveryCharged: money('561.00'),
+          courierCosts: money('650.00'),
+          grossMargin: money('-89.00'),
+        },
+      ],
+      byCourier: [
+        {
+          providerName: 'Daraz Express Logistics (DEX)',
+          shipments: 3,
+          courierCosts: money('1150.00'),
+        },
+      ],
+      byCountry: [{ countryCode: 'LK', shipments: 3 }],
+      byStatus: [
+        { status: 'IN_TRANSIT', shipments: 1 },
+        { status: 'DELIVERED', shipments: 2 },
+      ],
+    })
+  }),
   http.get(`${BASE}/shipments/expenses-report`, ({ request }) => {
     const url = new URL(request.url)
     sent.reports.push({

@@ -517,6 +517,51 @@ export async function addExpense(shipmentId: string, input: ExpenseInput) {
   ).data
 }
 
+export type ReportGrouping = 'DAY' | 'MONTH'
+
+export type ShippingSummary = {
+  from: string
+  to: string
+  grouping: ReportGrouping
+  totals: {
+    shipments: number
+    delivered: number
+    returned: number
+    withoutCourierCost: number
+    deliveryCharged: Money
+    courierCosts: Money
+    grossMargin: Money
+    averageDeliveryCharged: Money | null
+    /** days, e.g. "1.5"; null when nothing was delivered */
+    averageDaysToDeliver: string | null
+  }
+  /** every day or month in the range, also empty ones */
+  series: {
+    period: string
+    shipments: number
+    deliveryCharged: Money
+    courierCosts: Money
+    grossMargin: Money
+  }[]
+  byCourier: { providerName: string; shipments: number; courierCosts: Money }[]
+  byCountry: { countryCode: string; shipments: number }[]
+  byStatus: { status: TrackingStatus; shipments: number }[]
+}
+
+export async function getSummaryReport(
+  from: string,
+  to: string,
+  groupBy: ReportGrouping,
+  signal?: AbortSignal,
+) {
+  return (
+    await http.get<ShippingSummary>(`${SHIPMENTS}/summary-report`, {
+      params: { from, to, groupBy },
+      signal,
+    })
+  ).data
+}
+
 export async function getExpensesReport(
   from: string,
   to: string,

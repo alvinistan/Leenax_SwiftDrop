@@ -2,9 +2,20 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Shipping Phase G — Dispatch rules and dispatch queue
+## Shipping Phase H — Overview and reports with charts
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Done:**
+  - Summary report API (totals, series, breakdowns)
+  - Reports page with Recharts (accessible figures with tables)
+  - "This month so far" on the shipping overview
+  - 138 backend + 140 frontend tests; checked in the browser with real data
+- **Details:** [shipping/SHIPPING_DESIGN.md §19](shipping/SHIPPING_DESIGN.md)
+
+## Shipping Phase G — Dispatch rules and dispatch queue
+
+- **Status:** Done (owner continued to Phase H)
 - **Date:** 2026-11-14
 - **Done:**
   - Ship only confirmed, paid (or COD) orders, with customs details abroad

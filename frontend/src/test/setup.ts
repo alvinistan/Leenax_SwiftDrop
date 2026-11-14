@@ -3,6 +3,16 @@ import { afterAll, afterEach, beforeAll } from 'vitest'
 // Adds DOM matchers such as toBeInTheDocument() to Vitest's expect()
 import '@testing-library/jest-dom/vitest'
 import { server } from './mockApi'
+
+// jsdom has no ResizeObserver; the charts' ResponsiveContainer needs one.
+// Tests check the charts' tables and labels, not the drawn SVG.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver ??=
+  ResizeObserverStub as unknown as typeof ResizeObserver
 import { resetMockAdmin } from './mockAdminApi'
 import { resetMockShipping } from './mockShippingApi'
 import { resetMockShop } from './mockShopApi'

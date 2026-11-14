@@ -516,3 +516,32 @@ The rules are checked when a shipment is recorded for an order, shown on the adm
   - it was shipped with a reason, which was recorded as an internal note and not visible to the customer;
   - no console errors.
 
+## 19. Phase H — overview and reports with charts (done 2026-11-14)
+
+![Reports](../phase-reports/images/shipping-h-reports.png)
+
+**Built**
+- `GET /api/admin/shipping/shipments/summary-report?from&to&groupBy=DAY|MONTH` (ADMIN, Sri Lankan dates, at most one year). It reads the shipments recorded in the period and returns:
+  - **totals:** shipments, delivered, returned, parcels without a courier charge, delivery charged, courier costs, gross margin, average delivery charge per website order, average days from booking to delivery;
+  - a **series** with every day or month in the range, also empty ones, so a gap is visible;
+  - **breakdowns** by courier, destination country and status.
+  - It uses the same money rules as the expenses report: an order's delivery charge counts once; a missing courier charge is "missing", never 0; the margin is gross, not net profit.
+- **Recharts 3.10.1** (owner decision 9), only in the lazy-loaded admin Reports page. Shoppers never download it.
+- **Reports page:**
+  - filters in one row (from, to, group by);
+  - KPI tiles;
+  - charts: delivery charged vs courier costs (grouped bars, one axis, same unit), gross margin (blue above zero, red below, explained in the caption), and shipments by courier, destination and status.
+- **Overview:** "This month so far" tiles above the set-up checklist, with a link to the reports.
+- **Chart rules applied** (dataviz checklist):
+  - colours checked with the palette validator: blue/orange and blue/red pass the colour-vision and contrast checks;
+  - colour follows the meaning, never the position;
+  - thin bars with rounded ends and a 2 px gap; recessive grid;
+  - a legend for two series, with its text in the normal text colour;
+  - hover tooltips;
+  - every chart is a captioned figure with a text summary and a "Show the numbers" table, so nothing depends on colour or shape alone.
+
+**Verified**
+- Backend: **138 tests**: periods include empty days and months, booking-to-delivery time, the report endpoint (day and month grouping, breakdowns, 403).
+- Frontend: **140 tests**: KPI tiles, figures with names and tables, filters in the URL, overview tiles. Lint, types and build are clean.
+- **Browser:** the Reports page with real data (10 bars drawn), no console errors, no sideways scrolling at phone width. The screenshot was reviewed and the legend and breakdown heights were fixed after looking.
+
