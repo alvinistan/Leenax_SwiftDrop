@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lk.swiftdrop.common.error.BadRequestException;
+import lk.swiftdrop.order.CustomerOrder;
 import lk.swiftdrop.shipping.config.CourierProviderConfig;
 import lk.swiftdrop.shipping.config.CourierServiceConfig;
 import org.hibernate.annotations.CreationTimestamp;
@@ -51,7 +52,12 @@ public class Shipment {
     @JoinColumn(name = "service_id")
     private CourierServiceConfig service;
 
-    /** The owner's order number (text until orders exist in master Phase 8). */
+    /** The website order this parcel belongs to; null for orders taken elsewhere (phone, WhatsApp). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private CustomerOrder order;
+
+    /** The order number (website orders) or the owner's own reference. */
     @Column(name = "order_reference", nullable = false, length = 60)
     private String orderReference;
 
@@ -155,6 +161,16 @@ public class Shipment {
 
     private static String label(TrackingStatus status) {
         return status.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+    }
+
+    /** Links this parcel to a website order; the reference becomes the order number. */
+    public void linkTo(CustomerOrder order) {
+        this.order = order;
+        this.orderReference = order.getOrderNumber();
+    }
+
+    public CustomerOrder getOrder() {
+        return order;
     }
 
     public UUID getId() {

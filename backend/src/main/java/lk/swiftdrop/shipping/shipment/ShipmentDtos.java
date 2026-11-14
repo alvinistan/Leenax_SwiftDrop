@@ -39,6 +39,8 @@ public final class ShipmentDtos {
     /** Recording a parcel already booked on the courier's portal. */
     public record CreateShipmentRequest(
             @NotNull(message = "Choose the courier.") UUID providerId,
+            /** A website order this parcel belongs to (e.g. SD-001001); empty for orders taken elsewhere. */
+            @Size(max = 20) String orderNumber,
             @NotNull @jakarta.validation.Valid ShipmentDetailsRequest details,
             /** When it was booked on the portal; empty = now. */
             Instant bookedAt) {
@@ -52,12 +54,13 @@ public final class ShipmentDtos {
             @Size(max = 500) String note) {
     }
 
-    public record ShipmentSummary(UUID id, String orderReference, String awb, String providerCode,
+    public record ShipmentSummary(UUID id, String orderReference, boolean websiteOrder, String awb, String providerCode,
                                   String providerName, String destinationCountry, String destinationCity,
                                   TrackingStatus status, Instant createdAt, Instant updatedAt) {
 
         static ShipmentSummary from(Shipment s) {
-            return new ShipmentSummary(s.getId(), s.getOrderReference(), s.getAwb(), s.getProvider().getCode(),
+            return new ShipmentSummary(s.getId(), s.getOrderReference(), s.getOrder() != null, s.getAwb(),
+                    s.getProvider().getCode(),
                     s.getProvider().getName(), s.getDestinationCountry(), s.getDestinationCity(), s.getStatus(),
                     s.getCreatedAt(), s.getUpdatedAt());
         }
@@ -78,7 +81,33 @@ public final class ShipmentDtos {
                                  MoneyResponse courierCost, TrackingStatus status,
                                  Shipment.BookingMethod bookingMethod, String trackingUrl,
                                  Set<TrackingStatus> allowedNextStatuses, boolean manualTracking,
-                                 List<TrackingEventResponse> events, String createdBy, Instant createdAt) {
+                                 List<TrackingEventResponse> events, String createdBy, Instant createdAt,
+                                 /** The linked website order, or null. */
+                                 String orderNumber,
+                                 /** What the customer paid for delivery (website orders only). */
+                                 MoneyResponse deliveryCharged,
+                                 List<ExpenseResponse> expenses,
+                                 /** Base charge + extra charges. */
+                                 MoneyResponse totalCourierCost) {
+    }
+
+    public record ExpenseRequest(
+            @NotNull(message = "Choose the kind of charge.") CourierExpense.Kind kind,
+            @NotNull(message = "Amount is required.")
+            @Digits(integer = 13, fraction = 2, message = "At most 2 decimal places.") BigDecimal amount,
+            @Size(max = 60) String reference,
+            /** The date on the courier's invoice; empty = today. */
+            java.time.LocalDate incurredOn,
+            @Size(max = 300) String note) {
+    }
+
+    public record ExpenseResponse(UUID id, CourierExpense.Kind kind, MoneyResponse amount, String reference,
+                                  java.time.LocalDate incurredOn, String note, String recordedBy) {
+
+        static ExpenseResponse from(CourierExpense e) {
+            return new ExpenseResponse(e.getId(), e.getKind(), MoneyResponse.of(e.getAmount(), "LKR"),
+                    e.getReference(), e.getIncurredOn(), e.getNote(), e.getRecordedBy());
+        }
     }
 
     /** What the change history stores (no events: they are their own history). */

@@ -16,13 +16,27 @@ public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
     @Query("""
             SELECT s FROM Shipment s
             WHERE (:status IS NULL OR s.status = :status)
+              AND (:activeOnly = false OR s.status NOT IN (
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.DELIVERED,
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.RETURNED,
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.CANCELLED))
               AND (:providerId IS NULL OR s.provider.id = :providerId)
               AND (:pattern IS NULL
                    OR LOWER(s.orderReference) LIKE :pattern ESCAPE '\\'
                    OR LOWER(s.awb) LIKE :pattern ESCAPE '\\')
             """)
     Page<Shipment> search(@Param("status") TrackingStatus status, @Param("providerId") UUID providerId,
-                          @Param("pattern") String pattern, Pageable pageable);
+                          @Param("pattern") String pattern, @Param("activeOnly") boolean activeOnly,
+                          Pageable pageable);
+
+    /** Parcels of one website order, oldest first. */
+    @EntityGraph(attributePaths = {"provider", "events"})
+    java.util.List<Shipment> findAllByOrderIdOrderByCreatedAtAsc(UUID orderId);
+
+    /** Shipments created in a period, for the expenses report. */
+    @EntityGraph(attributePaths = {"provider", "order"})
+    java.util.List<Shipment> findAllByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+            java.time.Instant from, java.time.Instant to);
 
     @EntityGraph(attributePaths = {"provider", "service", "events"})
     Optional<Shipment> findWithEventsById(UUID id);

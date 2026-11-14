@@ -3,7 +3,10 @@ package lk.swiftdrop.shipping.shipment;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -13,6 +16,10 @@ import lk.swiftdrop.common.error.ConflictException;
 import lk.swiftdrop.common.error.ResourceNotFoundException;
 import lk.swiftdrop.common.money.MoneyResponse;
 import lk.swiftdrop.common.web.PageResponse;
+import lk.swiftdrop.order.CustomerOrder;
+import lk.swiftdrop.order.OrderRepository;
+import lk.swiftdrop.order.OrderStatus;
+import lk.swiftdrop.store.StoreDefaults;
 import lk.swiftdrop.shipping.audit.ShippingAuditService;
 import lk.swiftdrop.shipping.audit.ShippingAuditService.Action;
 import lk.swiftdrop.shipping.config.Countries;
@@ -23,6 +30,8 @@ import lk.swiftdrop.shipping.provider.CourierProviderRegistry;
 import lk.swiftdrop.shipping.provider.ProviderCapability;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.AuditView;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.CreateShipmentRequest;
+import lk.swiftdrop.shipping.shipment.ShipmentDtos.ExpenseRequest;
+import lk.swiftdrop.shipping.shipment.ShipmentDtos.ExpenseResponse;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.ShipmentDetail;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.ShipmentDetailsRequest;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.ShipmentSummary;
@@ -49,9 +58,15 @@ public class ShipmentService {
     private final CourierProviderRegistry registry;
     private final ShippingAuditService audit;
     private final Clock clock;
+    private final OrderRepository orders;
+    private final CourierExpenseRepository expenses;
 
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public ShipmentService(ShipmentRepository shipments, CourierProviderRepository providers,
-                           CourierProviderRegistry registry, ShippingAuditService audit, Clock clock) {
+                           CourierProviderRegistry registry, ShippingAuditService audit, Clock clock,
+                           OrderRepository orders, CourierExpenseRepository expenses) {
+        this.orders = orders;
+        this.expenses = expenses;
         this.shipments = shipments;
         this.providers = providers;
         this.registry = registry;
@@ -59,9 +74,10 @@ public class ShipmentService {
         this.clock = clock;
     }
 
-    public PageResponse<ShipmentSummary> search(String q, TrackingStatus status, UUID providerId, Pageable pageable) {
-        return PageResponse.from(
-                shipments.search(status, providerId, ProductService.likePattern(q), pageable), ShipmentSummary::from);
+    public PageResponse<ShipmentSummary> search(String q, TrackingStatus status, UUID providerId, boolean activeOnly,
+                                                Pageable pageable) {
+        return PageResponse.from(shipments.search(status, providerId, ProductService.likePattern(q), activeOnly,
+                pageable), ShipmentSummary::from);
     }
 
     public ShipmentDetail get(UUID id) {
@@ -86,6 +102,9 @@ public class ShipmentService {
         Instant bookedAt = checkedTime(request.bookedAt());
         Shipment shipment = Shipment.bookedManually(provider, awb, ShippingAuditService.currentUser(), bookedAt);
         applyDetails(shipment, provider, d, awb);
+        if (request.orderNumber() != null && !request.orderNumber().isBlank()) {
+            shipment.linkTo(shippableOrder(request.orderNumber().trim(), d.destinationCountry()));
+        }
         shipments.saveAndFlush(shipment);
         audit.record("SHIPMENT", shipment.getId(), Action.CREATE, null, AuditView.of(shipment));
         return toDetail(shipment);
@@ -100,6 +119,14 @@ public class ShipmentService {
         }
         AuditView before = AuditView.of(shipment);
         applyDetails(shipment, shipment.getProvider(), d, awb);
+        if (shipment.getOrder() != null) {
+            // A website order's number and country cannot be changed here.
+            if (!shipment.getOrder().getAddress().countryCode().equals(d.destinationCountry())) {
+                throw new BadRequestException("The destination must stay " + shipment.getOrder().getAddress().countryCode()
+                        + " (the order's country).");
+            }
+            shipment.linkTo(shipment.getOrder());
+        }
         AuditView after = AuditView.of(shipment);
         if (!before.equals(after)) {
             audit.record("SHIPMENT", id, Action.UPDATE, before, after);
@@ -115,11 +142,71 @@ public class ShipmentService {
         }
         shipment.track(r.status(), checkedTime(r.occurredAt()), blankToNull(r.location()), blankToNull(r.note()),
                 TrackingEvent.Source.MANUAL, ShippingAuditService.currentUser());
+        syncOrder(shipment, r.status());
         shipments.flush(); // optimistic lock: a parallel update fails instead of being lost
         return toDetail(shipment);
     }
 
+    /** An extra courier charge (surcharge, return fee, adjustment). Never edited afterwards. */
+    @Transactional
+    public ShipmentDetail addExpense(UUID id, ExpenseRequest r) {
+        Shipment shipment = find(id);
+        if (r.amount().signum() == 0) {
+            throw new BadRequestException("The amount cannot be 0.");
+        }
+        if (r.amount().signum() < 0 && r.kind() != CourierExpense.Kind.ADJUSTMENT) {
+            throw new BadRequestException("Only an adjustment can be negative (e.g. a refund from the courier).");
+        }
+        LocalDate today = LocalDate.now(clock.withZone(StoreDefaults.ZONE));
+        LocalDate incurredOn = r.incurredOn() != null ? r.incurredOn() : today;
+        if (incurredOn.isAfter(today)) {
+            throw new BadRequestException("The date cannot be in the future.");
+        }
+        CourierExpense expense = expenses.save(new CourierExpense(shipment, r.kind(),
+                r.amount().setScale(2, java.math.RoundingMode.UNNECESSARY), blankToNull(r.reference()), incurredOn,
+                blankToNull(r.note()), ShippingAuditService.currentUser()));
+        audit.record("COURIER_EXPENSE", expense.getId(), Action.CREATE, null, ExpenseResponse.from(expense));
+        return toDetail(shipment);
+    }
+
     // ------------------------------------------------------------------
+
+    /**
+     * Only CONFIRMED (or already SHIPPED, for a second parcel) orders can be
+     * shipped: nothing is booked just because an order was placed.
+     */
+    private CustomerOrder shippableOrder(String orderNumber, String destinationCountry) {
+        CustomerOrder order = orders.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new BadRequestException("Order " + orderNumber + " was not found."));
+        if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.SHIPPED) {
+            throw new BadRequestException("Order " + orderNumber + " is " + order.getStatus().name().toLowerCase(Locale.ROOT)
+                    + ". Confirm it before shipping.");
+        }
+        if (!order.getAddress().countryCode().equals(destinationCountry)) {
+            throw new BadRequestException("The destination must be " + order.getAddress().countryCode()
+                    + " (the order's country).");
+        }
+        return order;
+    }
+
+    /** Collected → the order is SHIPPED; delivered → DELIVERED. Returns are left to the owner. */
+    private static void syncOrder(Shipment shipment, TrackingStatus status) {
+        CustomerOrder order = shipment.getOrder();
+        if (order == null) {
+            return;
+        }
+        String actor = ShippingAuditService.currentUser();
+        boolean collected = EnumSet.of(TrackingStatus.PICKED_UP, TrackingStatus.IN_TRANSIT,
+                TrackingStatus.CUSTOMS_CLEARANCE, TrackingStatus.OUT_FOR_DELIVERY, TrackingStatus.DELIVERED)
+                .contains(status);
+        if (collected && order.getStatus() == OrderStatus.CONFIRMED) {
+            order.changeStatus(OrderStatus.SHIPPED, "Handed to " + shipment.getProvider().getName()
+                    + ", AWB " + shipment.getAwb(), actor);
+        }
+        if (status == TrackingStatus.DELIVERED && order.getStatus() == OrderStatus.SHIPPED) {
+            order.changeStatus(OrderStatus.DELIVERED, "Delivered (AWB " + shipment.getAwb() + ")", actor);
+        }
+    }
 
     private Shipment find(UUID id) {
         return shipments.findWithEventsById(id).orElseThrow(() -> new ResourceNotFoundException("Shipment", id));
@@ -153,6 +240,10 @@ public class ShipmentService {
     }
 
     private ShipmentDetail toDetail(Shipment s) {
+        List<CourierExpense> extras = s.getId() == null ? List.of()
+                : expenses.findAllByShipmentIdOrderByIncurredOnAscCreatedAtAsc(s.getId());
+        BigDecimal total = extras.stream().map(CourierExpense::getAmount)
+                .reduce(s.getCourierCost() == null ? BigDecimal.ZERO : s.getCourierCost(), BigDecimal::add);
         Set<ProviderCapability> capabilities = registry.capabilities(s.getProvider());
         boolean manualTracking = capabilities.contains(ProviderCapability.MANUAL_TRACKING);
         Set<TrackingStatus> next = manualTracking && !s.getStatus().isFinal()
@@ -163,7 +254,11 @@ public class ShipmentService {
                 s.getDestinationCountry(), s.getDestinationCity(), s.getWeightKg(),
                 s.getCourierCost() == null ? null : MoneyResponse.of(s.getCourierCost(), s.getCurrency()),
                 s.getStatus(), s.getBookingMethod(), s.getProvider().trackingUrl(s.getAwb()), next, manualTracking,
-                s.getEvents().stream().map(TrackingEventResponse::from).toList(), s.getCreatedBy(), s.getCreatedAt());
+                s.getEvents().stream().map(TrackingEventResponse::from).toList(), s.getCreatedBy(), s.getCreatedAt(),
+                s.getOrder() == null ? null : s.getOrder().getOrderNumber(),
+                s.getOrder() == null ? null : MoneyResponse.of(s.getOrder().getShippingPrice(), "LKR"),
+                extras.stream().map(ExpenseResponse::from).toList(),
+                MoneyResponse.of(total, s.getCurrency()));
     }
 
     /** AWBs are compared without case and stored in capitals: "abc-123" and "ABC-123" are the same parcel. */

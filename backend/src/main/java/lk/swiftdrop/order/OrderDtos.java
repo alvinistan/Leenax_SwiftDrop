@@ -66,6 +66,15 @@ public final class OrderDtos {
     public record EventView(String status, String note, String actor, Instant at) {
     }
 
+    /** A tracking step as the customer sees it (no internal notes or staff names). */
+    public record TrackingStepView(String status, Instant at, String location) {
+    }
+
+    /** A parcel of this order. */
+    public record ShipmentView(UUID id, String providerName, String serviceName, String awb, String status,
+                               String trackingUrl, List<TrackingStepView> steps) {
+    }
+
     /** What the customer sees: no courier cost, no platform fee, no staff names. */
     public record CustomerOrderDetail(String orderNumber, OrderStatus status, PaymentMethod paymentMethod,
                                       CustomerOrder.PaymentStatus paymentStatus, List<ItemView> items,
@@ -73,7 +82,7 @@ public final class OrderDtos {
                                       MoneyResponse shippingPrice, MoneyResponse grandTotal,
                                       String deliveryProvider, String deliveryService, AddressView address,
                                       String note, List<EventView> history, boolean canCancel,
-                                      Instant createdAt) {
+                                      Instant createdAt, List<ShipmentView> shipments) {
     }
 
     public record ShippingView(String providerCode, String providerName, String serviceName,
@@ -86,7 +95,7 @@ public final class OrderDtos {
                                    PaymentMethod paymentMethod, CustomerOrder.PaymentStatus paymentStatus,
                                    List<ItemView> items, MoneyResponse itemsTotal, MoneyResponse taxIncluded,
                                    ShippingView shipping, MoneyResponse grandTotal, AddressView address, String note,
-                                   List<EventView> history, Instant createdAt) {
+                                   List<EventView> history, Instant createdAt, List<ShipmentView> shipments) {
     }
 
     public record OrderSummary(String orderNumber, OrderStatus status, PaymentMethod paymentMethod,

@@ -1,5 +1,6 @@
 package lk.swiftdrop.store;
 
+import java.time.ZoneId;
 import java.util.UUID;
 
 /**
@@ -14,6 +15,9 @@ public final class StoreDefaults {
 
     /** The store's transaction currency (ISO 4217). */
     public static final String DEFAULT_CURRENCY = "LKR";
+
+    /** The store's time zone: "today" and report periods follow Sri Lankan dates. */
+    public static final ZoneId ZONE = ZoneId.of("Asia/Colombo");
 
     private StoreDefaults() {
     }

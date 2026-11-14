@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import java.net.URI;
 import java.util.UUID;
 import lk.swiftdrop.common.web.PageResponse;
+import lk.swiftdrop.shipping.shipment.ShipmentDtos;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.CreateShipmentRequest;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.ShipmentDetail;
 import lk.swiftdrop.shipping.shipment.ShipmentDtos.ShipmentDetailsRequest;
@@ -35,9 +36,22 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class AdminShipmentController {
 
     private final ShipmentService shipments;
+    private final lk.swiftdrop.shipping.shipment.ExpenseReportService reports;
 
-    public AdminShipmentController(ShipmentService shipments) {
+    public AdminShipmentController(ShipmentService shipments,
+                                   lk.swiftdrop.shipping.shipment.ExpenseReportService reports) {
         this.shipments = shipments;
+        this.reports = reports;
+    }
+
+    /** GET /api/admin/shipping/shipments/expenses-report?from=2026-11-01&to=2026-11-30 (Sri Lankan dates). */
+    @GetMapping("/expenses-report")
+    public ResponseEntity<lk.swiftdrop.shipping.shipment.ExpenseReportService.Report> expensesReport(
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate from,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate to) {
+        return ResponseEntity.ok(reports.report(from, to));
     }
 
     /** GET ?q=AWB-or-order-ref&status=IN_TRANSIT&providerId=…&page=0&size=20, newest first. */
@@ -46,10 +60,15 @@ public class AdminShipmentController {
             @RequestParam(required = false) @Size(max = 60) String q,
             @RequestParam(required = false) TrackingStatus status,
             @RequestParam(required = false) UUID providerId,
+            /** true = only parcels still on their way (the Tracking page). */
+            @RequestParam(defaultValue = "false") boolean active,
+            /** "updated" = least recently updated first (Tracking page); default newest first. */
+            @RequestParam(defaultValue = "created") @jakarta.validation.constraints.Pattern(regexp = "created|updated") String order,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return ResponseEntity.ok(shipments.search(q, status, providerId,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))));
+        Sort sort = order.equals("updated") ? Sort.by(Sort.Direction.ASC, "updatedAt")
+                : Sort.by(Sort.Direction.DESC, "createdAt");
+        return ResponseEntity.ok(shipments.search(q, status, providerId, active, PageRequest.of(page, size, sort)));
     }
 
     @GetMapping("/{id}")
@@ -70,6 +89,12 @@ public class AdminShipmentController {
     public ResponseEntity<ShipmentDetail> update(@PathVariable UUID id,
                                                  @Valid @RequestBody ShipmentDetailsRequest request) {
         return ResponseEntity.ok(shipments.updateDetails(id, request));
+    }
+
+    @PostMapping("/{id}/expenses")
+    public ResponseEntity<ShipmentDetail> addExpense(@PathVariable UUID id,
+                                                     @Valid @RequestBody ShipmentDtos.ExpenseRequest request) {
+        return ResponseEntity.ok(shipments.addExpense(id, request));
     }
 
     @PostMapping("/{id}/tracking")

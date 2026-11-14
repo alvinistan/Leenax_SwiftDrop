@@ -33,7 +33,9 @@ import lk.swiftdrop.order.OrderDtos.EventView;
 import lk.swiftdrop.order.OrderDtos.ItemView;
 import lk.swiftdrop.order.OrderDtos.OrderSummary;
 import lk.swiftdrop.order.OrderDtos.PlaceOrderRequest;
+import lk.swiftdrop.order.OrderDtos.ShipmentView;
 import lk.swiftdrop.order.OrderDtos.ShippingView;
+import lk.swiftdrop.order.OrderDtos.TrackingStepView;
 import lk.swiftdrop.shipping.config.ShippingConfigService;
 import lk.swiftdrop.shipping.quote.QuoteDtos.QuoteItemRequest;
 import lk.swiftdrop.shipping.quote.QuoteDtos.QuoteRequest;
@@ -41,6 +43,7 @@ import lk.swiftdrop.shipping.quote.QuoteOptionDraft;
 import lk.swiftdrop.shipping.quote.QuoteService;
 import lk.swiftdrop.shipping.quote.ShippingQuoteOption;
 import lk.swiftdrop.shipping.quote.ShippingQuoteOptionRepository;
+import lk.swiftdrop.shipping.shipment.ShipmentRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -68,11 +71,13 @@ public class OrderService {
     private final QuoteService quotes;
     private final ShippingConfigService shippingConfig;
     private final Clock clock;
+    private final ShipmentRepository shipments;
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public OrderService(OrderRepository orders, UserRepository users, ProductVariantRepository variants,
                         ShippingQuoteOptionRepository quoteOptions, QuoteService quotes,
-                        ShippingConfigService shippingConfig, Clock clock) {
+                        ShippingConfigService shippingConfig, Clock clock, ShipmentRepository shipments) {
+        this.shipments = shipments;
         this.orders = orders;
         this.users = users;
         this.variants = variants;
@@ -257,13 +262,28 @@ public class OrderService {
                 m(i.taxIncluded()))).toList();
     }
 
-    private static CustomerOrderDetail toCustomerDetail(CustomerOrder o) {
+    /** The order's parcels. Customers never see notes or who entered an update. */
+    private List<ShipmentView> shipmentsOf(CustomerOrder o) {
+        if (o.getId() == null) {
+            return List.of();
+        }
+        return shipments.findAllByOrderIdOrderByCreatedAtAsc(o.getId()).stream()
+                .map(s -> new ShipmentView(s.getId(), s.getProvider().getName(),
+                        s.getService() == null ? null : s.getService().getName(), s.getAwb(), s.getStatus().name(),
+                        s.getProvider().trackingUrl(s.getAwb()),
+                        s.getEvents().stream()
+                                .map(e -> new TrackingStepView(e.getStatus().name(), e.getOccurredAt(), e.getLocation()))
+                                .toList()))
+                .toList();
+    }
+
+    private CustomerOrderDetail toCustomerDetail(CustomerOrder o) {
         List<EventView> history = o.getEvents().stream()
                 .map(e -> new EventView(e.getStatus(), e.getNote(), null, e.getCreatedAt())).toList();
         return new CustomerOrderDetail(o.getOrderNumber(), o.getStatus(), o.getPaymentMethod(), o.getPaymentStatus(),
                 items(o), m(o.getItemsTotal()), m(o.getTaxIncluded()), m(o.getShippingPrice()), m(o.getGrandTotal()),
                 o.getShipping().providerName(), o.getShipping().serviceName(), AddressView.of(o.getAddress()),
-                o.getCustomerNote(), history, o.getStatus() == OrderStatus.PLACED, o.getCreatedAt());
+                o.getCustomerNote(), history, o.getStatus() == OrderStatus.PLACED, o.getCreatedAt(), shipmentsOf(o));
     }
 
     private AdminOrderDetail toAdminDetail(CustomerOrder o) {
@@ -276,7 +296,8 @@ public class OrderService {
                 o.getPaymentMethod(), o.getPaymentStatus(), items(o), m(o.getItemsTotal()), m(o.getTaxIncluded()),
                 new ShippingView(s.providerCode(), s.providerName(), s.serviceName(), m(s.courierPrice()),
                         m(s.platformFee()), m(o.getShippingPrice()), s.markupDescription(), s.chargeableWeightKg()),
-                m(o.getGrandTotal()), AddressView.of(o.getAddress()), o.getCustomerNote(), history, o.getCreatedAt());
+                m(o.getGrandTotal()), AddressView.of(o.getAddress()), o.getCustomerNote(), history, o.getCreatedAt(),
+                shipmentsOf(o));
     }
 
     private static OrderSummary toSummary(CustomerOrder o) {
