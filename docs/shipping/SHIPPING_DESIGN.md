@@ -545,3 +545,54 @@ The rules are checked when a shipment is recorded for an order, shown on the adm
 - Frontend: **140 tests**: KPI tiles, figures with names and tables, filters in the URL, overview tiles. Lint, types and build are clean.
 - **Browser:** the Reports page with real data (10 bars drawn), no console errors, no sideways scrolling at phone width. The screenshot was reviewed and the legend and breakdown heights were fixed after looking.
 
+## 20. Phase I — security review, documentation, full regression (done 2026-11-14)
+
+**Security review** of the whole branch: shipping, cart, checkout, orders, tax, shipments, images, registration, security and CORS settings. It was done with the security-review procedure (trace each input to the sensitive operation; only report exploitable issues). **No high-confidence vulnerability was found.**
+
+| Area | What was checked | Result |
+|---|---|---|
+| Authorization | `/api/admin/**` ADMIN only, `/api/orders/**` CUSTOMER only, deny by default | ✅ Now enforced by an automatic **sweep test over every endpoint**. A new endpoint fails the build until it is protected or added to the reviewed public list |
+| Account creation | Sign-up can never create an admin (fixed CUSTOMER role, no role field); bcrypt | ✅ |
+| Order privacy (IDOR) | Order lookups, cancel and idempotency keys are scoped to the customer (another customer's order → 404) | ✅ |
+| Price tampering | No price is accepted from the browser. Items, tax and delivery are re-priced on the server; delivery is re-quoted for the exact items and country; quantity rules; COD rules | ✅ |
+| Stock | Conditional `UPDATE` (all or nothing); concurrent cancel protected by `@Version` | ✅ |
+| Data exposure | Customers and public endpoints never get courier cost, platform fee, internal notes or staff names | ✅ |
+| Tracking links | https only, must contain `{awb}`, AWB URL-encoded; admin-only setting; links open with `noopener` | ✅ |
+| Injection | Bound JPQL parameters; LIKE wildcards escaped; one fixed native query | ✅ |
+| Image uploads | Type detected from the file's first bytes; random storage keys; 5 MB; private bucket; signed links | ✅ |
+| CSRF / CORS | CSRF on every state-changing request (tested even for admins); CORS limited to named origins and four headers | ✅ |
+| Secrets | No hard-coded keys or passwords; courier credentials will live only on the server (Phase D) | ✅ |
+| Frontend | No `dangerouslySetInnerHTML` or `eval`; local storage holds only the cart (ids and quantities) | ✅ |
+
+**Fixed during the review**
+1. **Personal data in logs:** the database-constraint warning logged PostgreSQL's message, which can contain values (e.g. a customer's email in "Key (email)=… already exists"). It now logs only the constraint name and SQL state.
+2. **Audit:** tax-rate changes are now in the change history (they change prices). History labels were added for destinations, shipments, courier charges and tax rates.
+3. **Clarity:** the admin order note field now says *"The customer can see this note"*. Internal notes are only the "ship before payment" reasons.
+
+**Known gaps (tracked, not vulnerabilities in this code)**
+- Login rate limiting and lockout: **required before going live** (master Phase 11).
+- Rate limiting of public endpoints (quotes, cart price, sign-up): Phase 11.
+- Secure cookies and HSTS over HTTPS: Phase 14 (deployment).
+- Email verification for new accounts: with the email provider (decision D-13).
+
+**Full regression**
+- Backend **142 tests**, including the new endpoint-authorization sweep (4 tests).
+- Frontend **140 tests**. Lint, format, types and build are clean; `npm audit` finds 0 vulnerabilities.
+- **Browser regression:** every walkthrough was run again against PostgreSQL and passed: E (manual shipment, duplicate AWB), 8 (sign-up → checkout → order), F (order shipment → tracking → expenses), G (dispatch rules and internal note) and H (reports). There were no unexpected console errors, and no emails or raw database messages appeared in the server log.
+- One script was updated: after Phase G, an "arrange payment" order must be marked paid before shipping, which is the intended behaviour.
+
+## 21. Status of the shipping plan
+
+| Phase | Status |
+|---|---|
+| A Audit and design | Done |
+| B Product shipping attributes | Done |
+| C Settings, weights, platform fee, rate cards, restrictions, quotes | Done |
+| E DEX manual courier | Done |
+| (master 8) Cart, checkout, orders | Done |
+| F Shipments, tracking, expenses | Done |
+| G Dispatch rules | Done (card-payment rules with master Phase 9; emails need D-13) |
+| H Overview and reports | Done |
+| I Security review and regression | Done, awaiting review |
+| **D DHL Express** | **Blocked**: needs the DHL account, MyDHL API sandbox credentials and network access (owner decision 10) |
+

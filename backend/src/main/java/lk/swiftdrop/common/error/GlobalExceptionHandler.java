@@ -72,8 +72,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ProblemDetail> handleDataIntegrity(DataIntegrityViolationException ex) {
-        log.warn("Database constraint violation: {}", ex.getMostSpecificCause().getMessage());
+        // Log only the constraint name and SQL state: the database's own message can contain
+        // the values involved (e.g. a customer's email), and logs must not hold personal data.
+        log.warn("Database constraint violation: constraint={}, sqlState={}", constraintName(ex), sqlState(ex));
         return problem(HttpStatus.CONFLICT, "The request conflicts with existing data.");
+    }
+
+    private static String constraintName(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause()) {
+            if (t instanceof org.hibernate.exception.ConstraintViolationException cve) {
+                return cve.getConstraintName();
+            }
+        }
+        return "unknown";
+    }
+
+    private static String sqlState(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause()) {
+            if (t instanceof java.sql.SQLException sql) {
+                return sql.getSQLState();
+            }
+        }
+        return "unknown";
     }
 
     /**

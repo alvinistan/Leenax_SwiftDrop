@@ -62,8 +62,8 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 | F | Shipments linked to orders, tracking, expenses (manual booking) | master Phase 8 (orders) | Done (owner continued to G) |
 | G | Dispatch rules and dispatch queue (card-payment rules with Phase 9; emails need D-13) | F | Done (owner continued to H) |
 | D | DHL Express (verified capabilities only) | DHL credentials + network access | Blocked |
-| H | Overview and report pages (charts) | F | Awaiting review |
-| I | Security review, documentation, regression | all | Not started |
+| H | Overview and report pages (charts) | F | Done (owner continued to I) |
+| I | Security review, documentation, regression | all | Awaiting review |
 
 ## Items parked for later
 
@@ -81,4 +81,5 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 - Reorder photos / edit alt text; CloudFront for images (Phase 14); orphaned-file clean-up job
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch
-- **Rate limiting for the public shipping quote endpoint: required before going live (Phase 11)**
+- **Rate limiting for public endpoints (quotes, cart price, sign-up): required before going live (Phase 11)**
+- Email verification for new customer accounts (with decision D-13)

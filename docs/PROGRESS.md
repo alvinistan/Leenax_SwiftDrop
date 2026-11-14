@@ -2,9 +2,21 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Shipping Phase H — Overview and reports with charts
+## Shipping Phase I — Security review, documentation, full regression
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Done:**
+  - Security review of the whole branch: no high-confidence vulnerability found
+  - Fixed: personal data could reach the logs; tax rates now audited; customer-visible admin notes labelled
+  - Automatic authorization sweep over every endpoint
+  - 142 backend + 140 frontend tests; all browser walkthroughs re-run
+- **Remaining:** Shipping Phase D (DHL) is blocked on DHL access; before going live, Phase 11 (rate limiting) and Phase 14 (HTTPS)
+- **Details:** [shipping/SHIPPING_DESIGN.md §20–21](shipping/SHIPPING_DESIGN.md)
+
+## Shipping Phase H — Overview and reports with charts
+
+- **Status:** Done (owner continued to Phase I)
 - **Date:** 2026-11-14
 - **Done:**
   - Summary report API (totals, series, breakdowns)

@@ -15,6 +15,10 @@ const TYPES: Record<string, string> = {
   BOX: 'Box size',
   COUNTRY_RESTRICTIONS: 'Country restrictions',
   PRODUCT_RESTRICTIONS: 'Product restrictions',
+  DESTINATIONS: 'Countries we deliver to',
+  SHIPMENT: 'Shipment',
+  COURIER_EXPENSE: 'Courier charge',
+  TAX_RATE: 'Tax rate',
   MARKUP_RULE: 'Platform fee rule',
   RATE_CARD: 'Rate card',
 }

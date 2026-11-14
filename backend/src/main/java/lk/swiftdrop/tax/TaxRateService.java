@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.UUID;
 import lk.swiftdrop.common.error.ConflictException;
 import lk.swiftdrop.common.error.ResourceNotFoundException;
+import lk.swiftdrop.shipping.audit.ShippingAuditService;
+import lk.swiftdrop.shipping.audit.ShippingAuditService.Action;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,9 +33,18 @@ public class TaxRateService {
     }
 
     private final TaxRateRepository rates;
+    private final ShippingAuditService audit;
 
-    public TaxRateService(TaxRateRepository rates) {
+    public TaxRateService(TaxRateRepository rates, ShippingAuditService audit) {
         this.rates = rates;
+        this.audit = audit;
+    }
+
+    /** What the change history keeps (prices depend on it, so every change is recorded). */
+    record AuditView(String name, BigDecimal percent) {
+        static AuditView of(TaxRate r) {
+            return new AuditView(r.getName(), r.getPercent());
+        }
     }
 
     public List<TaxRateResponse> list() {
@@ -45,7 +56,9 @@ public class TaxRateService {
         if (rates.existsByNameIgnoreCase(r.name().trim())) {
             throw new ConflictException("A tax rate named '" + r.name().trim() + "' already exists.");
         }
-        return toResponse(rates.save(new TaxRate(r.name().trim(), r.percent())));
+        TaxRate rate = rates.save(new TaxRate(r.name().trim(), r.percent()));
+        audit.record("TAX_RATE", rate.getId(), Action.CREATE, null, AuditView.of(rate));
+        return toResponse(rate);
     }
 
     /** Changing a rate affects NEW orders only: placed orders keep their tax snapshot. */
@@ -55,7 +68,9 @@ public class TaxRateService {
         if (rates.existsByNameIgnoreCaseAndIdNot(r.name().trim(), id)) {
             throw new ConflictException("A tax rate named '" + r.name().trim() + "' already exists.");
         }
+        AuditView before = AuditView.of(rate);
         rate.update(r.name().trim(), r.percent());
+        audit.record("TAX_RATE", id, Action.UPDATE, before, AuditView.of(rate));
         return toResponse(rate);
     }
 
@@ -66,6 +81,7 @@ public class TaxRateService {
         if (used > 0) {
             throw new ConflictException("This tax rate is used by " + used + " product(s). Choose another rate for them first.");
         }
+        audit.record("TAX_RATE", id, Action.DELETE, AuditView.of(rate), null);
         rates.delete(rate);
     }
 

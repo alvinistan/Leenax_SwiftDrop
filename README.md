@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 7 (images). Admins manage categories, products, variants, stock and photos. Images use S3Mock locally; connecting real AWS S3 is described in `docs/AWS_SETUP.md` (not done yet).
+> **Status:** Phase 8 (cart, checkout, orders) and shipping phases A–C and E–I are done. Customers sign up, check out (cash on delivery where allowed, or the owner arranges payment) and track their parcels; the owner manages orders, dispatch, DEX shipments, courier charges and reports. Next: DHL Express (needs DHL access), then online payments (Phase 9).
 
 ## Planned stack
 

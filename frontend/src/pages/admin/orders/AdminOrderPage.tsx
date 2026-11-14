@@ -244,6 +244,7 @@ function OrderView({
             <div className="mt-3">
               <Input
                 label="Note (optional)"
+                hint="The customer can see this note in their order history."
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />

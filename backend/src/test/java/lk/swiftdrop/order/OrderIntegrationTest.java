@@ -326,5 +326,7 @@ class OrderIntegrationTest {
         product("1180", "5", false, rate);
         send(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/admin/tax-rates/{id}", rate),
                 ADMIN, "", 409);
+        // Tax changes are in the change history (prices depend on them)
+        assertThat(read(get("/api/admin/shipping/audit").param("entityType", "TAX_RATE"), ADMIN)).contains(rate);
     }
 }
