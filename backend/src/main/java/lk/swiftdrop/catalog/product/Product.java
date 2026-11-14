@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import lk.swiftdrop.catalog.category.Category;
+import lk.swiftdrop.tax.TaxRate;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -86,6 +87,15 @@ public class Product {
 
     @Column(name = "customs_description", length = 200)
     private String customsDescription;
+
+    /** Tax INCLUDED in this product's prices; null = no tax. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tax_rate_id")
+    private TaxRate taxRate;
+
+    /** Cash on delivery may be offered for this product (Sri Lanka only; every item in the order must allow it). */
+    @Column(name = "cod_allowed", nullable = false)
+    private boolean codAllowed;
 
     /** This product goes to the origin country (Sri Lanka) only, whatever its shipping category allows. */
     @Column(name = "shipping_domestic_only", nullable = false)
@@ -147,6 +157,19 @@ public class Product {
         this.hsCode = hsCode;
         this.countryOfOrigin = countryOfOrigin;
         this.customsDescription = customsDescription;
+    }
+
+    public void updateSales(TaxRate taxRate, boolean codAllowed) {
+        this.taxRate = taxRate;
+        this.codAllowed = codAllowed;
+    }
+
+    public TaxRate getTaxRate() {
+        return taxRate;
+    }
+
+    public boolean isCodAllowed() {
+        return codAllowed;
     }
 
     /** Product-level restrictions. They only ADD to the category's rules. */

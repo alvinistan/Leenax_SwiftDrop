@@ -63,7 +63,13 @@ public record ProductRequest(
         /** Optional; countries this product may not be sent to (on top of its category's list). */
         @Size(max = 300, message = "At most 300 blocked countries.")
         List<@NotNull @Pattern(regexp = "^[A-Z]{2}$", message = "Use two-letter country codes, e.g. AU.") String>
-                shippingBlockedCountries) {
+                shippingBlockedCountries,
+
+        /** Optional; the tax included in the prices. null = no tax. */
+        UUID taxRateId,
+
+        /** Optional (default false): cash on delivery may be offered for this product. */
+        Boolean codAllowed) {
 
     public ShippingCategory effectiveShippingCategory() {
         return Objects.requireNonNullElse(shippingCategory, ShippingCategory.GENERAL);

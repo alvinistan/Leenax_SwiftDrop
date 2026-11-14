@@ -24,6 +24,8 @@ import lk.swiftdrop.shipping.audit.ShippingAuditService.Action;
 import lk.swiftdrop.shipping.audit.ShippingAuditService;
 import lk.swiftdrop.shipping.config.Countries;
 import lk.swiftdrop.store.StoreDefaults;
+import lk.swiftdrop.tax.TaxRate;
+import lk.swiftdrop.tax.TaxRateRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,10 +39,12 @@ public class ProductService {
     private final CategoryRepository categories;
     private final ImageUploads imageUploads;
     private final ShippingAuditService shippingAudit;
+    private final TaxRateRepository taxRates;
 
     public ProductService(ProductRepository products, ProductVariantRepository variants,
                           CategoryRepository categories, ImageUploads imageUploads,
-                          ShippingAuditService shippingAudit) {
+                          ShippingAuditService shippingAudit, TaxRateRepository taxRates) {
+        this.taxRates = taxRates;
         this.products = products;
         this.variants = variants;
         this.categories = categories;
@@ -204,7 +208,7 @@ public class ProductService {
         products.delete(product);
     }
 
-    private static void applyShippingDetails(Product product, ProductRequest request) {
+    private void applyShippingDetails(Product product, ProductRequest request) {
         product.updateShippingDetails(
                 request.effectiveShippingCategory(),
                 blankToNull(request.hsCode()),
@@ -217,6 +221,9 @@ public class ProductService {
         }
         product.updateShippingRestrictions(
                 request.effectiveShippingDomesticOnly(), request.effectiveShippingBlockedCountries());
+        TaxRate taxRate = request.taxRateId() == null ? null : taxRates.findById(request.taxRateId())
+                .orElseThrow(() -> new BadRequestException("Unknown tax rate."));
+        product.updateSales(taxRate, Boolean.TRUE.equals(request.codAllowed()));
     }
 
     private static String blankToNull(String value) {

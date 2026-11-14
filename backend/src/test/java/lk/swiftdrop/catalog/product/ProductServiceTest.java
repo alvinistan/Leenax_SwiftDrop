@@ -19,6 +19,7 @@ import lk.swiftdrop.common.error.ConflictException;
 import lk.swiftdrop.common.error.ResourceNotFoundException;
 import lk.swiftdrop.media.ImageUploads;
 import lk.swiftdrop.shipping.audit.ShippingAuditService;
+import lk.swiftdrop.tax.TaxRateRepository;
 import lk.swiftdrop.store.StoreDefaults;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,8 @@ class ProductServiceTest {
     private ImageUploads imageUploads;
     @Mock
     private ShippingAuditService shippingAudit;
+    @Mock
+    private TaxRateRepository taxRates;
 
     /** Mockito creates the service and passes the mocks to its constructor. */
     @InjectMocks
@@ -53,7 +56,7 @@ class ProductServiceTest {
 
     private static ProductRequest request(String slug, List<VariantRequest> variantRequests) {
         return new ProductRequest(CATEGORY_ID, "  Cotton T-Shirt ", slug, null, ProductStatus.ACTIVE, variantRequests,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     private static VariantRequest variant(String sku, String price, Map<String, String> options) {

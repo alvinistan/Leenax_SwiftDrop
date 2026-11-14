@@ -98,6 +98,22 @@ public class AdminShippingController {
         return ResponseEntity.ok(Countries.all());
     }
 
+    public record DestinationsRequest(
+            @jakarta.validation.constraints.NotNull
+            @jakarta.validation.constraints.Size(max = 300)
+            List<@Pattern(regexp = "^[A-Z]{2}$", message = "Use two-letter country codes.") String> countryCodes) {
+    }
+
+    @GetMapping("/destinations")
+    public ResponseEntity<List<String>> destinations() {
+        return ResponseEntity.ok(config.listDestinations());
+    }
+
+    @PutMapping("/destinations")
+    public ResponseEntity<List<String>> updateDestinations(@Valid @RequestBody DestinationsRequest request) {
+        return ResponseEntity.ok(config.updateDestinations(request.countryCodes()));
+    }
+
     // ---- couriers ----
 
     @GetMapping("/providers")

@@ -40,11 +40,13 @@ public class ShippingConfigService {
     private final ShippingAuditService audit;
     private final ProductRepository products;
     private final CourierProviderRegistry registry;
+    private final ShippingDestinationRepository destinations;
 
     public ShippingConfigService(ShippingSettingsRepository settings, CourierProviderRepository providers,
                                  PackagePresetRepository presets, ShippingCategoryPolicyRepository policies,
                                  ShippingAuditService audit, ProductRepository products,
-                                 CourierProviderRegistry registry) {
+                                 CourierProviderRegistry registry, ShippingDestinationRepository destinations) {
+        this.destinations = destinations;
         this.products = products;
         this.registry = registry;
         this.settings = settings;
@@ -175,6 +177,35 @@ public class ShippingConfigService {
                 .map(p -> new ProductRestrictionResponse(p.getId(), p.getName(), p.getShippingCategory(),
                         p.isShippingDomesticOnly(), p.getShippingBlockedCountries()))
                 .toList();
+    }
+
+    // ---- countries we deliver to ----
+
+    /** Destination country codes A–Z; the origin country is always included. */
+    public List<String> listDestinations() {
+        java.util.TreeSet<String> codes = destinations.findAll().stream()
+                .map(ShippingDestination::getCountryCode)
+                .collect(Collectors.toCollection(java.util.TreeSet::new));
+        codes.add(currentSettings().getOriginCountry());
+        return List.copyOf(codes);
+    }
+
+    public boolean deliversTo(String countryCode) {
+        return countryCode.equals(currentSettings().getOriginCountry()) || destinations.existsById(countryCode);
+    }
+
+    /** Replaces the whole list. Audited. */
+    @Transactional
+    public List<String> updateDestinations(List<String> countryCodes) {
+        countryCodes.forEach(ShippingConfigService::requireCountry);
+        List<String> before = listDestinations();
+        destinations.deleteAllInBatch();
+        destinations.flush();
+        new java.util.TreeSet<>(countryCodes).forEach(code -> destinations.save(new ShippingDestination(code)));
+        destinations.flush();
+        List<String> after = listDestinations();
+        audit.record("DESTINATIONS", "ALL", Action.UPDATE, before, after);
+        return after;
     }
 
     static void requireCountry(String code) {

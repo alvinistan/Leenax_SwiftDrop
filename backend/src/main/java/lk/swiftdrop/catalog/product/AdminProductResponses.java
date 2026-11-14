@@ -119,7 +119,10 @@ public final class AdminProductResponses {
             /** Sri Lanka only for this product (on top of the category's rules). */
             boolean shippingDomesticOnly,
             /** Extra blocked countries for this product, A–Z. */
-            List<String> shippingBlockedCountries) {
+            List<String> shippingBlockedCountries,
+            /** Tax included in the prices, or null. */
+            UUID taxRateId,
+            boolean codAllowed) {
 
         static AdminProductDetail from(Product product, Function<String, String> imageUrl) {
             return new AdminProductDetail(
@@ -139,7 +142,9 @@ public final class AdminProductResponses {
                     product.getCountryOfOrigin(),
                     product.getCustomsDescription(),
                     product.isShippingDomesticOnly(),
-                    product.getShippingBlockedCountries());
+                    product.getShippingBlockedCountries(),
+                    product.getTaxRate() == null ? null : product.getTaxRate().getId(),
+                    product.isCodAllowed());
         }
     }
 }

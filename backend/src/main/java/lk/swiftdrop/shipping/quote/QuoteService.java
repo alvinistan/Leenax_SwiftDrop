@@ -135,6 +135,24 @@ public class QuoteService {
                 parcel, calc.problems, calc.warnings, calc.options);
     }
 
+    /**
+     * Checkout: prices the delivery AGAIN for exactly these items and this
+     * country, for the chosen courier service. The order snapshot is taken from
+     * this result, never from the browser.
+     */
+    @Transactional(readOnly = true)
+    public QuoteOptionDraft priceForOrder(QuoteRequest request, UUID serviceId) {
+        Calculation calc = calculate(request, false);
+        if (!calc.problems.isEmpty()) {
+            throw new BadRequestException(calc.problems.get(0));
+        }
+        QuoteOptionDraft draft = calc.drafts.get(serviceId);
+        if (draft == null) {
+            throw new BadRequestException("This delivery option is no longer available. Please choose again.");
+        }
+        return draft;
+    }
+
     // ------------------------------------------------------------------
 
     /** Everything worked out for one request. */
@@ -162,6 +180,11 @@ public class QuoteService {
         calc.country = request.countryCode();
         calc.settings = config.currentSettings();
         calc.domestic = calc.country.equals(calc.settings.getOriginCountry());
+
+        if (!config.deliversTo(calc.country)) {
+            calc.problems.add("We don't deliver to " + countryName(calc.country) + " yet.");
+            return calc;
+        }
 
         Map<UUID, ProductVariant> found = variants.findAllWithProductByIdIn(
                         request.items().stream().map(QuoteItemRequest::variantId).toList())
