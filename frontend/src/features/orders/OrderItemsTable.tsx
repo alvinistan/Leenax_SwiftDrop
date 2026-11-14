@@ -21,7 +21,7 @@ export function OrderItemsTable({
   grandTotal,
 }: Props) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="h-fit overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Ordered items</caption>
         <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">

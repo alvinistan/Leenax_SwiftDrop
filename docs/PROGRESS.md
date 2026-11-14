@@ -2,9 +2,25 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Shipping Phase E — DEX manual courier: manual booking and tracking
+## Phase 8 — Shopping cart, checkout and orders
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Decided:** D-3 (Sri Lanka + countries with Tamil communities), D-5 (COD per product, Sri Lanka only; otherwise the owner arranges payment), D-8 (no guest checkout), D-9 (prices include tax, rate per product)
+- **Done:**
+  - Flyway V12
+  - Customer sign-up; cart priced by the server
+  - Checkout with idempotency, re-priced delivery, atomic stock and snapshots
+  - My orders with cancel
+  - Admin orders, tax rates, COD and tax per product, delivery countries
+  - CORS fix for `Idempotency-Key`
+  - 124 backend + 127 frontend tests; browser end-to-end verified
+- **Owner action:** create your tax rates (ask your accountant), set tax and COD per product
+- **Report:** [phase-reports/phase-8-cart-checkout.md](phase-reports/phase-8-cart-checkout.md)
+
+## Shipping Phase E — DEX manual courier: manual booking and tracking
+
+- **Status:** Done (owner continued to Phase 8)
 - **Date:** 2026-11-14
 - **Done:**
   - Courier capabilities as data
