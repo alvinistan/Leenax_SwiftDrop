@@ -33,6 +33,7 @@ import {
 } from '../../features/admin/productSchema'
 import { CountryBlockPicker } from '../../features/shipping/CountryBlockPicker'
 import { useCountries } from '../../features/shipping/useCountries'
+import { listTaxRates } from '../../features/tax/taxApi'
 import { useAsync } from '../../hooks/useAsync'
 import { ApiError, NotFoundError, userMessage } from '../../lib/errors'
 import { ProductImagesSection } from '../../features/admin/ProductImagesSection'
@@ -52,6 +53,8 @@ const EMPTY: ProductFormValues = {
   customsDescription: '',
   shippingDomesticOnly: false,
   shippingBlockedCountries: [],
+  taxRateId: '',
+  codAllowed: false,
 }
 
 /** The API's product → the form's values (numbers stay exact text). */
@@ -87,6 +90,8 @@ function toFormValues(product: AdminProductDetail): ProductFormValues {
     customsDescription: product.customsDescription ?? '',
     shippingDomesticOnly: product.shippingDomesticOnly,
     shippingBlockedCountries: product.shippingBlockedCountries,
+    taxRateId: product.taxRateId ?? '',
+    codAllowed: product.codAllowed,
   }
 }
 
@@ -124,6 +129,8 @@ function toInput(values: ProductFormValues): ProductInput {
     shippingBlockedCountries: values.shippingDomesticOnly
       ? []
       : values.shippingBlockedCountries,
+    taxRateId: values.taxRateId || null,
+    codAllowed: values.codAllowed,
   }
 }
 
@@ -657,6 +664,7 @@ function ShippingDetailsSection({
         />
       </div>
       <ProductShippingRestrictions control={control} register={register} />
+      <SalesSettings register={register} errors={errors} />
     </section>
   )
 }
@@ -716,6 +724,44 @@ function ProductShippingRestrictions({
           )}
         </div>
       )}
+    </fieldset>
+  )
+}
+
+/** Tax included in the price, and whether cash on delivery may be offered. */
+function SalesSettings({
+  register,
+  errors,
+}: Pick<ShippingDetailsProps, 'register' | 'errors'>) {
+  const { state } = useAsync((signal) => listTaxRates(signal), 'form-tax-rates')
+  return (
+    <fieldset className="grid gap-5 border-t border-slate-100 pt-5 sm:grid-cols-2">
+      <legend className="font-semibold text-slate-900">Tax and payment</legend>
+      <Select
+        label="Tax included in the price"
+        hint={
+          state.status === 'success' && state.data.length === 0
+            ? 'No tax rates yet: add them in Admin → Tax rates.'
+            : 'Prices already include this tax.'
+        }
+        error={errors.taxRateId?.message}
+        {...register('taxRateId')}
+      >
+        <option value="">No tax</option>
+        {state.status === 'success' &&
+          state.data.map((rate) => (
+            <option key={rate.id} value={rate.id}>
+              {rate.name} ({rate.percent}%)
+            </option>
+          ))}
+      </Select>
+      <div className="self-center">
+        <Checkbox
+          label="Cash on delivery allowed"
+          hint="Offered only for Sri Lanka addresses, and only if every product in the order allows it."
+          {...register('codAllowed')}
+        />
+      </div>
     </fieldset>
   )
 }

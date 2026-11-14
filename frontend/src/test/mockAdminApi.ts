@@ -16,14 +16,29 @@ export const ADMIN = {
   password: 'correct-password-123',
 }
 
-let loggedIn = false
+type MockUser = {
+  email: string
+  displayName: string
+  roles: string[]
+  password: string
+}
+const ADMIN_USER: MockUser = {
+  email: ADMIN.email,
+  displayName: 'Administrator',
+  roles: ['ADMIN'],
+  password: ADMIN.password,
+}
+let users: MockUser[] = [ADMIN_USER]
+/** Who is logged in (null = nobody). */
+let current: MockUser | null = null
 let categories: Category[] = []
 let products: AdminProductDetail[] = []
 /** The body of the last product POST/PUT, so tests can check what the form sent. */
 export let lastProductRequest: ProductInput | undefined
 
 export function resetMockAdmin() {
-  loggedIn = false
+  current = null
+  users = [ADMIN_USER]
   categories = []
   products = []
   lastProductRequest = undefined
@@ -48,6 +63,8 @@ function toDetail(id: string, input: ProductInput): AdminProductDetail {
     customsDescription: input.customsDescription,
     shippingDomesticOnly: input.shippingDomesticOnly ?? false,
     shippingBlockedCountries: input.shippingBlockedCountries ?? [],
+    taxRateId: input.taxRateId ?? null,
+    codAllowed: input.codAllowed ?? false,
     variants: input.variants.map((v, i) => ({
       id:
         v.id ?? `${id}-var-${i + 1}-${Math.random().toString(36).slice(2, 6)}`,
@@ -80,7 +97,22 @@ export function seedProduct(input: ProductInput): AdminProductDetail {
 
 /** Starts a test already logged in as the admin. */
 export function logInMockAdmin() {
-  loggedIn = true
+  current = ADMIN_USER
+}
+
+export const CUSTOMER = {
+  email: 'kamala@example.com',
+  password: 'a-long-enough-password',
+}
+
+/** Starts a test logged in as a customer (creating the account if needed). */
+export function logInMockCustomer() {
+  let user = users.find((u) => u.email === CUSTOMER.email)
+  if (!user) {
+    user = { ...CUSTOMER, displayName: 'Kamala', roles: ['CUSTOMER'] }
+    users.push(user)
+  }
+  current = user
 }
 
 export function seedCategory(
@@ -100,36 +132,66 @@ const problem = (status: number, title: string, detail: string) =>
   apiJson({ title, status, detail }, { status })
 
 const requireAdmin = () =>
-  loggedIn ? null : problem(401, 'Unauthorized', 'Please log in to continue.')
+  current?.roles.includes('ADMIN')
+    ? null
+    : problem(401, 'Unauthorized', 'Please log in to continue.')
 
 export const adminHandlers = [
   // CORS preflight for every API path
   http.options(`${API}/api/*`, () => apiPreflight()),
 
   http.get(`${API}/api/auth/me`, () =>
-    loggedIn
+    current
       ? apiJson({
-          email: ADMIN.email,
-          displayName: 'Administrator',
-          roles: ['ADMIN'],
+          email: current.email,
+          displayName: current.displayName,
+          roles: current.roles,
         })
       : problem(401, 'Unauthorized', 'Please log in to continue.'),
   ),
 
+  http.post(`${API}/api/auth/register`, async ({ request }) => {
+    const body = (await request.json()) as {
+      email: string
+      password: string
+      displayName: string
+    }
+    const email = body.email.toLowerCase()
+    if (users.some((u) => u.email === email)) {
+      return problem(
+        409,
+        'Conflict',
+        'An account with this email already exists. Log in instead.',
+      )
+    }
+    users.push({
+      email,
+      password: body.password,
+      displayName: body.displayName,
+      roles: ['CUSTOMER'],
+    })
+    return apiJson(
+      { email, displayName: body.displayName, roles: ['CUSTOMER'] },
+      { status: 201 },
+    )
+  }),
+
   http.post(`${API}/api/auth/login`, async ({ request }) => {
     const form = new URLSearchParams(await request.text())
-    if (
-      form.get('email')?.toLowerCase() === ADMIN.email &&
-      form.get('password') === ADMIN.password
-    ) {
-      loggedIn = true
+    const user = users.find(
+      (u) =>
+        u.email === form.get('email')?.toLowerCase() &&
+        u.password === form.get('password'),
+    )
+    if (user) {
+      current = user
       return apiEmpty(204)
     }
     return problem(401, 'Unauthorized', 'The email or password is incorrect.')
   }),
 
   http.post(`${API}/api/auth/logout`, () => {
-    loggedIn = false
+    current = null
     return apiEmpty(204)
   }),
 

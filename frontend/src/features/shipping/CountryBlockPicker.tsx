@@ -1,4 +1,4 @@
-import { Ban, Search, X } from 'lucide-react'
+import { Ban, Plus, Search, X } from 'lucide-react'
 import { useId, useMemo, useState } from 'react'
 import type { Country } from './shippingApi'
 
@@ -14,6 +14,11 @@ type Props = {
   subject: string
   /** The origin country, which can never be blocked. */
   originCountry?: string
+  /** Wording, e.g. "Add" / "Remove" when the list is countries we deliver TO. */
+  addLabel?: string
+  removeLabel?: string
+  emptyText?: string
+  tone?: 'block' | 'allow'
 }
 
 /** Search for countries to block; blocked ones show as removable chips. */
@@ -24,6 +29,10 @@ export function CountryBlockPicker({
   nameOf,
   subject,
   originCountry = 'LK',
+  addLabel = 'Block',
+  removeLabel = 'Unblock',
+  emptyText = 'No countries blocked.',
+  tone = 'block',
 }: Props) {
   const [query, setQuery] = useState('')
   const searchId = useId()
@@ -43,7 +52,7 @@ export function CountryBlockPicker({
     <div>
       <div className="relative mt-2 max-w-md">
         <label htmlFor={searchId} className="sr-only">
-          Find a country to block for {subject}
+          Find a country to {addLabel.toLowerCase()} for {subject}
         </label>
         <Search
           className="pointer-events-none absolute top-3 left-3 size-5 text-slate-400"
@@ -54,7 +63,7 @@ export function CountryBlockPicker({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Find a country to block…"
+          placeholder={`Find a country to ${addLabel.toLowerCase()}…`}
           autoComplete="off"
           className="h-11 w-full rounded-lg border border-slate-300 bg-white pr-3 pl-10 text-slate-900 placeholder:text-slate-400"
         />
@@ -82,9 +91,15 @@ export function CountryBlockPicker({
                     {country.name}{' '}
                     <span className="text-slate-500">({country.code})</span>
                   </span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-red-700">
-                    <Ban className="size-4" aria-hidden="true" />
-                    Block <span className="sr-only">{country.name}</span>
+                  <span
+                    className={`inline-flex items-center gap-1 font-semibold ${tone === 'block' ? 'text-red-700' : 'text-brand-800'}`}
+                  >
+                    {tone === 'block' ? (
+                      <Ban className="size-4" aria-hidden="true" />
+                    ) : (
+                      <Plus className="size-4" aria-hidden="true" />
+                    )}
+                    {addLabel} <span className="sr-only">{country.name}</span>
                   </span>
                 </button>
               </li>
@@ -94,20 +109,23 @@ export function CountryBlockPicker({
       </div>
 
       {value.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">No countries blocked.</p>
+        <p className="mt-3 text-sm text-slate-500">{emptyText}</p>
       ) : (
-        <ul className="mt-3 flex flex-wrap gap-2" aria-label="Blocked">
+        <ul
+          className="mt-3 flex flex-wrap gap-2"
+          aria-label={tone === 'block' ? 'Blocked' : 'Chosen countries'}
+        >
           {value.map((code) => (
             <li
               key={code}
-              className="inline-flex items-center gap-1 rounded-full bg-red-50 py-1 pr-1 pl-3 text-sm font-medium text-red-800"
+              className={`inline-flex items-center gap-1 rounded-full py-1 pr-1 pl-3 text-sm font-medium ${tone === 'block' ? 'bg-red-50 text-red-800' : 'bg-brand-50 text-brand-900'}`}
             >
               {nameOf(code)}
               <button
                 type="button"
                 onClick={() => onChange(value.filter((c) => c !== code))}
-                aria-label={`Unblock ${nameOf(code)}`}
-                className="rounded-full p-1 hover:bg-red-100"
+                aria-label={`${removeLabel} ${nameOf(code)}`}
+                className="rounded-full p-1 hover:bg-black/10"
               >
                 <X className="size-3.5" aria-hidden="true" />
               </button>

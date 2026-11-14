@@ -10,6 +10,7 @@ import { NotFoundError } from '../lib/errors'
 import { API, apiJson } from './apiResponses'
 import { adminHandlers } from './mockAdminApi'
 import { shippingHandlers } from './mockShippingApi'
+import { shopHandlers } from './mockShopApi'
 
 /**
  * A fake backend for tests, using MSW (Mock Service Worker). It intercepts the
@@ -59,6 +60,7 @@ export const server = setupServer(
   ...handlers,
   ...adminHandlers,
   ...shippingHandlers,
+  ...shopHandlers,
 )
 
 // Re-exported so tests can import everything about the fake API from one place.

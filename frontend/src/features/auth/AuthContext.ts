@@ -29,3 +29,7 @@ export function useAuth(): AuthContextValue {
 export function isAdmin(auth: AuthState): boolean {
   return auth.status === 'authenticated' && auth.user.roles.includes('ADMIN')
 }
+
+export function isCustomer(auth: AuthState): boolean {
+  return auth.status === 'authenticated' && auth.user.roles.includes('CUSTOMER')
+}

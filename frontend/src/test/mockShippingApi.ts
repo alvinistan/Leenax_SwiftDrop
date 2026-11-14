@@ -157,6 +157,7 @@ let boxes = initialBoxes()
 let cards: RateCard[] = []
 let audit: AuditEntry[] = []
 let productRestrictions: ProductRestriction[] = []
+let destinations = ['CA', 'GB', 'LK']
 let shipments: ShipmentDetail[] = []
 
 /** Same steps as the server's TrackingStatus.allowedNext(). */
@@ -262,6 +263,7 @@ export const sent: {
   quotes: QuoteRequest[]
   shipments: unknown[]
   tracking: unknown[]
+  destinations: string[][]
 } = {
   policies: [],
   rateCards: [],
@@ -270,6 +272,7 @@ export const sent: {
   quotes: [],
   shipments: [],
   tracking: [],
+  destinations: [],
 }
 
 /** What the simulator endpoint answers (tests may replace it). */
@@ -292,6 +295,7 @@ export function resetMockShipping() {
   cards = []
   audit = []
   productRestrictions = []
+  destinations = ['CA', 'GB', 'LK']
   shipments = []
   simulatedQuote = undefined
   sent.policies = []
@@ -301,6 +305,7 @@ export function resetMockShipping() {
   sent.quotes = []
   sent.shipments = []
   sent.tracking = []
+  sent.destinations = []
 }
 
 const validation = (field: string, message: string) =>
@@ -323,6 +328,13 @@ export const shippingHandlers = [
     return apiJson(settings)
   }),
   http.get(`${BASE}/countries`, () => apiJson(COUNTRIES)),
+  http.get(`${BASE}/destinations`, () => apiJson(destinations)),
+  http.put(`${BASE}/destinations`, async ({ request }) => {
+    const body = (await request.json()) as { countryCodes: string[] }
+    sent.destinations.push(body.countryCodes)
+    destinations = ['LK', ...body.countryCodes].sort()
+    return apiJson(destinations)
+  }),
   http.get(`${BASE}/product-restrictions`, () => apiJson(productRestrictions)),
   http.get(`${BASE}/providers`, () => apiJson(providers)),
   http.put(`${BASE}/providers/:id`, async ({ params, request }) => {

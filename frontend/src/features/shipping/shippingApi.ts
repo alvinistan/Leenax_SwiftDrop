@@ -205,6 +205,16 @@ export async function listCountries(signal?: AbortSignal) {
   return (await http.get<Country[]>(`${BASE}/countries`, { signal })).data
 }
 
+/** Countries we deliver to (the origin country is always included). */
+export async function getDestinations(signal?: AbortSignal) {
+  return (await http.get<string[]>(`${BASE}/destinations`, { signal })).data
+}
+
+export async function updateDestinations(countryCodes: string[]) {
+  return (await http.put<string[]>(`${BASE}/destinations`, { countryCodes }))
+    .data
+}
+
 // ---- couriers ----
 
 export async function listProviders(signal?: AbortSignal) {

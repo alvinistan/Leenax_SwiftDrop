@@ -2,13 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { LockKeyhole } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { Container } from '../components/layout/Container'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { isAdmin, useAuth } from '../features/auth/AuthContext'
+import { useAuth } from '../features/auth/AuthContext'
 import { ApiError, userMessage } from '../lib/errors'
+import { safeRedirect } from '../lib/safeRedirect'
 
 const loginSchema = z.object({
   email: z.email('Enter an email address like name@example.com.'),
@@ -16,11 +17,9 @@ const loginSchema = z.object({
 })
 type LoginValues = z.infer<typeof loginSchema>
 
-/** Only allow redirects to pages on this site (never to another website). */
-function safeRedirect(target: string | null): string {
-  return target && target.startsWith('/') && !target.startsWith('//')
-    ? target
-    : '/admin'
+/** Where to go after logging in when no page was asked for. */
+function home(roles: string[]): string {
+  return roles.includes('ADMIN') ? '/admin' : '/'
 }
 
 export function LoginPage() {
@@ -38,15 +37,15 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) })
 
-  if (isAdmin(auth)) {
-    return <Navigate to={redirectTo} replace />
+  if (auth.status === 'authenticated') {
+    return <Navigate to={redirectTo ?? home(auth.user.roles)} replace />
   }
 
   async function onSubmit(values: LoginValues) {
     setFormError(undefined)
     try {
-      await logIn(values.email, values.password)
-      navigate(redirectTo, { replace: true })
+      const user = await logIn(values.email, values.password)
+      navigate(redirectTo ?? home(user.roles), { replace: true })
     } catch (error) {
       // 401: the server does not say whether the email or the password was wrong,
       // so an attacker cannot find out which emails have accounts.
@@ -67,7 +66,7 @@ export function LoginPage() {
           aria-hidden="true"
         />
         <h1 className="mt-4 text-center text-2xl font-bold text-slate-900">
-          Admin log in
+          Log in
         </h1>
 
         <form
@@ -106,6 +105,15 @@ export function LoginPage() {
             Log in
           </Button>
         </form>
+        <p className="mt-6 text-center text-sm text-slate-600">
+          New here?{' '}
+          <Link
+            to={`/register${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
+            className="font-semibold text-brand-800 hover:underline"
+          >
+            Create an account
+          </Link>
+        </p>
       </div>
     </Container>
   )

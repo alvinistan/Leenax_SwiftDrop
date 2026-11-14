@@ -8,10 +8,12 @@ import { Checkbox } from '../../../components/ui/Checkbox'
 import { ErrorState } from '../../../components/ui/ErrorState'
 import type { ShippingCategory } from '../../../features/admin/adminProductApi'
 import {
+  getDestinations,
   listCategoryPolicies,
   listProductRestrictions,
   SHIPPING_CATEGORY_LABELS,
   updateCategoryPolicy,
+  updateDestinations,
   type CategoryPolicy,
   type Country,
 } from '../../../features/shipping/shippingApi'
@@ -48,7 +50,14 @@ export function CountryRestrictionsPage() {
         have their own rules too: check them before shipping food abroad.
       </p>
 
-      <div className="mt-6 flex flex-col gap-6">
+      {countryState.status === 'success' && (
+        <DestinationsCard countries={countries} nameOf={nameOf} />
+      )}
+
+      <h2 className="mt-10 text-lg font-semibold text-slate-900">
+        Rules per kind of product
+      </h2>
+      <div className="mt-4 flex flex-col gap-6">
         {(policies.state.status === 'loading' ||
           countryState.status === 'loading') && (
           <p className="text-slate-600">Loading restrictions…</p>
@@ -267,5 +276,92 @@ function ProductRestrictions({ nameOf }: { nameOf: (code: string) => string }) {
         )}
       </div>
     </section>
+  )
+}
+
+/** Which countries customers can choose at checkout (owner decision D-3). */
+function DestinationsCard({
+  countries,
+  nameOf,
+}: {
+  countries: Country[]
+  nameOf: (code: string) => string
+}) {
+  const { state, retry } = useAsync(
+    (signal) => getDestinations(signal),
+    'shipping-destinations',
+  )
+  const [chosen, setChosen] = useState<string[]>()
+  const [message, setMessage] = useState<Message>()
+  const [isSaving, setIsSaving] = useState(false)
+  const saved =
+    state.status === 'success' ? state.data.filter((c) => c !== 'LK') : []
+  const value = chosen ?? saved
+  const isDirty = chosen !== undefined && chosen.join() !== saved.join()
+
+  async function save() {
+    setIsSaving(true)
+    setMessage(undefined)
+    try {
+      await updateDestinations(value)
+      setChosen(undefined)
+      retry()
+      setMessage({ tone: 'success', text: 'Delivery countries saved.' })
+    } catch (error) {
+      setMessage({ tone: 'error', text: userMessage(error) })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Card
+      className="mt-6 p-5"
+      role="region"
+      aria-labelledby="destinations-heading"
+    >
+      <h2
+        id="destinations-heading"
+        className="text-lg font-semibold text-slate-900"
+      >
+        Countries we deliver to
+      </h2>
+      <p className="mt-1 text-sm text-slate-600">
+        Customers can only choose these countries at checkout. Sri Lanka is
+        always included.
+      </p>
+      {state.status === 'error' && (
+        <ErrorState description={userMessage(state.error)} onRetry={retry} />
+      )}
+      {state.status === 'success' && (
+        <>
+          <CountryBlockPicker
+            value={value}
+            onChange={(codes) => {
+              setChosen(codes)
+              setMessage(undefined)
+            }}
+            countries={countries}
+            nameOf={nameOf}
+            subject="delivery"
+            addLabel="Add"
+            removeLabel="Remove"
+            emptyText="Only Sri Lanka."
+            tone="allow"
+          />
+          <StatusMessage message={message} className="mt-4" />
+          <div className="mt-4 flex gap-2">
+            <Button onClick={save} disabled={!isDirty} isLoading={isSaving}>
+              Save countries
+            </Button>
+            {isDirty && (
+              <Button variant="secondary" onClick={() => setChosen(undefined)}>
+                Undo changes
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </Card>
   )
 }

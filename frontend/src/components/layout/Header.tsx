@@ -1,7 +1,7 @@
-import { Menu, ShoppingBag, X } from 'lucide-react'
+import { LogOut, Menu, ShoppingBag, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router'
-import { isAdmin, useAuth } from '../../features/auth/AuthContext'
+import { isAdmin, isCustomer, useAuth } from '../../features/auth/AuthContext'
 import { cn } from '../../lib/cn'
 import { buttonClasses } from '../ui/buttonStyles'
 import { Container } from './Container'
@@ -15,7 +15,7 @@ type HeaderProps = {
 export function Header({ cartCount }: HeaderProps) {
   // State: whether the mobile menu is open. Changing it re-renders the header.
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { auth } = useAuth()
+  const { auth, logOut } = useAuth()
 
   const cartLabel = `Cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`
 
@@ -63,6 +63,34 @@ export function Header({ cartCount }: HeaderProps) {
               className={buttonClasses({ variant: 'ghost', size: 'sm' })}
             >
               Admin
+            </Link>
+          )}
+          {isCustomer(auth) && (
+            <>
+              <Link
+                to="/account/orders"
+                className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+              >
+                <UserRound className="size-5" aria-hidden="true" />
+                <span className="hidden sm:inline">My orders</span>
+                <span className="sr-only sm:hidden">My orders</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => logOut()}
+                className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+              >
+                <LogOut className="size-5" aria-hidden="true" />
+                <span className="sr-only">Log out</span>
+              </button>
+            </>
+          )}
+          {auth.status === 'anonymous' && (
+            <Link
+              to="/login"
+              className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+            >
+              Log in
             </Link>
           )}
           <Link

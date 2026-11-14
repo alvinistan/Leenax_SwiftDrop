@@ -65,6 +65,10 @@ export type AdminProductDetail = {
   shippingDomesticOnly: boolean
   /** Extra blocked countries for this product (on top of its category's). */
   shippingBlockedCountries: string[]
+  /** Tax included in the prices, or null for none. */
+  taxRateId: string | null
+  /** Cash on delivery may be offered (Sri Lanka only). */
+  codAllowed: boolean
 }
 
 /**
@@ -102,6 +106,8 @@ export type ProductInput = {
   shippingDomesticOnly?: boolean
   /** Extra blocked countries for this product (on top of its category's). */
   shippingBlockedCountries?: string[]
+  taxRateId?: string | null
+  codAllowed?: boolean
 }
 
 export type AdminProductQuery = {

@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lk.swiftdrop.cart.LinePricing.PricedLine;
+import lk.swiftdrop.catalog.product.ProductResponses.QuantityResponse;
 import lk.swiftdrop.catalog.product.ProductVariant;
 import lk.swiftdrop.catalog.product.ProductVariantRepository;
 import lk.swiftdrop.catalog.product.SaleUnit;
@@ -49,7 +50,8 @@ public class CartController {
      * @param problem null when the line can be ordered; otherwise why not (shown to the customer)
      */
     public record CartLine(UUID variantId, String productName, String productSlug, String variantLabel,
-                           SaleUnit saleUnit, BigDecimal quantity, MoneyResponse unitPrice, MoneyResponse lineTotal,
+                           SaleUnit saleUnit, QuantityResponse rules, BigDecimal quantity, MoneyResponse unitPrice,
+                           MoneyResponse lineTotal,
                            MoneyResponse taxIncluded, String taxName, boolean codAllowed, String imageUrl,
                            String problem) {
     }
@@ -81,7 +83,7 @@ public class CartController {
             ProductVariant variant = found.get(item.variantId());
             if (variant == null || !LinePricing.isForSale(variant)) {
                 // Same answer for "deleted" and "hidden": nothing about drafts leaks.
-                lines.add(new CartLine(item.variantId(), null, null, null, null, item.quantity(), null, null, null,
+                lines.add(new CartLine(item.variantId(), null, null, null, null, null, item.quantity(), null, null, null,
                         null, false, null, "This item is no longer available."));
                 orderable = false;
                 continue;
@@ -96,7 +98,8 @@ public class CartController {
             PricedLine priced = LinePricing.price(variant, item.quantity());
             var product = variant.getProduct();
             lines.add(new CartLine(variant.getId(), product.getName(), product.getSlug(),
-                    LinePricing.variantLabel(variant), variant.getSaleUnit(), item.quantity(),
+                    LinePricing.variantLabel(variant), variant.getSaleUnit(),
+                    QuantityResponse.from(variant.getQuantityRules()), item.quantity(),
                     MoneyResponse.of(priced.unitPrice(), CURRENCY), MoneyResponse.of(priced.lineTotal(), CURRENCY),
                     MoneyResponse.of(priced.taxIncluded(), CURRENCY), priced.taxName(), product.isCodAllowed(),
                     images.urlFor(product.mainImageKey().orElse(null)), problem));

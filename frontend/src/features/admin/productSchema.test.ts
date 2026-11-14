@@ -13,6 +13,8 @@ const base = {
   customsDescription: '',
   shippingDomesticOnly: false,
   shippingBlockedCountries: [] as string[],
+  taxRateId: '',
+  codAllowed: false,
   variants: [{ ...newVariant(), sku: 'CAKE-1', price: '1200' }],
 }
 

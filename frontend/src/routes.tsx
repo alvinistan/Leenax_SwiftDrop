@@ -30,6 +30,31 @@ export const routes: RouteObject[] = [
       { path: 'products/:slug', element: <ProductDetailPage /> }, // :slug = route parameter
       { path: 'cart', element: <CartPage /> },
       {
+        path: 'register',
+        lazy: async () => ({
+          Component: (await import('./pages/RegisterPage')).RegisterPage,
+        }),
+      },
+      {
+        path: 'checkout',
+        lazy: async () => ({
+          Component: (await import('./pages/CheckoutPage')).CheckoutPage,
+        }),
+      },
+      {
+        path: 'account/orders',
+        lazy: async () => ({
+          Component: (await import('./pages/account/MyOrdersPage'))
+            .MyOrdersPage,
+        }),
+      },
+      {
+        path: 'account/orders/:orderNumber',
+        lazy: async () => ({
+          Component: (await import('./pages/account/MyOrderPage')).MyOrderPage,
+        }),
+      },
+      {
         path: 'login',
         lazy: async () => ({
           Component: (await import('./pages/LoginPage')).LoginPage,
@@ -95,6 +120,27 @@ export const routes: RouteObject[] = [
         lazy: async () => ({
           Component: (await import('./pages/admin/AdminProductFormPage'))
             .AdminProductFormPage,
+        }),
+      },
+      {
+        path: 'orders',
+        lazy: async () => ({
+          Component: (await import('./pages/admin/orders/AdminOrdersPage'))
+            .AdminOrdersPage,
+        }),
+      },
+      {
+        path: 'orders/:orderNumber',
+        lazy: async () => ({
+          Component: (await import('./pages/admin/orders/AdminOrderPage'))
+            .AdminOrderPage,
+        }),
+      },
+      {
+        path: 'tax-rates',
+        lazy: async () => ({
+          Component: (await import('./pages/admin/AdminTaxRatesPage'))
+            .AdminTaxRatesPage,
         }),
       },
       {

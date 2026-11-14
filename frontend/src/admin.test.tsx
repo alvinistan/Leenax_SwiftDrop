@@ -9,7 +9,7 @@ describe('admin login', () => {
     const router = renderRoute('/admin/categories')
 
     expect(
-      await screen.findByRole('heading', { name: 'Admin log in' }),
+      await screen.findByRole('heading', { name: 'Log in' }),
     ).toBeInTheDocument()
     expect(router.state.location.search).toBe(
       '?redirectTo=%2Fadmin%2Fcategories',

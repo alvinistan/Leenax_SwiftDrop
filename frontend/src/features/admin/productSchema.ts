@@ -190,6 +190,10 @@ export const productSchema = z
     shippingDomesticOnly: z.boolean(),
     /** Extra blocked countries for this product. */
     shippingBlockedCountries: z.array(z.string().regex(/^[A-Z]{2}$/)).max(300),
+    /** Tax included in the prices ('' = no tax). */
+    taxRateId: z.string(),
+    /** Cash on delivery may be offered (Sri Lanka only). */
+    codAllowed: z.boolean(),
     status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']),
     variants: z
       .array(variantSchema)

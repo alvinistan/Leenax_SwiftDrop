@@ -1,7 +1,7 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
-import { useOutletContext, useParams } from 'react-router'
-import type { RootOutletContext } from '../components/layout/RootLayout'
+import { Link, useParams } from 'react-router'
+import { useCart } from '../features/cart/useCart'
 import { Container } from '../components/layout/Container'
 import { Breadcrumbs } from '../components/navigation/Breadcrumbs'
 import { Badge } from '../components/ui/Badge'
@@ -69,7 +69,7 @@ export function ProductDetailPage() {
 }
 
 function ProductView({ product }: { product: ProductDetail }) {
-  const { addToCart } = useOutletContext<RootOutletContext>()
+  const cart = useCart()
   const activeVariants = product.variants.filter((variant) => variant.active)
 
   // Start on the first choice that can actually be bought.
@@ -177,7 +177,7 @@ function ProductView({ product }: { product: ProductDetail }) {
                 className="w-full sm:w-auto"
                 disabled={!variant.inStock}
                 onClick={() => {
-                  addToCart()
+                  cart.add(variant.id, quantity)
                   setAdded(true)
                 }}
               >
@@ -189,8 +189,10 @@ function ProductView({ product }: { product: ProductDetail }) {
                   className="flex items-center gap-2 text-sm font-medium text-brand-800"
                 >
                   <CheckCircle2 className="size-4" aria-hidden="true" />
-                  Added to cart (preview only: the real cart arrives in a later
-                  phase).
+                  Added to cart.
+                  <Link to="/cart" className="underline">
+                    View cart
+                  </Link>
                 </p>
               )}
             </div>

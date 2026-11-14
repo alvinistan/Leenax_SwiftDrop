@@ -1,7 +1,9 @@
 import {
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Package,
+  Percent,
   Store,
   Tags,
   Truck,
@@ -14,8 +16,10 @@ import { RequireAdmin } from '../../features/auth/RequireAdmin'
 const adminLinks = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/categories', label: 'Categories', icon: Tags, end: false },
+  { to: '/admin/orders', label: 'Orders', icon: ClipboardList, end: false },
   { to: '/admin/products', label: 'Products', icon: Package, end: false },
   { to: '/admin/shipping', label: 'Shipping', icon: Truck, end: false },
+  { to: '/admin/tax-rates', label: 'Tax rates', icon: Percent, end: false },
 ]
 
 /** The admin area's frame: only admins get past RequireAdmin. */

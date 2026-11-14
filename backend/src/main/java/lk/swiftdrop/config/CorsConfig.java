@@ -33,7 +33,8 @@ public class CorsConfig {
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
         // X-XSRF-TOKEN carries the CSRF token (see SecurityConfig).
-        config.setAllowedHeaders(List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
+        // Idempotency-Key: checkout sends it so a repeated submit returns the same order (Phase 8).
+        config.setAllowedHeaders(List.of("Content-Type", "Accept", "X-XSRF-TOKEN", "Idempotency-Key"));
         config.setExposedHeaders(List.of("Location"));
         config.setAllowCredentials(true);
         // Browsers may cache the "preflight" answer for an hour.

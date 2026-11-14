@@ -43,7 +43,8 @@ export function apiPreflight() {
     headers: {
       ...corsHeaders,
       'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE',
-      'Access-Control-Allow-Headers': 'Content-Type,Accept,X-XSRF-TOKEN',
+      'Access-Control-Allow-Headers':
+        'Content-Type,Accept,X-XSRF-TOKEN,Idempotency-Key',
     },
   })
 }

@@ -30,3 +30,12 @@ export async function logIn(email: string, password: string): Promise<void> {
 export async function logOut(): Promise<void> {
   await http.post('/api/auth/logout')
 }
+
+/** Creates a CUSTOMER account. 409 = an account with this email exists. */
+export async function register(input: {
+  email: string
+  password: string
+  displayName: string
+}): Promise<void> {
+  await http.post('/api/auth/register', input)
+}
