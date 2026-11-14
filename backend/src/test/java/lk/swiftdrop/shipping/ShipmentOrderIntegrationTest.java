@@ -268,4 +268,31 @@ class ShipmentOrderIntegrationTest {
         assertThat((List<String>) JsonPath.read(queue, "$.readyToShip[*].order.orderNumber")).contains(number);
         mockMvc.perform(get("/api/admin/orders/dispatch-queue").with(customer)).andExpect(status().isForbidden());
     }
+
+    @Test
+    void theSummaryReportCountsTodaysParcels() throws Exception {
+        String number = placeOrder();
+        send(post("/api/admin/orders/{n}/status", number), ADMIN, "{\"status\": \"CONFIRMED\"}", 200);
+        send(post("/api/admin/orders/{n}/payment", number), ADMIN, "{}", 200);
+        String id = JsonPath.read(send(post(SHIPMENTS), ADMIN, shipmentJson(number, "LK", "550"), 201), "$.id");
+        track(id, "PICKED_UP");
+        track(id, "DELIVERED");
+
+        String today = LocalDate.now(StoreDefaults.ZONE).toString();
+        String byDay = mockMvc.perform(get(SHIPMENTS + "/summary-report").param("from", today).param("to", today)
+                .with(ADMIN)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat((List<String>) JsonPath.read(byDay, "$.series[*].period")).containsExactly(today);
+        assertThat((Integer) JsonPath.read(byDay, "$.totals.shipments")).isGreaterThanOrEqualTo(1);
+        assertThat((Integer) JsonPath.read(byDay, "$.totals.delivered")).isGreaterThanOrEqualTo(1);
+        assertThat((String) JsonPath.read(byDay, "$.totals.averageDaysToDeliver")).isNotNull();
+        assertThat((List<String>) JsonPath.read(byDay, "$.byCourier[*].providerName")).anyMatch(n -> n.contains("DEX"));
+        assertThat((List<String>) JsonPath.read(byDay, "$.byCountry[*].countryCode")).contains("LK");
+        assertThat((List<String>) JsonPath.read(byDay, "$.byStatus[*].status")).contains("DELIVERED");
+
+        String byMonth = mockMvc.perform(get(SHIPMENTS + "/summary-report").param("from", today).param("to", today)
+                .param("groupBy", "MONTH").with(ADMIN)).andReturn().getResponse().getContentAsString();
+        assertThat((List<String>) JsonPath.read(byMonth, "$.series[*].period")).containsExactly(today.substring(0, 7));
+        mockMvc.perform(get(SHIPMENTS + "/summary-report").param("from", today).param("to", today)
+                .with(customer)).andExpect(status().isForbidden());
+    }
 }

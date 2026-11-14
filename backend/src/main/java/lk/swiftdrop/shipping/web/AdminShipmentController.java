@@ -37,11 +37,25 @@ public class AdminShipmentController {
 
     private final ShipmentService shipments;
     private final lk.swiftdrop.shipping.shipment.ExpenseReportService reports;
+    private final lk.swiftdrop.shipping.shipment.ShippingReportService summaries;
 
     public AdminShipmentController(ShipmentService shipments,
-                                   lk.swiftdrop.shipping.shipment.ExpenseReportService reports) {
+                                   lk.swiftdrop.shipping.shipment.ExpenseReportService reports,
+                                   lk.swiftdrop.shipping.shipment.ShippingReportService summaries) {
         this.shipments = shipments;
         this.reports = reports;
+        this.summaries = summaries;
+    }
+
+    /** GET /api/admin/shipping/shipments/summary-report?from=…&to=…&groupBy=DAY|MONTH (Sri Lankan dates). */
+    @GetMapping("/summary-report")
+    public ResponseEntity<lk.swiftdrop.shipping.shipment.ShippingReportService.Summary> summaryReport(
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate from,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate to,
+            @RequestParam(defaultValue = "DAY") lk.swiftdrop.shipping.shipment.ShippingReportService.Grouping groupBy) {
+        return ResponseEntity.ok(summaries.summary(from, to, groupBy));
     }
 
     /** GET /api/admin/shipping/shipments/expenses-report?from=2026-11-01&to=2026-11-30 (Sri Lankan dates). */

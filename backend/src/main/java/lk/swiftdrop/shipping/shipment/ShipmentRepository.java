@@ -44,4 +44,12 @@ public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
     boolean existsByProviderIdAndAwbIgnoreCase(UUID providerId, String awb);
 
     boolean existsByProviderIdAndAwbIgnoreCaseAndIdNot(UUID providerId, String awb, UUID id);
+
+    /** Shipments created in a period with their tracking steps, for the reports. */
+    @EntityGraph(attributePaths = {"provider", "order", "events"})
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT DISTINCT s FROM Shipment s
+            WHERE s.createdAt >= :from AND s.createdAt < :to
+            """)
+    java.util.List<Shipment> findForReport(@Param("from") java.time.Instant from, @Param("to") java.time.Instant to);
 }
