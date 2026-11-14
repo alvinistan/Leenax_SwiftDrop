@@ -43,7 +43,9 @@ public final class ShipmentDtos {
             @Size(max = 20) String orderNumber,
             @NotNull @jakarta.validation.Valid ShipmentDetailsRequest details,
             /** When it was booked on the portal; empty = now. */
-            Instant bookedAt) {
+            Instant bookedAt,
+            /** Shipping a website order before its payment arrived: why (recorded in the order history). */
+            @Size(max = 300) String shipBeforePaymentReason) {
     }
 
     public record TrackingUpdateRequest(

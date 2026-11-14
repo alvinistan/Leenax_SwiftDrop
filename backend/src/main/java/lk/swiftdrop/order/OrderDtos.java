@@ -95,7 +95,16 @@ public final class OrderDtos {
                                    PaymentMethod paymentMethod, CustomerOrder.PaymentStatus paymentStatus,
                                    List<ItemView> items, MoneyResponse itemsTotal, MoneyResponse taxIncluded,
                                    ShippingView shipping, MoneyResponse grandTotal, AddressView address, String note,
-                                   List<EventView> history, Instant createdAt, List<ShipmentView> shipments) {
+                                   List<EventView> history, Instant createdAt, List<ShipmentView> shipments,
+                                   DispatchCheck.Result dispatch) {
+    }
+
+    /** An order waiting for the owner: to confirm, or to ship (with what still blocks it). */
+    public record QueueEntry(OrderSummary order, DispatchCheck.Result dispatch) {
+    }
+
+    public record DispatchQueue(List<QueueEntry> toConfirm, List<QueueEntry> readyToShip,
+                                List<QueueEntry> waiting) {
     }
 
     public record OrderSummary(String orderNumber, OrderStatus status, PaymentMethod paymentMethod,

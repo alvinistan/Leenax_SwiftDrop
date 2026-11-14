@@ -31,4 +31,14 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
 
     @Query(value = "SELECT nextval('order_number_seq')", nativeQuery = true)
     long nextOrderNumber();
+
+    /** PLACED orders, and CONFIRMED orders without a parcel yet; oldest first. */
+    @Query("""
+            SELECT o FROM CustomerOrder o
+            WHERE o.status = lk.swiftdrop.order.OrderStatus.PLACED
+               OR (o.status = lk.swiftdrop.order.OrderStatus.CONFIRMED
+                   AND NOT EXISTS (SELECT s FROM Shipment s WHERE s.order = o))
+            ORDER BY o.createdAt ASC
+            """)
+    java.util.List<CustomerOrder> findOpenForDispatch();
 }

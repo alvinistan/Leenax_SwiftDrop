@@ -38,6 +38,9 @@ public class CustomerOrder {
 
     public enum PaymentStatus { UNPAID, PAID }
 
+    /** History entries with this status are for the owner only. */
+    public static final String INTERNAL_NOTE = "NOTE";
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -144,6 +147,11 @@ public class CustomerOrder {
         }
         status = next;
         events.add(new OrderStatusEvent(this, next.name(), note, actor));
+    }
+
+    /** An internal note in the history (customers do not see it), e.g. why it shipped before payment. */
+    public void addInternalNote(String note, String actor) {
+        events.add(new OrderStatusEvent(this, INTERNAL_NOTE, note, actor));
     }
 
     public void markPaid(String note, String actor) {

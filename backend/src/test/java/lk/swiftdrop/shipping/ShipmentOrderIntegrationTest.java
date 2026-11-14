@@ -132,6 +132,7 @@ class ShipmentOrderIntegrationTest {
         assertThat(refused).contains("Confirm it before shipping");
 
         send(post("/api/admin/orders/{n}/status", number), ADMIN, "{\"status\": \"CONFIRMED\"}", 200);
+        send(post("/api/admin/orders/{n}/payment", number), ADMIN, "{}", 200); // dispatch rule: paid first
         send(post(SHIPMENTS), ADMIN, shipmentJson(number, "IN", "550"), 400); // wrong country
         String shipment = send(post(SHIPMENTS), ADMIN, shipmentJson(number, "LK", "550"), 201);
         String id = JsonPath.read(shipment, "$.id");
@@ -158,6 +159,7 @@ class ShipmentOrderIntegrationTest {
     void courierExpensesAndTheGrossMarginReport() throws Exception {
         String number = placeOrder();
         send(post("/api/admin/orders/{n}/status", number), ADMIN, "{\"status\": \"CONFIRMED\"}", 200);
+        send(post("/api/admin/orders/{n}/payment", number), ADMIN, "{}", 200); // dispatch rule: paid first
         String first = JsonPath.read(send(post(SHIPMENTS), ADMIN, shipmentJson(number, "LK", "550"), 201), "$.id");
         String second = JsonPath.read(send(post(SHIPMENTS), ADMIN, shipmentJson(number, "LK", "400"), 201), "$.id");
         String other = JsonPath.read(send(post(SHIPMENTS), ADMIN, shipmentJson(null, "LK", "null"), 201), "$.id");
@@ -227,5 +229,43 @@ class ShipmentOrderIntegrationTest {
         assertThat(left).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM shipping_quotes WHERE id = ?::uuid", Integer.class, usedQuote))
                 .isEqualTo(1);
+    }
+
+    @Test
+    void unpaidOrdersWaitUnlessTheOwnerGivesAReason() throws Exception {
+        String number = placeOrder(); // "arrange payment later"
+        String queue = read("/api/admin/orders/dispatch-queue", ADMIN);
+        assertThat((List<String>) JsonPath.read(queue, "$.toConfirm[*].order.orderNumber")).contains(number);
+
+        send(post("/api/admin/orders/{n}/status", number), ADMIN, "{\"status\": \"CONFIRMED\"}", 200);
+        queue = read("/api/admin/orders/dispatch-queue", ADMIN);
+        assertThat((List<String>) JsonPath.read(queue, "$.waiting[*].order.orderNumber")).contains(number);
+        String detail = read("/api/admin/orders/{n}", ADMIN, number);
+        assertThat((Boolean) JsonPath.read(detail, "$.dispatch.paymentOverridable")).isTrue();
+
+        String refused = send(post(SHIPMENTS), ADMIN, shipmentJson(number, "LK", "550"), 400);
+        assertThat(refused).contains("Payment has not been received");
+        send(post(SHIPMENTS), ADMIN, shipmentJson(number, "LK", "550")
+                .replace("\"orderNumber\"", "\"shipBeforePaymentReason\": \"ok\", \"orderNumber\""), 400); // too short
+
+        send(post(SHIPMENTS), ADMIN, shipmentJson(number, "LK", "550")
+                .replace("\"orderNumber\"", "\"shipBeforePaymentReason\": \"Trusted repeat customer\", \"orderNumber\""), 201);
+        String admin = read("/api/admin/orders/{n}", ADMIN, number);
+        assertThat((List<String>) JsonPath.read(admin, "$.history[*].note"))
+                .contains("Shipped before payment: Trusted repeat customer");
+        // The customer never sees internal notes
+        assertThat(read("/api/orders/{n}", customer, number)).doesNotContain("Trusted repeat customer");
+        queue = read("/api/admin/orders/dispatch-queue", ADMIN);
+        assertThat(queue).doesNotContain(number); // it has a parcel now
+    }
+
+    @Test
+    void paidOrdersAreReadyToShip() throws Exception {
+        String number = placeOrder();
+        send(post("/api/admin/orders/{n}/status", number), ADMIN, "{\"status\": \"CONFIRMED\"}", 200);
+        send(post("/api/admin/orders/{n}/payment", number), ADMIN, "{}", 200);
+        String queue = read("/api/admin/orders/dispatch-queue", ADMIN);
+        assertThat((List<String>) JsonPath.read(queue, "$.readyToShip[*].order.orderNumber")).contains(number);
+        mockMvc.perform(get("/api/admin/orders/dispatch-queue").with(customer)).andExpect(status().isForbidden());
     }
 }

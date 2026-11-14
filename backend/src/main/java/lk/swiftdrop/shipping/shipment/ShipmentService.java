@@ -17,6 +17,8 @@ import lk.swiftdrop.common.error.ResourceNotFoundException;
 import lk.swiftdrop.common.money.MoneyResponse;
 import lk.swiftdrop.common.web.PageResponse;
 import lk.swiftdrop.order.CustomerOrder;
+import lk.swiftdrop.order.DispatchCheck;
+import lk.swiftdrop.order.DispatchService;
 import lk.swiftdrop.order.OrderRepository;
 import lk.swiftdrop.order.OrderStatus;
 import lk.swiftdrop.store.StoreDefaults;
@@ -60,11 +62,13 @@ public class ShipmentService {
     private final Clock clock;
     private final OrderRepository orders;
     private final CourierExpenseRepository expenses;
+    private final DispatchService dispatch;
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public ShipmentService(ShipmentRepository shipments, CourierProviderRepository providers,
                            CourierProviderRegistry registry, ShippingAuditService audit, Clock clock,
-                           OrderRepository orders, CourierExpenseRepository expenses) {
+                           OrderRepository orders, CourierExpenseRepository expenses, DispatchService dispatch) {
+        this.dispatch = dispatch;
         this.orders = orders;
         this.expenses = expenses;
         this.shipments = shipments;
@@ -103,7 +107,8 @@ public class ShipmentService {
         Shipment shipment = Shipment.bookedManually(provider, awb, ShippingAuditService.currentUser(), bookedAt);
         applyDetails(shipment, provider, d, awb);
         if (request.orderNumber() != null && !request.orderNumber().isBlank()) {
-            shipment.linkTo(shippableOrder(request.orderNumber().trim(), d.destinationCountry()));
+            shipment.linkTo(shippableOrder(request.orderNumber().trim(), d.destinationCountry(),
+                    request.shipBeforePaymentReason()));
         }
         shipments.saveAndFlush(shipment);
         audit.record("SHIPMENT", shipment.getId(), Action.CREATE, null, AuditView.of(shipment));
@@ -175,12 +180,21 @@ public class ShipmentService {
      * Only CONFIRMED (or already SHIPPED, for a second parcel) orders can be
      * shipped: nothing is booked just because an order was placed.
      */
-    private CustomerOrder shippableOrder(String orderNumber, String destinationCountry) {
+    private CustomerOrder shippableOrder(String orderNumber, String destinationCountry, String overrideReason) {
         CustomerOrder order = orders.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new BadRequestException("Order " + orderNumber + " was not found."));
         if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.SHIPPED) {
             throw new BadRequestException("Order " + orderNumber + " is " + order.getStatus().name().toLowerCase(Locale.ROOT)
                     + ". Confirm it before shipping.");
+        }
+        DispatchCheck.Result check = dispatch.check(order);
+        if (!check.ready()) {
+            String reason = overrideReason == null ? "" : overrideReason.trim();
+            if (!check.paymentOverridable() || reason.length() < 5) {
+                throw new BadRequestException(String.join(" ", check.blockers()));
+            }
+            // The owner chose to ship before payment: keep the reason in the order history.
+            order.addInternalNote("Shipped before payment: " + reason, ShippingAuditService.currentUser());
         }
         if (!order.getAddress().countryCode().equals(destinationCountry)) {
             throw new BadRequestException("The destination must be " + order.getAddress().countryCode()

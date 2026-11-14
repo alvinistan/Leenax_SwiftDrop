@@ -29,6 +29,8 @@ import lk.swiftdrop.order.OrderDtos.AddressRequest;
 import lk.swiftdrop.order.OrderDtos.AddressView;
 import lk.swiftdrop.order.OrderDtos.AdminOrderDetail;
 import lk.swiftdrop.order.OrderDtos.CustomerOrderDetail;
+import lk.swiftdrop.order.OrderDtos.DispatchQueue;
+import lk.swiftdrop.order.OrderDtos.QueueEntry;
 import lk.swiftdrop.order.OrderDtos.EventView;
 import lk.swiftdrop.order.OrderDtos.ItemView;
 import lk.swiftdrop.order.OrderDtos.OrderSummary;
@@ -72,11 +74,14 @@ public class OrderService {
     private final ShippingConfigService shippingConfig;
     private final Clock clock;
     private final ShipmentRepository shipments;
+    private final DispatchService dispatch;
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public OrderService(OrderRepository orders, UserRepository users, ProductVariantRepository variants,
                         ShippingQuoteOptionRepository quoteOptions, QuoteService quotes,
-                        ShippingConfigService shippingConfig, Clock clock, ShipmentRepository shipments) {
+                        ShippingConfigService shippingConfig, Clock clock, ShipmentRepository shipments,
+                        DispatchService dispatch) {
+        this.dispatch = dispatch;
         this.shipments = shipments;
         this.orders = orders;
         this.users = users;
@@ -205,6 +210,28 @@ public class OrderService {
         return toAdminDetail(find(orderNumber));
     }
 
+    /**
+     * The owner's to-do list, oldest first: orders to confirm, confirmed orders
+     * ready to hand to a courier, and confirmed orders still waiting (with why).
+     */
+    public DispatchQueue dispatchQueue() {
+        List<QueueEntry> toConfirm = new ArrayList<>();
+        List<QueueEntry> ready = new ArrayList<>();
+        List<QueueEntry> waiting = new ArrayList<>();
+        for (CustomerOrder o : orders.findOpenForDispatch()) {
+            DispatchCheck.Result check = dispatch.check(o);
+            QueueEntry entry = new QueueEntry(toSummary(o), check);
+            if (o.getStatus() == OrderStatus.PLACED) {
+                toConfirm.add(entry);
+            } else if (check.ready()) {
+                ready.add(entry);
+            } else {
+                waiting.add(entry);
+            }
+        }
+        return new DispatchQueue(toConfirm, ready, waiting);
+    }
+
     @Transactional
     public AdminOrderDetail changeStatus(String orderNumber, OrderStatus next, String note, String actor) {
         CustomerOrder order = find(orderNumber);
@@ -278,7 +305,9 @@ public class OrderService {
     }
 
     private CustomerOrderDetail toCustomerDetail(CustomerOrder o) {
+        // Internal notes are for the owner only.
         List<EventView> history = o.getEvents().stream()
+                .filter(e -> !CustomerOrder.INTERNAL_NOTE.equals(e.getStatus()))
                 .map(e -> new EventView(e.getStatus(), e.getNote(), null, e.getCreatedAt())).toList();
         return new CustomerOrderDetail(o.getOrderNumber(), o.getStatus(), o.getPaymentMethod(), o.getPaymentStatus(),
                 items(o), m(o.getItemsTotal()), m(o.getTaxIncluded()), m(o.getShippingPrice()), m(o.getGrandTotal()),
@@ -297,7 +326,7 @@ public class OrderService {
                 new ShippingView(s.providerCode(), s.providerName(), s.serviceName(), m(s.courierPrice()),
                         m(s.platformFee()), m(o.getShippingPrice()), s.markupDescription(), s.chargeableWeightKg()),
                 m(o.getGrandTotal()), AddressView.of(o.getAddress()), o.getCustomerNote(), history, o.getCreatedAt(),
-                shipmentsOf(o));
+                shipmentsOf(o), dispatch.check(o));
     }
 
     private static OrderSummary toSummary(CustomerOrder o) {

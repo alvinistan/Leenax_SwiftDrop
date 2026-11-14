@@ -43,6 +43,12 @@ public class AdminOrderController {
         return ResponseEntity.ok(orders.search(q, status, page, size));
     }
 
+    /** GET /api/admin/orders/dispatch-queue: what to confirm and what to ship next. */
+    @GetMapping("/dispatch-queue")
+    public ResponseEntity<OrderDtos.DispatchQueue> dispatchQueue() {
+        return ResponseEntity.ok(orders.dispatchQueue());
+    }
+
     @GetMapping("/{orderNumber}")
     public ResponseEntity<AdminOrderDetail> get(@PathVariable String orderNumber) {
         return ResponseEntity.ok(orders.adminGet(orderNumber));
