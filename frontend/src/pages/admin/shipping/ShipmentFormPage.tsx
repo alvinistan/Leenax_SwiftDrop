@@ -8,6 +8,7 @@ import { Card } from '../../../components/ui/Card'
 import { ErrorState } from '../../../components/ui/ErrorState'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
+import { Textarea } from '../../../components/ui/Textarea'
 import { applyFieldErrors } from '../../../features/shipping/applyFieldErrors'
 import { fromLocalInput } from '../../../features/shipping/dates'
 import {
@@ -36,6 +37,8 @@ export function ShipmentFormPage() {
   // ?order=SD-001001: recording the parcel of a website order (details come from the order).
   const [params] = useSearchParams()
   const orderNumber = id ? null : params.get('order')
+  const beforePayment =
+    orderNumber !== null && params.get('beforePayment') === '1'
   const order = useAsync(
     (signal) =>
       orderNumber ? adminGetOrder(orderNumber, signal) : Promise.resolve(null),
@@ -88,6 +91,7 @@ export function ShipmentFormPage() {
         countryState.status === 'success' &&
         order.state.status === 'success' && (
           <ShipmentForm
+            beforePayment={beforePayment}
             order={order.state.data}
             shipment={shipment.state.data}
             providers={providers.state.data}
@@ -99,13 +103,20 @@ export function ShipmentFormPage() {
 }
 
 type FormProps = {
+  beforePayment: boolean
   order: AdminOrder | null
   shipment: ShipmentDetail | null
   providers: CourierProvider[]
   countries: { code: string; name: string }[]
 }
 
-function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
+function ShipmentForm({
+  beforePayment,
+  order,
+  shipment,
+  providers,
+  countries,
+}: FormProps) {
   const navigate = useNavigate()
   const [error, setErrorMessage] = useState<string>()
   // Only couriers that are on and can be booked by hand (capabilities, not names).
@@ -131,6 +142,7 @@ function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
           weightKg: shipment.weightKg ?? '',
           courierCost: shipment.courierCost?.amount ?? '',
           bookedAt: '',
+          shipBeforePaymentReason: '',
         }
       : order
         ? {
@@ -146,6 +158,7 @@ function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
             weightKg: order.shipping.chargeableWeightKg,
             courierCost: '',
             bookedAt: '',
+            shipBeforePaymentReason: '',
           }
         : {
             providerId: bookable.length === 1 ? bookable[0].id : '',
@@ -157,6 +170,7 @@ function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
             weightKg: '',
             courierCost: '',
             bookedAt: '',
+            shipBeforePaymentReason: '',
           },
   })
   const providerId = useWatch({ control, name: 'providerId' })
@@ -167,6 +181,13 @@ function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
 
   async function onSubmit(v: ShipmentFormValues) {
     setErrorMessage(undefined)
+    if (beforePayment && v.shipBeforePaymentReason.length < 5) {
+      setError('shipBeforePaymentReason', {
+        message:
+          'Write why this order ships before payment (at least 5 characters).',
+      })
+      return
+    }
     const details = {
       serviceId: v.serviceId || null,
       orderReference: v.orderReference,
@@ -182,6 +203,9 @@ function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
         : await createShipment({
             providerId: v.providerId,
             orderNumber: order?.orderNumber ?? null,
+            shipBeforePaymentReason: beforePayment
+              ? v.shipBeforePaymentReason
+              : null,
             bookedAt: fromLocalInput(v.bookedAt),
             details,
           })
@@ -296,6 +320,17 @@ function ShipmentForm({ order, shipment, providers, countries }: FormProps) {
             error={errors.courierCost?.message}
             {...register('courierCost')}
           />
+          {beforePayment && (
+            <div className="sm:col-span-2">
+              <Textarea
+                label="Why ship before payment?"
+                hint="Kept in the order history for you; the customer does not see it."
+                rows={2}
+                error={errors.shipBeforePaymentReason?.message}
+                {...register('shipBeforePaymentReason')}
+              />
+            </div>
+          )}
           {!shipment && (
             <Input
               type="datetime-local"

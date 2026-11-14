@@ -122,6 +122,12 @@ export function seedAdminOrder(
     ],
     createdAt: '2026-11-14T08:00:00Z',
     shipments: [],
+    dispatch: {
+      ready: false,
+      blockers: [],
+      warnings: [],
+      paymentOverridable: false,
+    },
     ...order,
   }
   orders.push(full)
@@ -204,6 +210,28 @@ const NEXT: Record<OrderStatus, OrderStatus[]> = {
   DELIVERED: [],
   CANCELLED: [],
 }
+
+/** Same rules as the server's DispatchCheck (domestic orders only in these tests). */
+function dispatchOf(o: AdminOrder) {
+  const blockers: string[] = []
+  if (o.status === 'PLACED') blockers.push('Confirm the order first.')
+  const unpaid =
+    o.paymentMethod === 'ARRANGE_LATER' && o.paymentStatus !== 'PAID'
+  if (unpaid) {
+    blockers.push(
+      'Payment has not been received. Mark the order as paid, or ship anyway with a reason.',
+    )
+  }
+  return {
+    ready: blockers.length === 0,
+    blockers,
+    warnings: [],
+    paymentOverridable: unpaid && blockers.length === 1,
+  }
+}
+
+const withDispatch = (o: AdminOrder | undefined) =>
+  o && { ...o, dispatch: dispatchOf(o) }
 
 const page = <T>(content: T[]) => ({
   content,
@@ -366,8 +394,39 @@ export const shopHandlers = [
     ),
   ),
 
+  http.get(`${API}/api/admin/orders/dispatch-queue`, () => {
+    const entry = (o: AdminOrder) => ({
+      order: {
+        orderNumber: o.orderNumber,
+        status: o.status,
+        paymentMethod: o.paymentMethod,
+        paymentStatus: o.paymentStatus,
+        grandTotal: o.grandTotal,
+        itemCount: o.items.length,
+        recipientName: o.address.recipientName,
+        countryCode: o.address.countryCode,
+        createdAt: o.createdAt,
+      },
+      dispatch: dispatchOf(o),
+    })
+    const open = orders.filter(
+      (o) =>
+        o.status === 'PLACED' ||
+        (o.status === 'CONFIRMED' && o.shipments.length === 0),
+    )
+    return apiJson({
+      toConfirm: open.filter((o) => o.status === 'PLACED').map(entry),
+      readyToShip: open
+        .filter((o) => o.status === 'CONFIRMED' && dispatchOf(o).ready)
+        .map(entry),
+      waiting: open
+        .filter((o) => o.status === 'CONFIRMED' && !dispatchOf(o).ready)
+        .map(entry),
+    })
+  }),
+
   http.get(`${API}/api/admin/orders/:n`, ({ params }) =>
-    apiJson(orders.find((x) => x.orderNumber === params.n)),
+    apiJson(withDispatch(orders.find((x) => x.orderNumber === params.n))),
   ),
 
   http.post(
@@ -392,7 +451,7 @@ export const shopHandlers = [
           at: '2026-11-14T10:00:00Z',
         },
       ]
-      return apiJson(o)
+      return apiJson(withDispatch(o))
     },
   ),
 
@@ -408,7 +467,7 @@ export const shopHandlers = [
         at: '2026-11-14T10:00:00Z',
       },
     ]
-    return apiJson(o)
+    return apiJson(withDispatch(o))
   }),
 
   http.get(`${API}/api/admin/tax-rates`, () => apiJson(taxRates)),

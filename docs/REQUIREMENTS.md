@@ -103,3 +103,4 @@ None of these block Phase 1. Each one blocks the phase listed.
 | D-10 | Domain name (`swiftdrop.lk`?) and business registration | Phase 14 | `.lk` domains are registered through the LK Domain Registry |
 | D-11 | Return, refund and privacy policies | Before launch | Legal text written by you |
 | D-12 | Languages: English only, or also Sinhala and Tamil? | Phase 2 | **Decided 2026-10-28: English only, permanently.** No translation framework needed. |
+| D-13 | Customer emails (order placed, shipped, delivered): which email provider? | When wanted | Needs an account (e.g. Amazon SES, Brevo) and a sending domain; credentials stay on the server |

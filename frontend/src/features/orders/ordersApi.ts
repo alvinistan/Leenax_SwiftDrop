@@ -188,6 +188,8 @@ export type AdminOrder = Omit<
   customerEmail: string | null
   customerName: string | null
   allowedNextStatuses: OrderStatus[]
+  /** May this order be handed to a courier now? */
+  dispatch: DispatchCheck
   shipping: {
     providerCode: string
     providerName: string
@@ -198,6 +200,30 @@ export type AdminOrder = Omit<
     markupDescription: string
     chargeableWeightKg: string
   }
+}
+
+export type DispatchCheck = {
+  ready: boolean
+  blockers: string[]
+  warnings: string[]
+  /** true when the only problem is a missing payment (the owner may ship anyway with a reason) */
+  paymentOverridable: boolean
+}
+
+export type QueueEntry = { order: OrderSummary; dispatch: DispatchCheck }
+
+export type DispatchQueue = {
+  toConfirm: QueueEntry[]
+  readyToShip: QueueEntry[]
+  waiting: QueueEntry[]
+}
+
+export async function adminDispatchQueue(signal?: AbortSignal) {
+  return (
+    await http.get<DispatchQueue>('/api/admin/orders/dispatch-queue', {
+      signal,
+    })
+  ).data
 }
 
 export async function adminListOrders(

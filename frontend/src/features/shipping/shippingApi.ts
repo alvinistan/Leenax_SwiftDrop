@@ -570,6 +570,8 @@ export async function getShipment(shipmentId: string, signal?: AbortSignal) {
 export async function createShipment(input: {
   providerId: string
   orderNumber: string | null
+  /** Shipping before payment arrived: why (kept in the order history). */
+  shipBeforePaymentReason?: string | null
   bookedAt: string | null
   details: ShipmentDetailsInput
 }) {

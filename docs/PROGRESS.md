@@ -2,9 +2,21 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Shipping Phase F — Shipments linked to orders, tracking, courier expenses
+## Shipping Phase G — Dispatch rules and dispatch queue
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-14
+- **Done:**
+  - Ship only confirmed, paid (or COD) orders, with customs details abroad
+  - Owner override with a reason (internal note)
+  - Dispatch page (ready / waiting / to confirm)
+  - 135 backend + 136 frontend tests; browser end-to-end verified
+- **Open decision:** D-13 email provider for customer notifications
+- **Details:** [shipping/SHIPPING_DESIGN.md §18](shipping/SHIPPING_DESIGN.md)
+
+## Shipping Phase F — Shipments linked to orders, tracking, courier expenses
+
+- **Status:** Done (owner continued to Phase G)
 - **Date:** 2026-11-14
 - **Done:**
   - Flyway V13

@@ -240,6 +240,11 @@ export const shipmentSchema = z.object({
   ),
   courierCost: optional(MONEY, 'Enter an amount like 550 or 550.50.'),
   bookedAt: z.string(),
+  /** Only when shipping before payment (checked in the form). */
+  shipBeforePaymentReason: z
+    .string()
+    .trim()
+    .max(300, 'At most 300 characters.'),
 })
 export type ShipmentFormValues = z.infer<typeof shipmentSchema>
 

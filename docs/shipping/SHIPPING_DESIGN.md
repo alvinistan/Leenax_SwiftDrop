@@ -489,3 +489,30 @@ Each phase follows the usual workflow (plan, implement, test, report, commit, wa
 
 **Next:** Phase G (dispatch rules: payment checks before shipping, customer notifications), then D (DHL, when access is ready) and H (reports with charts).
 
+## 18. Phase G — dispatch rules and dispatch queue (done 2026-11-14)
+
+![Dispatch](../phase-reports/images/shipping-g-dispatch.png)
+
+**Rules** (`DispatchCheck`, plain Java, unit tested): an order may be handed to a courier only when:
+1. it is **CONFIRMED** (or already SHIPPED, for a second parcel);
+2. **payment**: "we will contact you" orders must be **marked paid**. COD is paid on delivery, so it ships unpaid. The owner may ship an unpaid order anyway with a **written reason** (at least 5 characters). The reason is kept as an **internal note** in the order history, which customers never see. The override is only possible when the payment is the only problem;
+3. **international**: every product has an **HS code and customs description**;
+4. **warning only**: a product's country rules changed after the order was placed.
+
+The rules are checked when a shipment is recorded for an order, shown on the admin order page ("Ready to ship?"), and drive the new **Dispatch** page: *Ready to ship* (with "Record shipment"), *Waiting* (with the reasons) and *To confirm*, oldest first.
+
+**Not built, and why**
+- **Automatic booking:** this needs a courier API. DEX has none, and DHL is Phase D. The Dispatch page is the manual equivalent. API booking will use the same rules.
+- **Card-payment rules:** these depend on online payments (master Phase 9, decision D-6).
+- **Customer emails** (order placed, shipped with tracking link, delivered): this needs an email provider and credentials. It is a new **owner decision D-13**. Until then customers follow their order on "My order".
+
+**Verified**
+- Backend: **135 tests**. New ones:
+  - 5 unit tests: COD, payment override, placed orders, customs abroad, warnings;
+  - 2 integration tests: an unpaid order waits, the reason is too short or OK, the note is hidden from the customer, the queue moves; a paid order is ready; 403 for customers.
+- Frontend: **136 tests**. Lint, types and build are clean.
+- Browser:
+  - an unpaid confirmed order showed under *Waiting* with the reason;
+  - it was shipped with a reason, which was recorded as an internal note and not visible to the customer;
+  - no console errors.
+

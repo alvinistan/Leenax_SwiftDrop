@@ -143,7 +143,7 @@ function OrderView({
           <Card className="p-5 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-semibold text-slate-900">Shipments</h2>
-              {(order.status === 'CONFIRMED' || order.status === 'SHIPPED') && (
+              {order.dispatch.ready && (
                 <Link
                   to={`/admin/shipping/shipments/new?order=${encodeURIComponent(order.orderNumber)}`}
                   className={buttonClasses({
@@ -155,12 +155,9 @@ function OrderView({
                 </Link>
               )}
             </div>
+            <DispatchStatus order={order} />
             {order.shipments.length === 0 ? (
-              <p className="mt-2 text-slate-500">
-                {order.status === 'PLACED'
-                  ? 'Confirm the order before booking the courier.'
-                  : 'No parcel recorded yet.'}
-              </p>
+              <p className="mt-2 text-slate-500">No parcel recorded yet.</p>
             ) : (
               <div className="mt-3">
                 <OrderShipments shipments={order.shipments} />
@@ -185,10 +182,12 @@ function OrderView({
               {order.history.map((h, i) => (
                 <li key={i}>
                   <span className="font-medium">
-                    {h.status === 'PAID'
-                      ? 'Payment received'
-                      : (ORDER_STATUS_LABELS[h.status as OrderStatus] ??
-                        h.status)}
+                    {h.status === 'NOTE'
+                      ? 'Internal note'
+                      : h.status === 'PAID'
+                        ? 'Payment received'
+                        : (ORDER_STATUS_LABELS[h.status as OrderStatus] ??
+                          h.status)}
                   </span>
                   {h.note && ` · ${h.note}`}
                   <span className="text-slate-500">
@@ -291,5 +290,48 @@ function OrderView({
         </div>
       </div>
     </>
+  )
+}
+
+/** Can this order be handed to a courier now? If not, why not. */
+function DispatchStatus({ order }: { order: AdminOrder }) {
+  const d = order.dispatch
+  if (
+    order.status !== 'CONFIRMED' &&
+    order.status !== 'SHIPPED' &&
+    order.status !== 'PLACED'
+  ) {
+    return null
+  }
+  return (
+    <div className="mt-3 space-y-2" aria-label="Ready to ship?" role="group">
+      {d.ready ? (
+        order.shipments.length === 0 && (
+          <p className="rounded-lg bg-emerald-50 p-2 text-emerald-800">
+            Ready to ship: book the parcel with {order.shipping.providerName},
+            then record it here.
+          </p>
+        )
+      ) : (
+        <ul className="list-disc space-y-1 rounded-lg bg-amber-50 py-2 pr-2 pl-6 text-amber-900">
+          {d.blockers.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+        </ul>
+      )}
+      {d.warnings.map((w) => (
+        <p key={w} className="rounded-lg bg-amber-50 p-2 text-amber-900">
+          {w}
+        </p>
+      ))}
+      {d.paymentOverridable && (
+        <Link
+          to={`/admin/shipping/shipments/new?order=${encodeURIComponent(order.orderNumber)}&beforePayment=1`}
+          className="font-semibold text-brand-800 hover:underline"
+        >
+          Ship before payment (with a reason)
+        </Link>
+      )}
+    </div>
   )
 }

@@ -29,6 +29,7 @@ describe('shipments linked to orders', () => {
     seedAdminOrder({
       orderNumber: 'SD-001010',
       status: 'CONFIRMED',
+      paymentStatus: 'PAID',
       allowedNextStatuses: ['SHIPPED', 'CANCELLED'],
     })
     const router = renderRoute('/admin/orders/SD-001010')
@@ -78,7 +79,7 @@ describe('shipments linked to orders', () => {
     renderRoute('/admin/orders/SD-001011')
 
     expect(
-      await screen.findByText('Confirm the order before booking the courier.'),
+      await screen.findByText('Confirm the order first.'),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: 'Record shipment' }),
