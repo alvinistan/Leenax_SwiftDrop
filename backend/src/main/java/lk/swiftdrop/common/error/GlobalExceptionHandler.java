@@ -76,6 +76,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.CONFLICT, "The request conflicts with existing data.");
     }
 
+    /**
+     * 409: someone else saved a change to the same record first (optimistic
+     * locking with @Version). Nothing was overwritten.
+     */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    ResponseEntity<ProblemDetail> handleOptimisticLock(
+            org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return problem(HttpStatus.CONFLICT,
+                "Someone else changed this at the same time. Reload the page and try again.");
+    }
+
     /** 400 */
     @ExceptionHandler(BadRequestException.class)
     ResponseEntity<ProblemDetail> handleBadRequest(BadRequestException ex) {

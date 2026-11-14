@@ -36,7 +36,8 @@ public class ShippingAuditService {
                 after == null ? null : json.writeValueAsString(after)));
     }
 
-    private static String currentUser() {
+    /** The logged-in admin's email, or "system". */
+    public static String currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth == null ? "system" : auth.getName();
     }

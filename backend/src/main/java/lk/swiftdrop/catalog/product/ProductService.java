@@ -256,7 +256,7 @@ public class ProductService {
      * % and _ (and the escape character itself) are escaped, so they are
      * searched for literally. null/blank → no filter.
      */
-    static String likePattern(String search) {
+    public static String likePattern(String search) {
         if (search == null || search.isBlank()) {
             return null;
         }

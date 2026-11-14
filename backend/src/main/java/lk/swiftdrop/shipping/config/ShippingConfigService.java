@@ -13,6 +13,7 @@ import lk.swiftdrop.common.error.BadRequestException;
 import lk.swiftdrop.common.error.ConflictException;
 import lk.swiftdrop.common.error.ResourceNotFoundException;
 import lk.swiftdrop.shipping.audit.ShippingAuditService;
+import lk.swiftdrop.shipping.provider.CourierProviderRegistry;
 import lk.swiftdrop.shipping.audit.ShippingAuditService.Action;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.CategoryPolicyRequest;
 import lk.swiftdrop.shipping.config.ShippingConfigDtos.CategoryPolicyResponse;
@@ -38,11 +39,14 @@ public class ShippingConfigService {
     private final ShippingCategoryPolicyRepository policies;
     private final ShippingAuditService audit;
     private final ProductRepository products;
+    private final CourierProviderRegistry registry;
 
     public ShippingConfigService(ShippingSettingsRepository settings, CourierProviderRepository providers,
                                  PackagePresetRepository presets, ShippingCategoryPolicyRepository policies,
-                                 ShippingAuditService audit, ProductRepository products) {
+                                 ShippingAuditService audit, ProductRepository products,
+                                 CourierProviderRegistry registry) {
         this.products = products;
+        this.registry = registry;
         this.settings = settings;
         this.providers = providers;
         this.presets = presets;
@@ -76,16 +80,16 @@ public class ShippingConfigService {
     // ---- couriers ----
 
     public List<ProviderResponse> listProviders() {
-        return providers.findAllByOrderByNameAsc().stream().map(ProviderResponse::from).toList();
+        return providers.findAllByOrderByNameAsc().stream().map(this::toResponse).toList();
     }
 
     @Transactional
     public ProviderResponse updateProvider(UUID id, ProviderUpdateRequest r) {
         CourierProviderConfig provider = providers.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Courier", id));
-        ProviderResponse before = ProviderResponse.from(provider);
+        ProviderResponse before = toResponse(provider);
         provider.update(r.enabled(), r.ratesSource(), r.volumetricDivisor(), r.weightRoundingIncrementKg(),
-                r.rulesVerified(), blankToNull(r.notes()));
+                r.rulesVerified(), blankToNull(r.notes()), blankToNull(r.trackingUrlTemplate()));
 
         // Only this courier's services can be changed through this courier (IDOR protection).
         Map<UUID, CourierServiceConfig> own = provider.getServices().stream()
@@ -97,9 +101,13 @@ public class ShippingConfigService {
             }
             service.setEnabled(toggle.enabled());
         }
-        ProviderResponse after = ProviderResponse.from(provider);
+        ProviderResponse after = toResponse(provider);
         audit.record("COURIER", provider.getCode(), Action.UPDATE, before, after);
         return after;
+    }
+
+    private ProviderResponse toResponse(CourierProviderConfig provider) {
+        return ProviderResponse.from(provider, registry.capabilities(provider));
     }
 
     // ---- boxes ----

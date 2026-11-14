@@ -10,8 +10,10 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lk.swiftdrop.catalog.product.ShippingCategory;
+import lk.swiftdrop.shipping.provider.ProviderCapability;
 
 /** Request and response shapes for shipping configuration (admin API). */
 public final class ShippingConfigDtos {
@@ -56,7 +58,12 @@ public final class ShippingConfigDtos {
             @Digits(integer = 3, fraction = 3) BigDecimal weightRoundingIncrementKg,
             @NotNull Boolean rulesVerified,
             @Size(max = 500) String notes,
-            @Size(max = 20) List<@Valid ServiceToggle> services) {
+            @Size(max = 20) List<@Valid ServiceToggle> services,
+            /** From the courier's official website, with {awb} where the tracking number goes. */
+            @Size(max = 300)
+            @Pattern(regexp = "^https://[^\\s]*\\{awb\\}[^\\s]*$",
+                    message = "Use a secure link (https://) that contains {awb}, e.g. https://courier.example/track?awb={awb}.")
+            String trackingUrlTemplate) {
     }
 
     public record ServiceResponse(UUID id, String code, String name, ServiceScope scope, boolean enabled) {
@@ -68,12 +75,14 @@ public final class ShippingConfigDtos {
 
     public record ProviderResponse(UUID id, String code, String name, boolean enabled, RatesSource ratesSource,
                                    Integer volumetricDivisor, BigDecimal weightRoundingIncrementKg,
-                                   boolean rulesVerified, String notes, List<ServiceResponse> services) {
+                                   boolean rulesVerified, String notes, List<ServiceResponse> services,
+                                   String trackingUrlTemplate, Set<ProviderCapability> capabilities) {
 
-        static ProviderResponse from(CourierProviderConfig p) {
+        static ProviderResponse from(CourierProviderConfig p, Set<ProviderCapability> capabilities) {
             return new ProviderResponse(p.getId(), p.getCode(), p.getName(), p.isEnabled(), p.getRatesSource(),
                     p.getVolumetricDivisor(), p.getWeightRoundingIncrementKg(), p.isRulesVerified(), p.getNotes(),
-                    p.getServices().stream().map(ServiceResponse::from).toList());
+                    p.getServices().stream().map(ServiceResponse::from).toList(), p.getTrackingUrlTemplate(),
+                    new java.util.TreeSet<>(capabilities));
         }
     }
 

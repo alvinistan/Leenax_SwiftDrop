@@ -58,6 +58,10 @@ public class CourierProviderConfig {
     @Column(length = 500)
     private String notes;
 
+    /** "Track on the courier's website" link with {awb}, from the courier's official site; null = none. */
+    @Column(name = "tracking_url_template", length = 300)
+    private String trackingUrlTemplate;
+
     @OneToMany(mappedBy = "provider", cascade = CascadeType.ALL)
     @OrderBy("code ASC")
     private List<CourierServiceConfig> services = new ArrayList<>();
@@ -70,7 +74,9 @@ public class CourierProviderConfig {
     }
 
     public void update(boolean enabled, RatesSource ratesSource, Integer volumetricDivisor,
-                       BigDecimal weightRoundingIncrementKg, boolean rulesVerified, String notes) {
+                       BigDecimal weightRoundingIncrementKg, boolean rulesVerified, String notes,
+                       String trackingUrlTemplate) {
+        this.trackingUrlTemplate = trackingUrlTemplate;
         this.enabled = enabled;
         this.ratesSource = ratesSource;
         this.volumetricDivisor = volumetricDivisor;
@@ -117,5 +123,15 @@ public class CourierProviderConfig {
 
     public List<CourierServiceConfig> getServices() {
         return Collections.unmodifiableList(services);
+    }
+
+    public String getTrackingUrlTemplate() {
+        return trackingUrlTemplate;
+    }
+
+    /** The courier's tracking page for this AWB, or null when no link format is set. */
+    public String trackingUrl(String awb) {
+        return trackingUrlTemplate == null ? null
+                : trackingUrlTemplate.replace("{awb}", java.net.URLEncoder.encode(awb, java.nio.charset.StandardCharsets.UTF_8));
     }
 }
