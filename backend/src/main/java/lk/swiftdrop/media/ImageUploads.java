@@ -26,9 +26,11 @@ public class ImageUploads {
     static final long MAX_BYTES = 5L * 1024 * 1024;
 
     private final ImageStorage storage;
+    private final ImageSanitizer sanitizer;
 
-    public ImageUploads(ImageStorage storage) {
+    public ImageUploads(ImageStorage storage, ImageSanitizer sanitizer) {
         this.storage = storage;
+        this.sanitizer = sanitizer;
     }
 
     /** A file that passed the checks and is now in storage. */
@@ -56,6 +58,8 @@ public class ImageUploads {
         }
         ImageType type = ImageType.detect(bytes)
                 .orElseThrow(() -> new BadRequestException("Upload a JPEG, PNG or WebP image."));
+        // No location data or other metadata leaves the shop; huge photos are shrunk.
+        bytes = sanitizer.clean(bytes, type);
         String key = folder + "/" + UUID.randomUUID() + "." + type.extension();
         storage.store(key, bytes, type.contentType());
         return new StoredImage(key, type, bytes.length);

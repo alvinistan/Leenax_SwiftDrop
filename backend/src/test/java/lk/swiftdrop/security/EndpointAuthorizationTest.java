@@ -45,6 +45,8 @@ class EndpointAuthorizationTest {
             "POST /api/shipping/quotes", "GET /api/shipping/quotes/{id}", "GET /api/shipping/destinations",
             "POST /api/cart/price",
             "POST /api/auth/register", "GET /api/auth/me",
+            // Phase 11: any logged-in user changes their own password (current password required)
+            "POST /api/auth/password",
             // Phase 9: is card payment offered? / PayHere's server-to-server notification (md5sig-checked)
             "GET /api/payments/options", "POST /api/payments/payhere/notify");
 

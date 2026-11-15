@@ -226,8 +226,10 @@ public class OrderService {
         List<QueueEntry> toConfirm = new ArrayList<>();
         List<QueueEntry> ready = new ArrayList<>();
         List<QueueEntry> waiting = new ArrayList<>();
-        for (CustomerOrder o : orders.findOpenForDispatch()) {
-            DispatchCheck.Result check = dispatch.check(o);
+        List<CustomerOrder> open = orders.findOpenForDispatch();
+        Map<UUID, DispatchCheck.Result> checks = dispatch.checkAll(open); // one query for all orders
+        for (CustomerOrder o : open) {
+            DispatchCheck.Result check = checks.get(o.getId());
             QueueEntry entry = new QueueEntry(toSummary(o), check);
             if (o.getStatus() == OrderStatus.PLACED) {
                 toConfirm.add(entry);

@@ -13,6 +13,17 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import lk.swiftdrop.security.LoginAttemptService;
+import lk.swiftdrop.security.RateLimitFilter;
+import lk.swiftdrop.security.RateLimitProperties;
+import java.time.Clock;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.web.filter.CorsFilter;
 
 /**
  * All security rules in one place.
@@ -32,12 +43,48 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
  * request. Hiding a button in the UI is never enough.
  */
 @Configuration
+@org.springframework.boot.context.properties.EnableConfigurationProperties(RateLimitProperties.class)
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    LoginAttemptService loginAttemptService(RateLimitProperties properties, ObjectProvider<Clock> clock) {
+        return new LoginAttemptService(properties, clock.getIfAvailable(Clock::systemUTC));
+    }
+
+    @Bean
+    RateLimitFilter rateLimitFilter(RateLimitProperties properties, LoginAttemptService loginAttempts,
+                                    ObjectProvider<Clock> clock) {
+        return new RateLimitFilter(properties, loginAttempts, clock.getIfAvailable(Clock::systemUTC));
+    }
+
+    /**
+     * The rate limiter runs inside the security chain (below), right after
+     * CORS, so it also protects the login. Spring Boot must not ALSO run it as
+     * a plain servlet filter.
+     */
+    @Bean
+    FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
+        FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http, RateLimitFilter rateLimit,
+                                            LoginAttemptService loginAttempts) throws Exception {
         http
                 .cors(withDefaults()) // uses the CorsConfigurationSource bean (CorsConfig)
+                // 429 answers still carry CORS headers, so the browser can show the message.
+                .addFilterAfter(rateLimit, CorsFilter.class)
+                .headers(headers -> headers
+                        // The API returns data, never pages: nothing may be loaded or framed from it.
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                PathPatternRequestMatcher.withDefaults().matcher("/api/**"),
+                                new StaticHeadersWriter("Content-Security-Policy",
+                                        "default-src 'none'; frame-ancestors 'none'")))
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+                        // HSTS is sent on HTTPS requests only (production, Phase 14).
+                        .httpStrictTransportSecurity(hsts -> hsts.maxAgeInSeconds(31_536_000)))
                 .csrf(csrf -> csrf.spa()
                         // PayHere calls this server to server (no browser, no CSRF token);
                         // its md5sig signature is checked instead (PaymentService).
@@ -62,7 +109,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/orders", "/api/orders/**").hasRole("CUSTOMER")
                         // Delivery staff: only their own parcels (checked again in DeliveryJobService)
                         .requestMatchers("/api/delivery/**").hasRole("DELIVERY")
-                        .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers("/api/auth/me", "/api/auth/password").authenticated()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/error").permitAll()
                         // API documentation (disable with API_DOCS_ENABLED=false in production)
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
@@ -73,10 +120,15 @@ public class SecurityConfig {
                         .usernameParameter("email")
                         .passwordParameter("password")
                         // An API answers with status codes, not redirects to HTML pages.
-                        .successHandler((request, response, authentication) ->
-                                response.setStatus(HttpStatus.NO_CONTENT.value()))
-                        .failureHandler((request, response, exception) -> writeProblem(
-                                response, HttpStatus.UNAUTHORIZED, "The email or password is incorrect."))
+                        .successHandler((request, response, authentication) -> {
+                            loginAttempts.succeeded(authentication.getName());
+                            response.setStatus(HttpStatus.NO_CONTENT.value());
+                        })
+                        .failureHandler((request, response, exception) -> {
+                            // Counts towards the account lockout (RateLimitFilter refuses locked emails).
+                            loginAttempts.failed(request.getParameter("email"));
+                            writeProblem(response, HttpStatus.UNAUTHORIZED, "The email or password is incorrect.");
+                        })
                         .permitAll())
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")

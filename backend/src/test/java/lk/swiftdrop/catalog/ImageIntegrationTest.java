@@ -101,7 +101,10 @@ class ImageIntegrationTest {
 
         HttpResponse<byte[]> image = download(url);
         assertThat(image.statusCode()).isEqualTo(200);
-        assertThat(image.body()).isEqualTo(PNG);
+        // Saved again without metadata (Phase 11): still the same 1×1 PNG picture
+        java.awt.image.BufferedImage stored = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(image.body()));
+        assertThat(stored.getWidth()).isEqualTo(1);
+        assertThat(stored.getHeight()).isEqualTo(1);
 
         // Customers see it as the main photo
         mockMvc.perform(get("/api/products/{slug}", product[1]))
