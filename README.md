@@ -29,6 +29,7 @@ It is also a step-by-step programming-learning project.
 - [AWS setup](docs/AWS_SETUP.md): S3 for images: costs, budget alert, least-privilege IAM (needs approval)
 - [PayHere payments](docs/payments/PAYHERE.md): setup, sandbox testing, going live
 - [Delivery management](docs/delivery/DELIVERY.md): own staff, failed attempts, cash on delivery
+- [Security, performance and quality](docs/SECURITY.md): limits, lockout, photo cleaning, coverage
 - [Shipping design](docs/shipping/SHIPPING_DESIGN.md): couriers, weights, platform fee, country restrictions; admin pages under **Admin → Shipping**
 - [Phase reports](docs/phase-reports/)
 

@@ -1,4 +1,4 @@
-import { LogOut } from 'lucide-react'
+import { KeyRound, LogOut } from 'lucide-react'
 import { Link, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../../features/auth/AuthContext'
 import { RequireDelivery } from '../../features/auth/RequireDelivery'
@@ -28,6 +28,12 @@ function DeliveryFrame() {
                 {auth.user.displayName}
               </span>
             )}
+            <Link
+              to="/account/password"
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
+            >
+              <KeyRound className="size-4" aria-hidden="true" /> Password
+            </Link>
             <button
               type="button"
               onClick={async () => {

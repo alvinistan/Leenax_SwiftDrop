@@ -1,0 +1,23 @@
+# Dependabot (Phase 11): opens pull requests when a dependency has a security
+# fix or a new version. CI runs on each one; nothing is merged automatically.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Vitest and its coverage tool must stay on the same version.
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  # Docker images are added in Phase 12, together with the Dockerfiles.

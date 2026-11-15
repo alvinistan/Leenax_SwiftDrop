@@ -2,9 +2,24 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Phase 10 — Delivery management
+## Phase 11 — Quality, security and performance
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-15
+- **Done:**
+  - Request limits (429) and account lockout
+  - Change password for all accounts
+  - Security headers
+  - Photo cleaning (GPS/EXIF removed, upright, max 2000 px, bombs refused)
+  - Query-count test (dispatch N+1 fixed)
+  - V16 indexes, gzip
+  - Coverage floors and npm audit in CI, Dependabot
+  - 168 backend + 160 frontend tests
+- **Report:** [phase-reports/phase-11-quality-security.md](phase-reports/phase-11-quality-security.md)
+
+## Phase 10 — Delivery management
+
+- **Status:** Done (owner continued to Phase 11)
 - **Date:** 2026-11-15
 - **Decided:** D-7 = couriers plus own staff locally; COD is paid when the cash reaches the owner; proof of delivery = the receiver's name
 - **Done:**

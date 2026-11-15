@@ -55,6 +55,13 @@ export const routes: RouteObject[] = [
         }),
       },
       {
+        path: 'account/password',
+        lazy: async () => ({
+          Component: (await import('./pages/account/ChangePasswordPage'))
+            .ChangePasswordPage,
+        }),
+      },
+      {
         path: 'login',
         lazy: async () => ({
           Component: (await import('./pages/LoginPage')).LoginPage,

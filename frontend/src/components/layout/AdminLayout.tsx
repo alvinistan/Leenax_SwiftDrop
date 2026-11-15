@@ -1,5 +1,6 @@
 import {
   ClipboardList,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Package,
@@ -52,6 +53,12 @@ function AdminFrame() {
                 {auth.user.email}
               </span>
             )}
+            <Link
+              to="/account/password"
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
+            >
+              <KeyRound className="size-4" aria-hidden="true" /> Password
+            </Link>
             <Link
               to="/"
               className="inline-flex items-center gap-1 rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"

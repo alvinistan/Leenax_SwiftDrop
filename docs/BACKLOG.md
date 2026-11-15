@@ -17,8 +17,8 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 7 | AWS S3 product images | 6 | Awaiting review (real AWS awaiting approval) |
 | 8 | Shopping cart and checkout (COD) | 6 | Done |
 | 9 | Orders and payments (PayHere card payments) | 8 | Done |
-| 10 | Delivery management (own staff, failed attempts, COD cash) | 9 | Awaiting review |
-| 11 | Quality, security and performance | 10 | Not started |
+| 10 | Delivery management (own staff, failed attempts, COD cash) | 9 | Done |
+| 11 | Quality, security and performance | 10 | Awaiting review |
 | 12 | Docker production-like environment | 11 | Not started |
 | 13 | GitHub Actions CI/CD | 12 | Not started |
 | 14 | AWS staging and production readiness | 13 | Not started |
@@ -73,13 +73,14 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 - Production hosting must fall back to index.html for client-side routes: Phases 12–14
 - "From" price rule for products mixing PIECE and KG variants: owner to decide
 - ETag / If-Match using Product.version: optional, with the admin UI (Phase 6)
-- **Login rate limiting / lockout: required before going live (Phase 11)**
-- Admin password change and "forgot password": later
+- ~~Login rate limiting / lockout~~ — done in Phase 11
+- ~~Password change~~ — done in Phase 11 (all accounts); "forgot password": needs D-13 (email)
 - Audit log of admin actions: candidate for Phase 6B/11
 - Inventory history (stock movements) and low-stock alerts: later
-- **Strip EXIF metadata and resize images: required before going live**
+- ~~Strip EXIF metadata and resize images~~ — done in Phase 11
 - Reorder photos / edit alt text; CloudFront for images (Phase 14); orphaned-file clean-up job
 - Email notifications (order confirmation): candidate for Phase 9
 - SEO (server rendering or pre-rendering): review before launch
-- **Rate limiting for public endpoints (quotes, cart price, sign-up): required before going live (Phase 11)**
+- ~~Rate limiting for public endpoints~~ — done in Phase 11
+- Two-factor login for the owner: recommended before going live
 - Email verification for new customer accounts (with decision D-13)

@@ -210,6 +210,24 @@ export const adminHandlers = [
     return problem(401, 'Unauthorized', 'The email or password is incorrect.')
   }),
 
+  http.post(`${API}/api/auth/password`, async ({ request }) => {
+    if (!current)
+      return problem(401, 'Unauthorized', 'Please log in to continue.')
+    const body = (await request.json()) as {
+      currentPassword: string
+      newPassword: string
+    }
+    if (body.currentPassword !== current.password) {
+      return problem(
+        400,
+        'Bad Request',
+        'Your current password is not correct.',
+      )
+    }
+    current.password = body.newPassword
+    return apiEmpty(204)
+  }),
+
   http.post(`${API}/api/auth/logout`, () => {
     current = null
     return apiEmpty(204)

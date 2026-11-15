@@ -39,3 +39,11 @@ export async function register(input: {
 }): Promise<void> {
   await http.post('/api/auth/register', input)
 }
+
+/** Changes the logged-in user's own password (the current one is required). */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await http.post('/api/auth/password', { currentPassword, newPassword })
+}

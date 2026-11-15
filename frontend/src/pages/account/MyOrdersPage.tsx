@@ -31,7 +31,15 @@ function MyOrders() {
   return (
     <Container className="py-10">
       <title>My orders | Leenax SwiftDrop.lk</title>
-      <h1 className="text-3xl font-bold text-slate-900">My orders</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h1 className="text-3xl font-bold text-slate-900">My orders</h1>
+        <Link
+          to="/account/password"
+          className="text-sm font-medium text-brand-800 hover:underline"
+        >
+          Change password
+        </Link>
+      </div>
       <div className="mt-8">
         {state.status === 'loading' && (
           <p className="text-slate-600">Loading your orders…</p>

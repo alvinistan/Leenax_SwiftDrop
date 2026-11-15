@@ -25,6 +25,7 @@ jobs:
           cache: maven
       # verify = compile + unit/integration tests + package.
       # Testcontainers uses the Docker that GitHub runners provide.
+      # verify also writes the coverage report and fails below the floor in pom.xml.
       - run: ./mvnw -B verify
 
   frontend:
@@ -44,5 +45,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
-      - run: npm test
+      # Tests with coverage (fails below the floors in vite.config.ts)
+      - run: npm run test:coverage
+      # Known vulnerabilities in the packages shipped to browsers
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run build
