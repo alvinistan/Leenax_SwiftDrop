@@ -4,7 +4,7 @@ import type { CartItem } from '../cart/cartStorage'
 
 export type OrderStatus =
   'PLACED' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
-export type PaymentMethod = 'COD' | 'ARRANGE_LATER'
+export type PaymentMethod = 'COD' | 'ARRANGE_LATER' | 'CARD'
 export type PaymentStatus = 'UNPAID' | 'PAID'
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -18,6 +18,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   COD: 'Cash on delivery',
   ARRANGE_LATER: 'We will contact you to arrange payment',
+  CARD: 'Pay online by card (PayHere)',
 }
 
 export type Address = {
@@ -71,6 +72,8 @@ export type CustomerOrder = {
   createdAt: string
   /** The parcels of this order (courier, tracking number, steps). */
   shipments: OrderShipment[]
+  /** A card order not paid yet: show "Pay now". */
+  canPayOnline: boolean
 }
 
 export type OrderShipment = {
@@ -181,15 +184,40 @@ export async function getDeliveryQuote(input: {
 
 // ---- admin ----
 
+export type PaymentAttempt = {
+  id: string
+  provider: string
+  status:
+    | 'STARTED'
+    | 'PENDING'
+    | 'SUCCEEDED'
+    | 'CANCELLED'
+    | 'FAILED'
+    | 'CHARGED_BACK'
+  amount: string
+  currency: string
+  providerPaymentId: string | null
+  method: string | null
+  message: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export type AdminOrder = Omit<
   CustomerOrder,
-  'canCancel' | 'deliveryProvider' | 'deliveryService' | 'shippingPrice'
+  | 'canCancel'
+  | 'deliveryProvider'
+  | 'deliveryService'
+  | 'shippingPrice'
+  | 'canPayOnline'
 > & {
   customerEmail: string | null
   customerName: string | null
   allowedNextStatuses: OrderStatus[]
   /** May this order be handed to a courier now? */
   dispatch: DispatchCheck
+  /** Online payment attempts (card orders). */
+  payments: PaymentAttempt[]
   shipping: {
     providerCode: string
     providerName: string

@@ -204,6 +204,25 @@ function OrderView({
           <Card className="p-5 text-sm">
             <h2 className="font-semibold text-slate-900">Payment</h2>
             <p className="mt-1">{PAYMENT_METHOD_LABELS[order.paymentMethod]}</p>
+            {order.payments.length > 0 && (
+              <ul
+                aria-label="Online payment attempts"
+                className="mt-2 space-y-1 text-slate-600"
+              >
+                {order.payments.map((p) => (
+                  <li key={p.id}>
+                    {p.status.replace('_', ' ').toLowerCase()} · {p.currency}{' '}
+                    {p.amount}
+                    {p.method && ` · ${p.method}`}
+                    {p.providerPaymentId && ` · PayHere ${p.providerPaymentId}`}
+                    <span className="text-slate-400">
+                      {' '}
+                      · {formatDateTime(p.updatedAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <p className="font-medium">
               {order.paymentStatus === 'PAID' ? 'Paid' : 'Not paid yet'}
             </p>

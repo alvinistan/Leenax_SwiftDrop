@@ -1,6 +1,6 @@
 import { CheckCircle2 } from 'lucide-react'
-import { useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router'
 import { Container } from '../../components/layout/Container'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -19,6 +19,10 @@ import {
 import { OrderStatusBadge } from '../../features/orders/OrderStatusBadge'
 import { formatDateTime } from '../../features/shipping/dates'
 import { useCountries } from '../../features/shipping/useCountriesPublic'
+import {
+  startPayHereCheckout,
+  submitToPayHere,
+} from '../../features/payments/paymentsApi'
 import { useAsync } from '../../hooks/useAsync'
 import { userMessage } from '../../lib/errors'
 
@@ -35,6 +39,10 @@ function historyLabel(status: string) {
   return ORDER_STATUS_LABELS[status as OrderStatus] ?? status
 }
 
+/** After returning from PayHere: check every 3 s for up to 1 minute. */
+const PAYMENT_CHECK_MS = 3000
+const MAX_PAYMENT_CHECKS = 20
+
 function MyOrder() {
   const { orderNumber = '' } = useParams()
   const location = useLocation()
@@ -50,6 +58,41 @@ function MyOrder() {
   const [error, setError] = useState<string>()
   const { nameOf } = useCountries()
   const order = updated ?? (state.status === 'success' ? state.data : undefined)
+  // Back from PayHere: ?payment=return or ?payment=cancelled. The return itself
+  // proves nothing; only PayHere's verified notification marks the order paid,
+  // so we check our own server for a short while.
+  const [params] = useSearchParams()
+  const paymentReturn = params.get('payment')
+  const [checks, setChecks] = useState(0)
+  const [isPaying, setIsPaying] = useState(false)
+  const waitingForPayment =
+    paymentReturn === 'return' &&
+    order?.paymentMethod === 'CARD' &&
+    order.paymentStatus === 'UNPAID' &&
+    checks < MAX_PAYMENT_CHECKS
+
+  useEffect(() => {
+    if (!waitingForPayment) return
+    const timer = setTimeout(async () => {
+      try {
+        setUpdated(await getMyOrder(orderNumber))
+      } finally {
+        setChecks((n) => n + 1)
+      }
+    }, PAYMENT_CHECK_MS)
+    return () => clearTimeout(timer)
+  }, [waitingForPayment, checks, orderNumber])
+
+  async function payNow() {
+    setIsPaying(true)
+    setError(undefined)
+    try {
+      submitToPayHere(await startPayHereCheckout(orderNumber))
+    } catch (e) {
+      setError(userMessage(e))
+      setIsPaying(false)
+    }
+  }
 
   async function cancel() {
     setIsCancelling(true)
@@ -95,9 +138,52 @@ function MyOrder() {
               Thank you! Your order {order.orderNumber} has been placed.
               {order.paymentMethod === 'ARRANGE_LATER'
                 ? ' We will contact you to arrange payment.'
-                : ' Please have the cash ready when the parcel arrives.'}
+                : order.paymentMethod === 'CARD'
+                  ? ' Please complete the card payment below.'
+                  : ' Please have the cash ready when the parcel arrives.'}
             </p>
           )}
+          {paymentReturn === 'return' && order.paymentStatus === 'PAID' && (
+            <p
+              role="status"
+              className="mt-6 flex items-start gap-2 rounded-lg bg-emerald-50 p-4 font-medium text-emerald-900"
+            >
+              <CheckCircle2
+                className="mt-0.5 size-5 shrink-0"
+                aria-hidden="true"
+              />
+              Payment received. Thank you!
+            </p>
+          )}
+          {waitingForPayment && (
+            <p
+              role="status"
+              className="mt-6 rounded-lg bg-brand-50 p-4 font-medium text-brand-900"
+            >
+              Confirming your payment with PayHere…
+            </p>
+          )}
+          {paymentReturn === 'return' &&
+            order.paymentStatus === 'UNPAID' &&
+            !waitingForPayment && (
+              <p
+                role="status"
+                className="mt-6 rounded-lg bg-amber-50 p-4 text-amber-900"
+              >
+                We have not received the payment confirmation yet. It can take a
+                few minutes: refresh this page later. If your card was charged
+                and this does not change, please contact us.
+              </p>
+            )}
+          {paymentReturn === 'cancelled' &&
+            order.paymentStatus === 'UNPAID' && (
+              <p
+                role="status"
+                className="mt-6 rounded-lg bg-amber-50 p-4 text-amber-900"
+              >
+                The payment was cancelled. You can try again with “Pay now”.
+              </p>
+            )}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-bold text-slate-900">
               Order {order.orderNumber}
@@ -192,6 +278,11 @@ function MyOrder() {
                 <p role="alert" className="text-red-700">
                   {error}
                 </p>
+              )}
+              {order.canPayOnline && (
+                <Button onClick={payNow} isLoading={isPaying}>
+                  Pay now
+                </Button>
               )}
               {order.canCancel && (
                 <Button variant="secondary" onClick={() => setConfirming(true)}>

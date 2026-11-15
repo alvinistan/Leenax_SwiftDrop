@@ -6,7 +6,7 @@ multi-seller marketplace.
 
 It is also a step-by-step programming-learning project.
 
-> **Status:** Phase 8 (cart, checkout, orders) and shipping phases A–C and E–I are done. Customers sign up, check out (cash on delivery where allowed, or the owner arranges payment) and track their parcels; the owner manages orders, dispatch, DEX shipments, courier charges and reports. Next: DHL Express (needs DHL access), then online payments (Phase 9).
+> **Status:** Phase 8 (cart, checkout, orders) and shipping phases A–C and E–I are done. Customers sign up, check out (card via PayHere, cash on delivery where allowed, or the owner arranges payment) and track their parcels; the owner manages orders, dispatch, DEX shipments, courier charges and reports. Online card payments use PayHere (sandbox; see `docs/payments/PAYHERE.md`). Next: DHL Express (needs DHL access).
 
 ## Planned stack
 
@@ -27,6 +27,7 @@ It is also a step-by-step programming-learning project.
 - [Learning roadmap](docs/LEARNING_ROADMAP.md): what to study for each phase
 - [Progress](docs/PROGRESS.md): what has been completed
 - [AWS setup](docs/AWS_SETUP.md): S3 for images: costs, budget alert, least-privilege IAM (needs approval)
+- [PayHere payments](docs/payments/PAYHERE.md): setup, sandbox testing, going live
 - [Shipping design](docs/shipping/SHIPPING_DESIGN.md): couriers, weights, platform fee, country restrictions; admin pages under **Admin → Shipping**
 - [Phase reports](docs/phase-reports/)
 

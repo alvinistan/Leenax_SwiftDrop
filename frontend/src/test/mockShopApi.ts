@@ -31,13 +31,29 @@ let orders: AdminOrder[] = []
 let taxRates: TaxRate[] = []
 let deliveryQuote: DeliveryQuote | undefined
 let orderConflict: string | undefined
+let cardEnabled = false
+
+/** Turns on "Pay online by card" (as if PayHere were set up on the server). */
+export function enableCardPayments() {
+  cardEnabled = true
+}
+
+/** Lets a test change an order as the server would (e.g. PayHere confirmed the payment). */
+export function updateMockOrder(
+  orderNumber: string,
+  change: Partial<AdminOrder>,
+) {
+  const o = orders.find((x) => x.orderNumber === orderNumber)!
+  Object.assign(o, change)
+}
 
 /** What the pages sent. */
 export const shopSent: {
   orders: { body: PlaceOrderInput; key: string | null }[]
   quotes: unknown[]
   statusChanges: unknown[]
-} = { orders: [], quotes: [], statusChanges: [] }
+  payHereCheckouts: string[]
+} = { orders: [], quotes: [], statusChanges: [], payHereCheckouts: [] }
 
 export function resetMockShop() {
   variants = []
@@ -45,6 +61,8 @@ export function resetMockShop() {
   taxRates = []
   deliveryQuote = undefined
   orderConflict = undefined
+  cardEnabled = false
+  shopSent.payHereCheckouts = []
   shopSent.orders = []
   shopSent.quotes = []
   shopSent.statusChanges = []
@@ -122,6 +140,7 @@ export function seedAdminOrder(
     ],
     createdAt: '2026-11-14T08:00:00Z',
     shipments: [],
+    payments: [],
     dispatch: {
       ready: false,
       blockers: [],
@@ -184,6 +203,11 @@ function priceLine(variantId: string, quantity: string): PricedCartLine {
 function toCustomer(o: AdminOrder): CustomerOrder {
   return {
     shipments: o.shipments,
+    canPayOnline:
+      cardEnabled &&
+      o.paymentMethod === 'CARD' &&
+      o.paymentStatus === 'UNPAID' &&
+      (o.status === 'PLACED' || o.status === 'CONFIRMED'),
     orderNumber: o.orderNumber,
     status: o.status,
     paymentMethod: o.paymentMethod,
@@ -478,4 +502,16 @@ export const shopHandlers = [
     return apiJson(rate, { status: 201 })
   }),
   http.delete(`${API}/api/admin/tax-rates/:id`, () => apiEmpty(204)),
+  http.get(`${API}/api/payments/options`, () => apiJson({ card: cardEnabled })),
+  http.post(`${API}/api/orders/:n/payhere-checkout`, ({ params }) => {
+    shopSent.payHereCheckouts.push(String(params.n))
+    return apiJson({
+      actionUrl: 'https://sandbox.payhere.lk/pay/checkout',
+      fields: {
+        merchant_id: '1211149',
+        order_id: String(params.n),
+        hash: 'ABC',
+      },
+    })
+  }),
 ]

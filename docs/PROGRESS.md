@@ -2,9 +2,25 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Shipping Phase I — Security review, documentation, full regression
+## Phase 9 — Online card payments (PayHere)
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-15
+- **Decided:** D-6 = PayHere (sandbox first)
+- **Done:**
+  - Flyway V14
+  - Signed checkout form
+  - Verified notifications (md5sig, merchant, amount, currency; idempotent; charge-back)
+  - Card orders must be paid before dispatch
+  - Unpaid card orders time out after 2 hours
+  - Pay now / payment confirmation pages
+  - 151 backend + 146 frontend tests; browser end-to-end with simulated PayHere
+- **Owner action:** register the domain in the PayHere sandbox, set up a tunnel, add the PAYHERE_* settings to .env, then make a sandbox payment
+- **Report:** [phase-reports/phase-9-payments.md](phase-reports/phase-9-payments.md)
+
+## Shipping Phase I — Security review, documentation, full regression
+
+- **Status:** Done (owner continued to Phase 9)
 - **Date:** 2026-11-14
 - **Done:**
   - Security review of the whole branch: no high-confidence vulnerability found

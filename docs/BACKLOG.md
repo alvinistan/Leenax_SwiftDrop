@@ -15,8 +15,8 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 5 | Axios and backend integration | 3, 4 | Done |
 | 6 | Authentication and administration (6A + 6B) | 5 | Done |
 | 7 | AWS S3 product images | 6 | Awaiting review (real AWS awaiting approval) |
-| 8 | Shopping cart and checkout (COD) | 6 | Done (owner continued) |
-| 9 | Orders and payments | 8 | Not started |
+| 8 | Shopping cart and checkout (COD) | 6 | Done |
+| 9 | Orders and payments (PayHere card payments) | 8 | Awaiting review |
 | 10 | Delivery management | 9 | Not started |
 | 11 | Quality, security and performance | 10 | Not started |
 | 12 | Docker production-like environment | 11 | Not started |
@@ -63,7 +63,7 @@ Design: [shipping/SHIPPING_DESIGN.md](shipping/SHIPPING_DESIGN.md). Sub-phases:
 | G | Dispatch rules and dispatch queue (card-payment rules with Phase 9; emails need D-13) | F | Done (owner continued to H) |
 | D | DHL Express (verified capabilities only) | DHL credentials + network access | Blocked |
 | H | Overview and report pages (charts) | F | Done (owner continued to I) |
-| I | Security review, documentation, regression | all | Awaiting review |
+| I | Security review, documentation, regression | all | Done |
 
 ## Items parked for later
 

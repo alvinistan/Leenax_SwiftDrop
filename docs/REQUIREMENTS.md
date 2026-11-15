@@ -96,7 +96,7 @@ None of these block Phase 1. Each one blocks the phase listed.
 | D-3 | Which countries do you ship to at launch? | Phase 8 | **Decided 2026-11-14: Sri Lanka and countries with Tamil communities** (admin-editable list) |
 | D-4 | How are delivery fees calculated? (flat, by district, by weight, by country) | Phase 8 | |
 | D-5 | Where is COD allowed? (Sri Lanka only?) | Phase 8 | **Decided 2026-11-14: Sri Lanka only, per product (default off); otherwise the owner arranges payment with the customer** |
-| D-6 | Which online payment provider? (for example PayHere, Stripe, or a bank gateway) | Phase 9 | Needs merchant-account approval. Check that it supports your business type and LKR. |
+| D-6 | Which online payment provider? (for example PayHere, Stripe, or a bank gateway) | Phase 9 | **Decided 2026-11-15: PayHere** (sandbox first). See docs/payments/PAYHERE.md |
 | D-7 | Who delivers? (yourself, a courier company, or both) | Phase 10 | |
 | D-8 | Can guests check out without an account? | Phase 8 | **Decided 2026-11-14: No** — customers sign up |
 | D-9 | Do prices include tax? Are you VAT-registered? | Phase 8 | **Decided 2026-11-14: prices include tax; the admin sets a tax rate per product** (rates from your accountant) |

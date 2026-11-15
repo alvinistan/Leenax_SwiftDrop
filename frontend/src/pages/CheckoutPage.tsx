@@ -14,6 +14,11 @@ import { RequireCustomer } from '../features/auth/RequireCustomer'
 import { priceCart, type PricedCart } from '../features/cart/cartApi'
 import { useCart } from '../features/cart/useCart'
 import {
+  getPaymentOptions,
+  startPayHereCheckout,
+  submitToPayHere,
+} from '../features/payments/paymentsApi'
+import {
   addressSchema,
   type AddressFormValues,
 } from '../features/orders/addressSchema'
@@ -43,6 +48,7 @@ export function CheckoutPage() {
 
 function Checkout() {
   const cart = useCart()
+  const [leaving, setLeaving] = useState(false)
   const priced = useAsync(
     (signal) => priceCart(cart.items, signal),
     `checkout-${JSON.stringify(cart.items)}`,
@@ -51,6 +57,22 @@ function Checkout() {
     (signal) => listDestinations(signal),
     'checkout-destinations',
   )
+  const paymentOptions = useAsync(
+    (signal) => getPaymentOptions(signal),
+    'checkout-payment-options',
+  )
+
+  if (leaving) {
+    // The order is placed and the browser is on its way to PayHere.
+    return (
+      <Container className="py-24 text-center">
+        <title>Checkout | Leenax SwiftDrop.lk</title>
+        <p role="status" className="text-lg font-medium text-brand-900">
+          Taking you to PayHere to pay securely…
+        </p>
+      </Container>
+    )
+  }
 
   if (cart.items.length === 0) {
     return (
@@ -89,6 +111,12 @@ function Checkout() {
           <CheckoutForm
             cart={priced.state.data}
             countries={destinations.state.data}
+            // Card payment only when PayHere is set up (if unsure, it is not offered)
+            cardAvailable={
+              paymentOptions.state.status === 'success' &&
+              paymentOptions.state.data.card
+            }
+            onLeaving={() => setLeaving(true)}
           />
         ) : (
           <p
@@ -115,9 +143,13 @@ function addMoney(a: Money, b: Money): Money {
 function CheckoutForm({
   cart,
   countries,
+  cardAvailable,
+  onLeaving,
 }: {
   cart: PricedCart
   countries: Country[]
+  cardAvailable: boolean
+  onLeaving: () => void
 }) {
   const { items, clear } = useCart()
   const navigate = useNavigate()
@@ -164,9 +196,11 @@ function CheckoutForm({
   const chosen = currentQuote?.options.find((o) => o.optionId === optionId)
   const codPossible =
     currentQuote?.domestic === true && cart.lines.every((l) => l.codAllowed)
-  const methods: PaymentMethod[] = codPossible
-    ? ['COD', 'ARRANGE_LATER']
-    : ['ARRANGE_LATER']
+  const methods: PaymentMethod[] = [
+    ...(cardAvailable ? (['CARD'] as const) : []),
+    ...(codPossible ? (['COD'] as const) : []),
+    'ARRANGE_LATER',
+  ]
 
   async function showDeliveryOptions(values: AddressFormValues) {
     setMessage(undefined)
@@ -223,6 +257,18 @@ function CheckoutForm({
         },
         idempotencyKey,
       )
+      if (method === 'CARD') {
+        // Straight on to PayHere. If that fails, the order page offers "Pay now".
+        try {
+          const form = await startPayHereCheckout(order.orderNumber)
+          onLeaving()
+          clear()
+          submitToPayHere(form)
+          return
+        } catch {
+          // fall through to the order page
+        }
+      }
       clear()
       navigate(`/account/orders/${order.orderNumber}`, {
         state: { placed: true },
