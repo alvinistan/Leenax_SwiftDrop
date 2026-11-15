@@ -43,7 +43,9 @@ class EndpointAuthorizationTest {
             "GET /api/products", "GET /api/products/{slug}",
             "POST /api/shipping/quotes", "GET /api/shipping/quotes/{id}", "GET /api/shipping/destinations",
             "POST /api/cart/price",
-            "POST /api/auth/register", "GET /api/auth/me");
+            "POST /api/auth/register", "GET /api/auth/me",
+            // Phase 9: is card payment offered? / PayHere's server-to-server notification (md5sig-checked)
+            "GET /api/payments/options", "POST /api/payments/payhere/notify");
 
     private static final RequestPostProcessor CUSTOMER = user("shopper@example.com").roles("CUSTOMER");
     private static final RequestPostProcessor ADMIN = user("owner@example.com").roles("ADMIN");

@@ -36,6 +36,7 @@ import lk.swiftdrop.order.OrderDtos.ItemView;
 import lk.swiftdrop.order.OrderDtos.OrderSummary;
 import lk.swiftdrop.order.OrderDtos.PlaceOrderRequest;
 import lk.swiftdrop.order.OrderDtos.ShipmentView;
+import lk.swiftdrop.payment.PaymentService;
 import lk.swiftdrop.order.OrderDtos.ShippingView;
 import lk.swiftdrop.order.OrderDtos.TrackingStepView;
 import lk.swiftdrop.shipping.config.ShippingConfigService;
@@ -75,13 +76,15 @@ public class OrderService {
     private final Clock clock;
     private final ShipmentRepository shipments;
     private final DispatchService dispatch;
+    private final PaymentService payments;
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public OrderService(OrderRepository orders, UserRepository users, ProductVariantRepository variants,
                         ShippingQuoteOptionRepository quoteOptions, QuoteService quotes,
                         ShippingConfigService shippingConfig, Clock clock, ShipmentRepository shipments,
-                        DispatchService dispatch) {
+                        DispatchService dispatch, PaymentService payments) {
         this.dispatch = dispatch;
+        this.payments = payments;
         this.shipments = shipments;
         this.orders = orders;
         this.users = users;
@@ -145,7 +148,10 @@ public class OrderService {
                     + " LKR. Please review it and place the order again.");
         }
 
-        // 3. Payment: COD only in Sri Lanka and only if EVERY product allows it (owner decision D-5)
+        // 3. Payment: card only when PayHere is set up; COD only in Sri Lanka and only if EVERY product allows it
+        if (request.paymentMethod() == PaymentMethod.CARD && !payments.cardPaymentsAvailable()) {
+            throw new BadRequestException("Card payments are not available right now.");
+        }
         if (request.paymentMethod() == PaymentMethod.COD
                 && !(domestic && lines.stream().allMatch(l -> l.variant().getProduct().isCodAllowed()))) {
             throw new BadRequestException("Cash on delivery is not available for this order.");
@@ -304,6 +310,28 @@ public class OrderService {
                 .toList();
     }
 
+    /** A card order that is not paid yet can be paid (again) online. */
+    private boolean canPayOnline(CustomerOrder o) {
+        return o.getPaymentMethod() == PaymentMethod.CARD
+                && o.getPaymentStatus() == CustomerOrder.PaymentStatus.UNPAID
+                && (o.getStatus() == OrderStatus.PLACED || o.getStatus() == OrderStatus.CONFIRMED)
+                && payments.cardPaymentsAvailable();
+    }
+
+    /** Card orders left unpaid: cancelled and their stock returned (see UnpaidCardOrderJob). */
+    @Transactional
+    public int cancelUnpaidCardOrders(java.time.Instant placedBefore) {
+        int cancelled = 0;
+        for (CustomerOrder o : orders.findUnpaidCardOrders(placedBefore)) {
+            if (payments.hasPaymentInProgress(o.getId())) {
+                continue; // PayHere is still processing (pending)
+            }
+            cancel(o, "Cancelled automatically: the card payment was not completed in time.", "system");
+            cancelled++;
+        }
+        return cancelled;
+    }
+
     private CustomerOrderDetail toCustomerDetail(CustomerOrder o) {
         // Internal notes are for the owner only.
         List<EventView> history = o.getEvents().stream()
@@ -312,7 +340,8 @@ public class OrderService {
         return new CustomerOrderDetail(o.getOrderNumber(), o.getStatus(), o.getPaymentMethod(), o.getPaymentStatus(),
                 items(o), m(o.getItemsTotal()), m(o.getTaxIncluded()), m(o.getShippingPrice()), m(o.getGrandTotal()),
                 o.getShipping().providerName(), o.getShipping().serviceName(), AddressView.of(o.getAddress()),
-                o.getCustomerNote(), history, o.getStatus() == OrderStatus.PLACED, o.getCreatedAt(), shipmentsOf(o));
+                o.getCustomerNote(), history, o.getStatus() == OrderStatus.PLACED, o.getCreatedAt(), shipmentsOf(o),
+                canPayOnline(o));
     }
 
     private AdminOrderDetail toAdminDetail(CustomerOrder o) {
@@ -326,7 +355,7 @@ public class OrderService {
                 new ShippingView(s.providerCode(), s.providerName(), s.serviceName(), m(s.courierPrice()),
                         m(s.platformFee()), m(o.getShippingPrice()), s.markupDescription(), s.chargeableWeightKg()),
                 m(o.getGrandTotal()), AddressView.of(o.getAddress()), o.getCustomerNote(), history, o.getCreatedAt(),
-                shipmentsOf(o), dispatch.check(o));
+                shipmentsOf(o), dispatch.check(o), o.getId() == null ? List.of() : payments.paymentsOf(o.getId()));
     }
 
     private static OrderSummary toSummary(CustomerOrder o) {

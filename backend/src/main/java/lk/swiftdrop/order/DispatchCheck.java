@@ -34,11 +34,16 @@ public final class DispatchCheck {
         List<String> blockers = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
         boolean paymentMissing = false;
+        // (CARD payments are confirmed only by PayHere's verified notification.)
 
         if (status != OrderStatus.CONFIRMED && status != OrderStatus.SHIPPED) {
             blockers.add(status == OrderStatus.PLACED
                     ? "Confirm the order first."
                     : "The order is " + status.name().toLowerCase() + ".");
+        }
+        if (method == PaymentMethod.CARD && payment != CustomerOrder.PaymentStatus.PAID) {
+            // Never overridable: the card payment must be confirmed by PayHere first.
+            blockers.add("The online card payment has not been confirmed by PayHere yet.");
         }
         if (method == PaymentMethod.ARRANGE_LATER && payment != CustomerOrder.PaymentStatus.PAID) {
             blockers.add("Payment has not been received. Mark the order as paid, or ship anyway with a reason.");

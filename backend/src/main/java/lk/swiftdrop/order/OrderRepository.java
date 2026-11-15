@@ -41,4 +41,14 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
             ORDER BY o.createdAt ASC
             """)
     java.util.List<CustomerOrder> findOpenForDispatch();
+
+    /** Card orders still unpaid and not shipped, placed before the given time. */
+    @Query("""
+            SELECT o FROM CustomerOrder o
+            WHERE o.paymentMethod = lk.swiftdrop.order.PaymentMethod.CARD
+              AND o.paymentStatus = lk.swiftdrop.order.CustomerOrder.PaymentStatus.UNPAID
+              AND o.status IN (lk.swiftdrop.order.OrderStatus.PLACED, lk.swiftdrop.order.OrderStatus.CONFIRMED)
+              AND o.createdAt < :before
+            """)
+    java.util.List<CustomerOrder> findUnpaidCardOrders(@Param("before") java.time.Instant before);
 }

@@ -38,7 +38,10 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(withDefaults()) // uses the CorsConfigurationSource bean (CorsConfig)
-                .csrf(csrf -> csrf.spa())
+                .csrf(csrf -> csrf.spa()
+                        // PayHere calls this server to server (no browser, no CSRF token);
+                        // its md5sig signature is checked instead (PaymentService).
+                        .ignoringRequestMatchers("/api/payments/payhere/notify"))
                 .authorizeHttpRequests(auth -> auth
                         // The order matters: the first matching rule wins.
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -48,6 +51,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/shipping/quotes/*").permitAll()
                         // Countries we deliver to (checkout address form)
                         .requestMatchers(HttpMethod.GET, "/api/shipping/destinations").permitAll()
+                        // Online payments: is card payment offered? / PayHere's signed notification
+                        .requestMatchers(HttpMethod.GET, "/api/payments/options").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/payhere/notify").permitAll()
                         // Customers create their own account (no guest checkout)
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         // Prices for the items in a cart (the browser keeps only ids and quantities)

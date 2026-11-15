@@ -82,7 +82,9 @@ public final class OrderDtos {
                                       MoneyResponse shippingPrice, MoneyResponse grandTotal,
                                       String deliveryProvider, String deliveryService, AddressView address,
                                       String note, List<EventView> history, boolean canCancel,
-                                      Instant createdAt, List<ShipmentView> shipments) {
+                                      Instant createdAt, List<ShipmentView> shipments,
+                                      /** A card order not paid yet: show "Pay now". */
+                                      boolean canPayOnline) {
     }
 
     public record ShippingView(String providerCode, String providerName, String serviceName,
@@ -96,7 +98,8 @@ public final class OrderDtos {
                                    List<ItemView> items, MoneyResponse itemsTotal, MoneyResponse taxIncluded,
                                    ShippingView shipping, MoneyResponse grandTotal, AddressView address, String note,
                                    List<EventView> history, Instant createdAt, List<ShipmentView> shipments,
-                                   DispatchCheck.Result dispatch) {
+                                   DispatchCheck.Result dispatch,
+                                   List<lk.swiftdrop.payment.PaymentService.PaymentView> payments) {
     }
 
     /** An order waiting for the owner: to confirm, or to ship (with what still blocks it). */

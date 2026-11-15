@@ -154,6 +154,14 @@ public class CustomerOrder {
         events.add(new OrderStatusEvent(this, INTERNAL_NOTE, note, actor));
     }
 
+    /** A charge-back: the money went back to the card holder, so the order is unpaid again. */
+    public void reversePayment(String note, String actor) {
+        if (paymentStatus == PaymentStatus.PAID) {
+            paymentStatus = PaymentStatus.UNPAID;
+        }
+        events.add(new OrderStatusEvent(this, INTERNAL_NOTE, note, actor));
+    }
+
     public void markPaid(String note, String actor) {
         if (status == OrderStatus.CANCELLED) {
             throw new BadRequestException("A cancelled order cannot be marked as paid.");
