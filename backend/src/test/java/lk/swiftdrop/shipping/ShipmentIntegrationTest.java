@@ -75,7 +75,8 @@ class ShipmentIntegrationTest {
                 .andExpect(jsonPath("$.events.length()").value(1))
                 .andExpect(jsonPath("$.events[0].recordedBy").value("owner@example.com"))
                 .andExpect(jsonPath("$.allowedNextStatuses",
-                        containsInAnyOrder("BOOKED", "LABEL_CREATED", "PICKED_UP", "EXCEPTION", "CANCELLED")));
+                        containsInAnyOrder("BOOKED", "LABEL_CREATED", "PICKED_UP", "OUT_FOR_DELIVERY", "EXCEPTION",
+                                "CANCELLED")));
 
         send(post(BASE + "/{id}/tracking", id), "{\"status\": \"PICKED_UP\", \"location\": \"Jaffna\"}", 200);
         send(post(BASE + "/{id}/tracking", id), "{\"status\": \"IN_TRANSIT\", \"note\": \"Colombo hub\"}", 200);

@@ -119,6 +119,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.BAD_REQUEST, "Cannot sort by '" + ex.getPropertyName() + "'.");
     }
 
+    /** 403: e.g. a delivery account that was disabled while logged in. */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    ResponseEntity<ProblemDetail> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        return problem(HttpStatus.FORBIDDEN, "You do not have permission to do this.");
+    }
+
     /** 500: anything unexpected. Log the details; never send them to the client. */
     @ExceptionHandler(Exception.class)
     ResponseEntity<ProblemDetail> handleUnexpected(Exception ex) {

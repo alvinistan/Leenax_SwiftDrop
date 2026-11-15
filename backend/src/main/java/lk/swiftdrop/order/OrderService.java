@@ -77,12 +77,14 @@ public class OrderService {
     private final ShipmentRepository shipments;
     private final DispatchService dispatch;
     private final PaymentService payments;
+    private final lk.swiftdrop.delivery.CodService cod;
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public OrderService(OrderRepository orders, UserRepository users, ProductVariantRepository variants,
                         ShippingQuoteOptionRepository quoteOptions, QuoteService quotes,
                         ShippingConfigService shippingConfig, Clock clock, ShipmentRepository shipments,
-                        DispatchService dispatch, PaymentService payments) {
+                        DispatchService dispatch, PaymentService payments, lk.swiftdrop.delivery.CodService cod) {
+        this.cod = cod;
         this.dispatch = dispatch;
         this.payments = payments;
         this.shipments = shipments;
@@ -254,6 +256,7 @@ public class OrderService {
     public AdminOrderDetail markPaid(String orderNumber, String note, String actor) {
         CustomerOrder order = find(orderNumber);
         order.markPaid(blankToNull(note), actor);
+        cod.settleForOrder(order, actor); // cash a courier or staff member held is no longer owed
         orders.flush();
         return toAdminDetail(order);
     }
@@ -305,7 +308,9 @@ public class OrderService {
                         s.getService() == null ? null : s.getService().getName(), s.getAwb(), s.getStatus().name(),
                         s.getProvider().trackingUrl(s.getAwb()),
                         s.getEvents().stream()
-                                .map(e -> new TrackingStepView(e.getStatus().name(), e.getOccurredAt(), e.getLocation()))
+                                .map(e -> new TrackingStepView(e.getStatus().name(), e.getOccurredAt(), e.getLocation(),
+                                        e.getFailureReason() == null ? null : e.getFailureReason().label(),
+                                        e.getReceivedBy()))
                                 .toList()))
                 .toList();
     }

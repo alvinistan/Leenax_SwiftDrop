@@ -93,6 +93,14 @@ public class Shipment {
     @Column(name = "created_by", nullable = false, updatable = false)
     private String createdBy;
 
+    /** The staff member delivering it (own delivery only, Phase 10). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to")
+    private lk.swiftdrop.identity.User assignedTo;
+
+    @Column(name = "assigned_at")
+    private Instant assignedAt;
+
     @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
     @OrderBy("occurredAt ASC, createdAt ASC")
     private List<TrackingEvent> events = new ArrayList<>();
@@ -143,6 +151,23 @@ public class Shipment {
      */
     public TrackingEvent track(TrackingStatus next, Instant occurredAt, String location, String note,
                                TrackingEvent.Source source, String recordedBy) {
+        return track(next, occurredAt, location, note, source, recordedBy, null, null);
+    }
+
+    /**
+     * @param failureReason only with EXCEPTION (a failed delivery attempt)
+     * @param receivedBy    only with DELIVERED (proof of delivery)
+     */
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    public TrackingEvent track(TrackingStatus next, Instant occurredAt, String location, String note,
+                               TrackingEvent.Source source, String recordedBy, FailureReason failureReason,
+                               String receivedBy) {
+        if (failureReason != null && next != TrackingStatus.EXCEPTION) {
+            throw new BadRequestException("A failure reason goes only with a failed attempt (exception).");
+        }
+        if (receivedBy != null && next != TrackingStatus.DELIVERED) {
+            throw new BadRequestException("The receiver's name goes only with a delivered update.");
+        }
         if (status.isFinal()) {
             throw new BadRequestException("This shipment is " + label(status) + ": no more updates can be added.");
         }
@@ -153,7 +178,8 @@ public class Shipment {
         if (latest != null && occurredAt.isBefore(latest)) {
             throw new BadRequestException("Updates must be in time order: this one is earlier than the latest update.");
         }
-        TrackingEvent event = new TrackingEvent(this, next, occurredAt, location, note, source, recordedBy);
+        TrackingEvent event = new TrackingEvent(this, next, occurredAt, location, note, source, recordedBy)
+                .withOutcome(failureReason, receivedBy);
         events.add(event);
         status = next;
         return event;
@@ -167,6 +193,28 @@ public class Shipment {
     public void linkTo(CustomerOrder order) {
         this.order = order;
         this.orderReference = order.getOrderNumber();
+    }
+
+    /** Gives the parcel to a staff member (null = nobody). */
+    public void assignTo(lk.swiftdrop.identity.User staff, Instant at) {
+        if (status.isFinal()) {
+            throw new BadRequestException("This shipment is " + label(status) + ": it can no longer be reassigned.");
+        }
+        this.assignedTo = staff;
+        this.assignedAt = staff == null ? null : at;
+    }
+
+    public lk.swiftdrop.identity.User getAssignedTo() {
+        return assignedTo;
+    }
+
+    public Instant getAssignedAt() {
+        return assignedAt;
+    }
+
+    /** How many delivery attempts failed. */
+    public long failedAttempts() {
+        return events.stream().filter(e -> e.getFailureReason() != null).count();
     }
 
     public CustomerOrder getOrder() {

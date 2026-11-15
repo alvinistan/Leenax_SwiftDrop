@@ -71,6 +71,20 @@ public class User {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
+    /** A disabled user cannot log in (and staff pages refuse an existing session). */
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    /** @param passwordHash an already-hashed password (see PasswordEncoder) */
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public boolean hasRole(Role role) {
+        return roles.contains(role);
+    }
+
     public UUID getId() {
         return id;
     }
@@ -89,6 +103,10 @@ public class User {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
     public Set<Role> getRoles() {

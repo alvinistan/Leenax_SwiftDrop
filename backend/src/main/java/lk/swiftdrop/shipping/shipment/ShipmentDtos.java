@@ -26,7 +26,8 @@ public final class ShipmentDtos {
     public record ShipmentDetailsRequest(
             UUID serviceId,
             @NotBlank(message = "Order reference is required.") @Size(max = 60) String orderReference,
-            @NotBlank(message = "Tracking number (AWB) is required.") @Pattern(regexp = AWB, message = AWB_MESSAGE) String awb,
+            /** Required for couriers; own deliveries get a reference (LD-000001) when it is empty. */
+            @Pattern(regexp = "^$|" + AWB, message = AWB_MESSAGE) String awb,
             @NotNull(message = "Choose the destination country.")
             @Pattern(regexp = "^[A-Z]{2}$", message = "Use a two-letter country code.") String destinationCountry,
             @Size(max = 100) String destinationCity,
@@ -45,7 +46,13 @@ public final class ShipmentDtos {
             /** When it was booked on the portal; empty = now. */
             Instant bookedAt,
             /** Shipping a website order before its payment arrived: why (recorded in the order history). */
-            @Size(max = 300) String shipBeforePaymentReason) {
+            @Size(max = 300) String shipBeforePaymentReason,
+            /** Own delivery: the staff member who delivers it (optional; can be set later). */
+            UUID assignedToUserId) {
+    }
+
+    /** Own delivery: give the parcel to a staff member, or to nobody (null). */
+    public record AssignRequest(UUID userId) {
     }
 
     public record TrackingUpdateRequest(
@@ -53,7 +60,11 @@ public final class ShipmentDtos {
             /** When it happened (from the courier's site); empty = now. */
             Instant occurredAt,
             @Size(max = 100) String location,
-            @Size(max = 500) String note) {
+            @Size(max = 500) String note,
+            /** With EXCEPTION: why the delivery attempt failed. */
+            FailureReason failureReason,
+            /** With DELIVERED: who received the parcel (required for own deliveries). */
+            @Size(max = 100) String receivedBy) {
     }
 
     public record ShipmentSummary(UUID id, String orderReference, boolean websiteOrder, String awb, String providerCode,
@@ -69,12 +80,17 @@ public final class ShipmentDtos {
     }
 
     public record TrackingEventResponse(UUID id, TrackingStatus status, Instant occurredAt, String location,
-                                        String note, TrackingEvent.Source source, String recordedBy) {
+                                        String note, TrackingEvent.Source source, String recordedBy,
+                                        FailureReason failureReason, String receivedBy) {
 
         static TrackingEventResponse from(TrackingEvent e) {
             return new TrackingEventResponse(e.getId(), e.getStatus(), e.getOccurredAt(), e.getLocation(),
-                    e.getNote(), e.getSource(), e.getRecordedBy());
+                    e.getNote(), e.getSource(), e.getRecordedBy(), e.getFailureReason(), e.getReceivedBy());
         }
+    }
+
+    /** A delivery staff member, as the admin sees them on a shipment. */
+    public record StaffRef(UUID id, String name) {
     }
 
     public record ShipmentDetail(UUID id, UUID providerId, String providerCode, String providerName,
@@ -90,7 +106,13 @@ public final class ShipmentDtos {
                                  MoneyResponse deliveryCharged,
                                  List<ExpenseResponse> expenses,
                                  /** Base charge + extra charges. */
-                                 MoneyResponse totalCourierCost) {
+                                 MoneyResponse totalCourierCost,
+                                 /** Own delivery: parcels are assigned to staff. */
+                                 boolean staffDelivery,
+                                 StaffRef assignedTo,
+                                 long failedAttempts,
+                                 /** Cash to collect on delivery (unpaid COD order), else null. */
+                                 MoneyResponse cashToCollect) {
     }
 
     public record ExpenseRequest(
@@ -114,12 +136,14 @@ public final class ShipmentDtos {
 
     /** What the change history stores (no events: they are their own history). */
     record AuditView(String orderReference, String awb, String provider, String service, String destinationCountry,
-                     String destinationCity, BigDecimal weightKg, BigDecimal courierCost, TrackingStatus status) {
+                     String destinationCity, BigDecimal weightKg, BigDecimal courierCost, TrackingStatus status,
+                     String assignedTo) {
 
         static AuditView of(Shipment s) {
             return new AuditView(s.getOrderReference(), s.getAwb(), s.getProvider().getCode(),
                     s.getService() == null ? null : s.getService().getCode(), s.getDestinationCountry(),
-                    s.getDestinationCity(), s.getWeightKg(), s.getCourierCost(), s.getStatus());
+                    s.getDestinationCity(), s.getWeightKg(), s.getCourierCost(), s.getStatus(),
+                    s.getAssignedTo() == null ? null : s.getAssignedTo().getEmail());
         }
     }
 }

@@ -10,6 +10,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
+    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r = :role ORDER BY u.displayName")
+    java.util.List<User> findAllByRole(@Param("role") Role role);
+
     @Query("SELECT COUNT(u) > 0 FROM User u JOIN u.roles r WHERE r = :role")
     boolean existsByRole(@Param("role") Role role);
 }

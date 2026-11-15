@@ -67,7 +67,11 @@ public final class OrderDtos {
     }
 
     /** A tracking step as the customer sees it (no internal notes or staff names). */
-    public record TrackingStepView(String status, Instant at, String location) {
+    public record TrackingStepView(String status, Instant at, String location,
+                                   /** A failed delivery attempt: why (e.g. "Nobody was at home"). */
+                                   String failedBecause,
+                                   /** Proof of delivery: who received the parcel. */
+                                   String receivedBy) {
     }
 
     /** A parcel of this order. */

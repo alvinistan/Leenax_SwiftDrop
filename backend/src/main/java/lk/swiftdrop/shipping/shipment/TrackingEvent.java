@@ -50,6 +50,15 @@ public class TrackingEvent {
     @Column(name = "recorded_by", nullable = false, updatable = false)
     private String recordedBy;
 
+    /** Only on EXCEPTION: why the delivery attempt failed. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "failure_reason", length = 20, updatable = false)
+    private FailureReason failureReason;
+
+    /** Only on DELIVERED: who received the parcel (proof of delivery). */
+    @Column(name = "received_by", length = 100, updatable = false)
+    private String receivedBy;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -66,6 +75,20 @@ public class TrackingEvent {
         this.note = note;
         this.source = source;
         this.recordedBy = recordedBy;
+    }
+
+    TrackingEvent withOutcome(FailureReason failureReason, String receivedBy) {
+        this.failureReason = failureReason;
+        this.receivedBy = receivedBy;
+        return this;
+    }
+
+    public FailureReason getFailureReason() {
+        return failureReason;
+    }
+
+    public String getReceivedBy() {
+        return receivedBy;
     }
 
     public UUID getId() {

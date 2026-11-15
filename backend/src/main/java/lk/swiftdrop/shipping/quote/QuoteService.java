@@ -158,6 +158,7 @@ public class QuoteService {
     /** Everything worked out for one request. */
     private static final class Calculation {
         String country;
+        String postalCode;
         boolean domestic;
         ShippingSettings settings;
         Parcel parcel;
@@ -178,6 +179,7 @@ public class QuoteService {
         }
         Calculation calc = new Calculation();
         calc.country = request.countryCode();
+        calc.postalCode = request.postalCode();
         calc.settings = config.currentSettings();
         calc.domestic = calc.country.equals(calc.settings.getOriginCountry());
 
@@ -260,6 +262,12 @@ public class QuoteService {
                                         List<MarkupRule> rules, Instant now) {
         if (!provider.isEnabled() || !service.isEnabled()) {
             return unavailable(provider, service, "Courier or service is turned off.", null, null);
+        }
+        if (!service.covers(calc.postalCode)) {
+            return unavailable(provider, service, calc.postalCode == null || calc.postalCode.isBlank()
+                    ? "Only for some areas: enter your postal code to check."
+                    : "Not available for postal code " + CourierServiceConfig.normalizePostalCode(calc.postalCode) + ".",
+                    null, null);
         }
         if (provider.getRatesSource() == RatesSource.API) {
             return unavailable(provider, service, "Live rates are not connected yet (Shipping Phase D).", null, null);

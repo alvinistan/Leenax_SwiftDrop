@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/cart/price").permitAll()
                         // A customer's own orders (checked again in OrderService)
                         .requestMatchers("/api/orders", "/api/orders/**").hasRole("CUSTOMER")
+                        // Delivery staff: only their own parcels (checked again in DeliveryJobService)
+                        .requestMatchers("/api/delivery/**").hasRole("DELIVERY")
                         .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/error").permitAll()
                         // API documentation (disable with API_DOCS_ENABLED=false in production)

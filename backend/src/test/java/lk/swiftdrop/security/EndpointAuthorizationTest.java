@@ -29,6 +29,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * <ul>
  *   <li>/api/admin/** — visitors get 401, customers get 403;</li>
  *   <li>/api/orders/** — visitors get 401, admins get 403 (orders belong to customer accounts);</li>
+ *   <li>/api/delivery/** — visitors get 401, customers and admins get 403 (delivery staff only);</li>
  *   <li>everything else must be on the short, reviewed list of public endpoints.</li>
  * </ul>
  */
@@ -130,9 +131,33 @@ class EndpointAuthorizationTest {
     }
 
     @Test
+    void deliveryEndpointsAreForDeliveryStaffOnly() throws Exception {
+        List<String> problems = new ArrayList<>();
+        int checked = 0;
+        for (Endpoint e : endpoints()) {
+            if (!e.pattern().startsWith("/api/delivery/")) {
+                continue;
+            }
+            checked++;
+            if (status(e, anonymous()) != 401) {
+                problems.add(e.key() + " visitor");
+            }
+            if (status(e, CUSTOMER) != 403) {
+                problems.add(e.key() + " customer");
+            }
+            if (status(e, ADMIN) != 403) {
+                problems.add(e.key() + " admin");
+            }
+        }
+        assertThat(checked).isEqualTo(3);
+        assertThat(problems).isEmpty();
+    }
+
+    @Test
     void everyOtherEndpointIsOnTheReviewedPublicList() {
         List<String> unreviewed = endpoints().stream()
-                .filter(e -> !e.pattern().startsWith("/api/admin/") && !e.pattern().startsWith("/api/orders"))
+                .filter(e -> !e.pattern().startsWith("/api/admin/") && !e.pattern().startsWith("/api/orders")
+                        && !e.pattern().startsWith("/api/delivery/"))
                 .map(Endpoint::key)
                 .filter(key -> !PUBLIC.contains(key))
                 .toList();

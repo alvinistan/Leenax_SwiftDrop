@@ -15,5 +15,7 @@ public enum ProviderCapability {
     /** The admin enters tracking updates by hand. */
     MANUAL_TRACKING,
     /** "Track on the courier's website" link (the admin entered the link format). */
-    TRACKING_LINK
+    TRACKING_LINK,
+    /** Delivered by the store's own staff: parcels are assigned to a staff member (Phase 10). */
+    STAFF_DELIVERY
 }

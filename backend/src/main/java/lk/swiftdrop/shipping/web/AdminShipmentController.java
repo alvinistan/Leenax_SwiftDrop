@@ -111,6 +111,13 @@ public class AdminShipmentController {
         return ResponseEntity.ok(shipments.addExpense(id, request));
     }
 
+    /** Own delivery: give the parcel to a staff member ({"userId": null} = nobody). */
+    @PutMapping("/{id}/assignee")
+    public ResponseEntity<ShipmentDetail> assign(@PathVariable UUID id,
+                                                 @RequestBody ShipmentDtos.AssignRequest request) {
+        return ResponseEntity.ok(shipments.assign(id, request.userId()));
+    }
+
     @PostMapping("/{id}/tracking")
     public ResponseEntity<ShipmentDetail> addTrackingUpdate(@PathVariable UUID id,
                                                             @Valid @RequestBody TrackingUpdateRequest request) {

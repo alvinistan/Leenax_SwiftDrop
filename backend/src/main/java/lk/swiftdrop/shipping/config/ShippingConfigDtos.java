@@ -46,7 +46,11 @@ public final class ShippingConfigDtos {
 
     // ---- couriers ----
 
-    public record ServiceToggle(@NotNull UUID id, @NotNull Boolean enabled) {
+    public record ServiceToggle(@NotNull UUID id, @NotNull Boolean enabled,
+                                /** Postal codes it covers; empty = everywhere; null = unchanged. */
+                                @Size(max = 200, message = "At most 200 postal codes.")
+                                List<@Pattern(regexp = "^\\s*[A-Za-z0-9 -]{3,12}\\s*$",
+                                        message = "Postal codes are 3 to 10 letters, digits or hyphens.") String> postalCodes) {
     }
 
     public record ProviderUpdateRequest(
@@ -66,10 +70,12 @@ public final class ShippingConfigDtos {
             String trackingUrlTemplate) {
     }
 
-    public record ServiceResponse(UUID id, String code, String name, ServiceScope scope, boolean enabled) {
+    public record ServiceResponse(UUID id, String code, String name, ServiceScope scope, boolean enabled,
+                                  java.util.Set<String> postalCodes) {
 
         static ServiceResponse from(CourierServiceConfig s) {
-            return new ServiceResponse(s.getId(), s.getCode(), s.getName(), s.getScope(), s.isEnabled());
+            return new ServiceResponse(s.getId(), s.getCode(), s.getName(), s.getScope(), s.isEnabled(),
+                    s.getPostalCodes());
         }
     }
 

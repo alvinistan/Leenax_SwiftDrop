@@ -102,6 +102,13 @@ public class ShippingConfigService {
                 throw new ResourceNotFoundException("Courier service", toggle.id());
             }
             service.setEnabled(toggle.enabled());
+            if (toggle.postalCodes() != null) {
+                if (service.getScope() != ServiceScope.DOMESTIC && !toggle.postalCodes().isEmpty()) {
+                    throw new lk.swiftdrop.common.error.BadRequestException(
+                            "Postal codes can only limit a Sri Lanka (domestic) service.");
+                }
+                service.setPostalCodes(toggle.postalCodes());
+            }
         }
         ProviderResponse after = toResponse(provider);
         audit.record("COURIER", provider.getCode(), Action.UPDATE, before, after);

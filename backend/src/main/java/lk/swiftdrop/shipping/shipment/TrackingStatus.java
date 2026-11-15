@@ -31,8 +31,9 @@ public enum TrackingStatus {
      */
     public Set<TrackingStatus> allowedNext() {
         return switch (this) {
-            case BOOKED -> EnumSet.of(BOOKED, LABEL_CREATED, PICKED_UP, EXCEPTION, CANCELLED);
-            case LABEL_CREATED -> EnumSet.of(LABEL_CREATED, PICKED_UP, EXCEPTION, CANCELLED);
+            // OUT_FOR_DELIVERY straight away: own staff (Phase 10) and couriers that skip the pick-up scan.
+            case BOOKED -> EnumSet.of(BOOKED, LABEL_CREATED, PICKED_UP, OUT_FOR_DELIVERY, EXCEPTION, CANCELLED);
+            case LABEL_CREATED -> EnumSet.of(LABEL_CREATED, PICKED_UP, OUT_FOR_DELIVERY, EXCEPTION, CANCELLED);
             case PICKED_UP, IN_TRANSIT, CUSTOMS_CLEARANCE, OUT_FOR_DELIVERY, EXCEPTION ->
                     EnumSet.of(IN_TRANSIT, CUSTOMS_CLEARANCE, OUT_FOR_DELIVERY, DELIVERED, EXCEPTION, RETURNED);
             case DELIVERED, RETURNED, CANCELLED -> EnumSet.noneOf(TrackingStatus.class);

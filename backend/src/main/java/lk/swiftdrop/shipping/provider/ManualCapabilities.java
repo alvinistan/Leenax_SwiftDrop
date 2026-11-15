@@ -6,12 +6,12 @@ import lk.swiftdrop.shipping.config.CourierProviderConfig;
 import lk.swiftdrop.shipping.config.RatesSource;
 
 /** Capabilities every courier has without an API: manual booking and tracking. */
-final class ManualCapabilities {
+public final class ManualCapabilities {
 
     private ManualCapabilities() {
     }
 
-    static Set<ProviderCapability> of(CourierProviderConfig config) {
+    public static Set<ProviderCapability> of(CourierProviderConfig config) {
         EnumSet<ProviderCapability> capabilities =
                 EnumSet.of(ProviderCapability.MANUAL_BOOKING, ProviderCapability.MANUAL_TRACKING);
         if (config.getRatesSource() == RatesSource.RATE_CARD) {

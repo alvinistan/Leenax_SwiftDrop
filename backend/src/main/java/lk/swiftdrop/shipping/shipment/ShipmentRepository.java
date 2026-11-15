@@ -43,6 +43,34 @@ public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
 
     boolean existsByProviderIdAndAwbIgnoreCase(UUID providerId, String awb);
 
+    /** Next own-delivery reference number (LD-000001). */
+    @org.springframework.data.jpa.repository.Query(value = "SELECT nextval('own_delivery_ref_seq')", nativeQuery = true)
+    long nextOwnDeliveryNumber();
+
+    /** A staff member's deliveries still to do, oldest assignment first. */
+    @EntityGraph(attributePaths = {"provider", "order", "events"})
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT DISTINCT s FROM Shipment s
+            WHERE s.assignedTo.id = :userId
+              AND s.status NOT IN (
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.DELIVERED,
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.RETURNED,
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.CANCELLED)
+            ORDER BY s.assignedAt ASC
+            """)
+    java.util.List<Shipment> findActiveAssignedTo(@Param("userId") UUID userId);
+
+    /** How many unfinished deliveries a staff member has. */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT COUNT(s) FROM Shipment s
+            WHERE s.assignedTo.id = :userId
+              AND s.status NOT IN (
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.DELIVERED,
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.RETURNED,
+                    lk.swiftdrop.shipping.shipment.TrackingStatus.CANCELLED)
+            """)
+    long countActiveAssignedTo(@Param("userId") UUID userId);
+
     boolean existsByProviderIdAndAwbIgnoreCaseAndIdNot(UUID providerId, String awb, UUID id);
 
     /** Shipments created in a period with their tracking steps, for the reports. */
