@@ -115,6 +115,26 @@ export function logInMockCustomer() {
   current = user
 }
 
+/** Creates delivery staff member Ravi's account (not logged in). */
+export function addMockStaffAccount() {
+  let user = users.find((u) => u.email === 'ravi@example.com')
+  if (!user) {
+    user = {
+      email: 'ravi@example.com',
+      password: 'a-long-staff-password',
+      displayName: 'Ravi',
+      roles: ['DELIVERY'],
+    }
+    users.push(user)
+  }
+  return user
+}
+
+/** Starts a test logged in as delivery staff member Ravi. */
+export function logInMockStaff() {
+  current = addMockStaffAccount()
+}
+
 export function seedCategory(
   category: Partial<Category> & { name: string; slug: string },
 ) {

@@ -11,6 +11,7 @@ import type {
   RateCardInput,
   ShipmentDetail,
   ShippingSettings,
+  FailureReason,
   TrackingStatus,
   SimulatedQuote,
 } from '../features/shipping/shippingApi'
@@ -59,6 +60,7 @@ function initialProviders(): CourierProvider[] {
           name: 'DEX standard delivery (Sri Lanka)',
           scope: 'DOMESTIC',
           enabled: true,
+          postalCodes: [],
         },
       ],
     },
@@ -81,6 +83,35 @@ function initialProviders(): CourierProvider[] {
           name: 'DHL Express international',
           scope: 'INTERNATIONAL',
           enabled: true,
+          postalCodes: [],
+        },
+      ],
+    },
+    {
+      id: 'prov-own',
+      code: 'OWN_DELIVERY',
+      name: 'SwiftDrop own delivery',
+      enabled: false,
+      ratesSource: 'RATE_CARD',
+      volumetricDivisor: null,
+      weightRoundingIncrementKg: '1',
+      rulesVerified: true,
+      notes: null,
+      trackingUrlTemplate: null,
+      capabilities: [
+        'MANUAL_BOOKING',
+        'MANUAL_TRACKING',
+        'RATE_CARD',
+        'STAFF_DELIVERY',
+      ],
+      services: [
+        {
+          id: 'svc-own-local',
+          code: 'LOCAL',
+          name: 'Local delivery by our staff',
+          scope: 'DOMESTIC',
+          enabled: true,
+          postalCodes: [],
         },
       ],
     },
@@ -162,8 +193,21 @@ let shipments: ShipmentDetail[] = []
 
 /** Same steps as the server's TrackingStatus.allowedNext(). */
 const NEXT: Record<TrackingStatus, TrackingStatus[]> = {
-  BOOKED: ['BOOKED', 'LABEL_CREATED', 'PICKED_UP', 'EXCEPTION', 'CANCELLED'],
-  LABEL_CREATED: ['LABEL_CREATED', 'PICKED_UP', 'EXCEPTION', 'CANCELLED'],
+  BOOKED: [
+    'BOOKED',
+    'LABEL_CREATED',
+    'PICKED_UP',
+    'OUT_FOR_DELIVERY',
+    'EXCEPTION',
+    'CANCELLED',
+  ],
+  LABEL_CREATED: [
+    'LABEL_CREATED',
+    'PICKED_UP',
+    'OUT_FOR_DELIVERY',
+    'EXCEPTION',
+    'CANCELLED',
+  ],
   PICKED_UP: [
     'IN_TRANSIT',
     'CUSTOMS_CLEARANCE',
@@ -240,6 +284,8 @@ export function seedShipment(
         note: "Booked on the courier's portal",
         source: 'MANUAL',
         recordedBy: 'owner@example.com',
+        failureReason: null,
+        receivedBy: null,
       },
     ],
     createdBy: 'owner@example.com',
@@ -248,6 +294,10 @@ export function seedShipment(
     deliveryCharged: null,
     expenses: [],
     totalCourierCost: { amount: '0.00', currency: 'LKR' },
+    staffDelivery: false,
+    assignedTo: null,
+    failedAttempts: 0,
+    cashToCollect: null,
     ...overrides,
   }
   shipments = [...shipments, shipment]
@@ -267,6 +317,7 @@ export const sent: {
   quotes: QuoteRequest[]
   shipments: unknown[]
   tracking: unknown[]
+  assignments: { shipmentId: string; userId: string | null }[]
   destinations: string[][]
   expenses: unknown[]
   reports: unknown[]
@@ -278,6 +329,7 @@ export const sent: {
   quotes: [],
   shipments: [],
   tracking: [],
+  assignments: [],
   destinations: [],
   expenses: [],
   reports: [],
@@ -313,6 +365,7 @@ export function resetMockShipping() {
   sent.quotes = []
   sent.shipments = []
   sent.tracking = []
+  sent.assignments = []
   sent.destinations = []
   sent.expenses = []
   sent.reports = []
@@ -354,13 +407,20 @@ export const shippingHandlers = [
         ? {
             ...p,
             ...body,
-            services: p.services.map((s) => ({
-              ...s,
-              enabled:
-                (body.services as { id: string; enabled: boolean }[]).find(
-                  (t) => t.id === s.id,
-                )?.enabled ?? s.enabled,
-            })),
+            services: p.services.map((s) => {
+              const toggle = (
+                body.services as {
+                  id: string
+                  enabled: boolean
+                  postalCodes?: string[]
+                }[]
+              ).find((t) => t.id === s.id)
+              return {
+                ...s,
+                enabled: toggle?.enabled ?? s.enabled,
+                postalCodes: toggle?.postalCodes ?? s.postalCodes,
+              }
+            }),
           }
         : p,
     )
@@ -592,7 +652,11 @@ export const shippingHandlers = [
       }
     }
     sent.shipments.push(body)
-    const awb = body.details.awb.toUpperCase()
+    const own = body.providerId === 'prov-own'
+    const awb =
+      own && !body.details.awb
+        ? `LD-${String(shipments.length + 1).padStart(6, '0')}`
+        : body.details.awb.toUpperCase()
     if (shipments.some((sh) => sh.awb === awb)) {
       return apiJson(
         {
@@ -614,14 +678,32 @@ export const shippingHandlers = [
       awb,
       providerId: body.providerId,
       orderNumber: body.orderNumber,
+      ...(own && {
+        providerCode: 'OWN_DELIVERY',
+        providerName: 'SwiftDrop own delivery',
+        staffDelivery: true,
+      }),
     } as Partial<ShipmentDetail>)
     return apiJson(created, { status: 201 })
+  }),
+  http.put(`${BASE}/shipments/:id/assignee`, async ({ params, request }) => {
+    const { userId } = (await request.json()) as { userId: string | null }
+    sent.assignments.push({ shipmentId: String(params.id), userId })
+    const shipment = shipments.find((sh) => sh.id === params.id)!
+    const updated: ShipmentDetail = {
+      ...shipment,
+      assignedTo: userId ? { id: userId, name: staffName(userId) } : null,
+    }
+    shipments = shipments.map((sh) => (sh.id === updated.id ? updated : sh))
+    return apiJson(updated)
   }),
   http.post(`${BASE}/shipments/:id/tracking`, async ({ params, request }) => {
     const body = (await request.json()) as {
       status: TrackingStatus
       location: string | null
       note: string | null
+      failureReason?: FailureReason | null
+      receivedBy?: string | null
     }
     sent.tracking.push(body)
     const shipment = shipments.find((sh) => sh.id === params.id)!
@@ -639,6 +721,8 @@ export const shippingHandlers = [
           note: body.note,
           source: 'MANUAL',
           recordedBy: 'owner@example.com',
+          failureReason: body.failureReason ?? null,
+          receivedBy: body.receivedBy ?? null,
         },
       ],
     }
@@ -675,3 +759,13 @@ export const shippingHandlers = [
     return apiJson(updated)
   }),
 ]
+
+/** Names of the staff in mockDeliveryApi (kept simple: id → name). */
+const STAFF_NAMES: Record<string, string> = {
+  'staff-ravi': 'Ravi',
+  'staff-nila': 'Nila',
+}
+
+function staffName(id: string) {
+  return STAFF_NAMES[id] ?? id
+}

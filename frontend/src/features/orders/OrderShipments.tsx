@@ -41,8 +41,11 @@ export function OrderShipments({ shipments }: { shipments: OrderShipment[] }) {
           >
             {[...s.steps].reverse().map((step, i) => (
               <li key={i}>
-                {TRACKING_STATUS_LABELS[step.status as TrackingStatus] ??
-                  step.status}
+                {step.failedBecause
+                  ? `Delivery attempt failed: ${step.failedBecause}`
+                  : (TRACKING_STATUS_LABELS[step.status as TrackingStatus] ??
+                    step.status)}
+                {step.receivedBy && ` · received by ${step.receivedBy}`}
                 {step.location && ` · ${step.location}`}
                 <span className="text-slate-400">
                   {' '}

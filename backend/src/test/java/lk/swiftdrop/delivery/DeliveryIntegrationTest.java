@@ -191,6 +191,7 @@ class DeliveryIntegrationTest {
         assertThat((String) JsonPath.read(shipment, "$.awb")).matches("LD-\\d{6}"); // our own reference
         assertThat((Boolean) JsonPath.read(shipment, "$.staffDelivery")).isTrue();
         assertThat((String) JsonPath.read(shipment, "$.assignedTo.name")).isEqualTo("Ravi");
+        assertThat((String) JsonPath.read(shipment, "$.events[0].note")).isEqualTo("Ready for our own delivery");
         assertThat((String) JsonPath.read(shipment, "$.cashToCollect.amount")).isEqualTo(total);
 
         // Ravi sees the job with the address; another staff member does not

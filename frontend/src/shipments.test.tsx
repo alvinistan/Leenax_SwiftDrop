@@ -138,6 +138,8 @@ describe('shipments (manual booking and tracking)', () => {
       occurredAt: null,
       location: 'Colombo hub',
       note: null,
+      failureReason: null,
+      receivedBy: null,
     })
   })
 

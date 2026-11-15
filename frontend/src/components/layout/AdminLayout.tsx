@@ -8,6 +8,7 @@ import {
   Store,
   Tags,
   Truck,
+  UserRound,
 } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { cn } from '../../lib/cn'
@@ -17,6 +18,7 @@ import { RequireAdmin } from '../../features/auth/RequireAdmin'
 const adminLinks = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/categories', label: 'Categories', icon: Tags, end: false },
+  { to: '/admin/delivery', label: 'Delivery', icon: UserRound, end: false },
   { to: '/admin/dispatch', label: 'Dispatch', icon: PackageCheck, end: false },
   { to: '/admin/orders', label: 'Orders', icon: ClipboardList, end: false },
   { to: '/admin/products', label: 'Products', icon: Package, end: false },

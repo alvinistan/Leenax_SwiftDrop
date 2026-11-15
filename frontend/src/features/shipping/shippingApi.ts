@@ -32,6 +32,8 @@ export type CourierService = {
   name: string
   scope: ServiceScope
   enabled: boolean
+  /** Postal codes it covers (Sri Lanka services); empty = everywhere. */
+  postalCodes: string[]
 }
 
 export type CourierProvider = {
@@ -57,11 +59,12 @@ export type ProviderCapability =
   | 'MANUAL_BOOKING'
   | 'MANUAL_TRACKING'
   | 'TRACKING_LINK'
+  | 'STAFF_DELIVERY'
 
 export type ProviderInput = Omit<
   CourierProvider,
   'id' | 'code' | 'name' | 'services' | 'capabilities'
-> & { services: { id: string; enabled: boolean }[] }
+> & { services: { id: string; enabled: boolean; postalCodes?: string[] }[] }
 
 export type BoxPreset = {
   id: string
@@ -407,7 +410,32 @@ export type TrackingEvent = {
   note: string | null
   source: 'MANUAL' | 'API'
   recordedBy: string
+  /** A failed delivery attempt: why. */
+  failureReason: FailureReason | null
+  /** Proof of delivery: who received the parcel. */
+  receivedBy: string | null
 }
+
+export type FailureReason =
+  | 'NOT_AT_HOME'
+  | 'WRONG_ADDRESS'
+  | 'PHONE_UNREACHABLE'
+  | 'REFUSED'
+  | 'NO_CASH'
+  | 'OTHER'
+
+export const FAILURE_REASON_LABELS: Record<FailureReason, string> = {
+  NOT_AT_HOME: 'Nobody was at home',
+  WRONG_ADDRESS: 'The address could not be found',
+  PHONE_UNREACHABLE: 'The phone could not be reached',
+  REFUSED: 'The parcel was refused',
+  NO_CASH: 'The cash payment was not ready',
+  OTHER: 'Other reason',
+}
+
+export const FAILURE_REASONS = Object.keys(
+  FAILURE_REASON_LABELS,
+) as FailureReason[]
 
 export type ShipmentDetail = {
   id: string
@@ -437,6 +465,12 @@ export type ShipmentDetail = {
   expenses: CourierExpense[]
   /** Base charge + extra charges. */
   totalCourierCost: Money
+  /** Own delivery: parcels are given to a staff member. */
+  staffDelivery: boolean
+  assignedTo: { id: string; name: string } | null
+  failedAttempts: number
+  /** Cash to collect on delivery (unpaid cash-on-delivery order), else null. */
+  cashToCollect: Money | null
 }
 
 export type ExpenseKind = 'SURCHARGE' | 'RETURN' | 'ADJUSTMENT'
@@ -504,6 +538,8 @@ export type TrackingUpdateInput = {
   occurredAt: string | null
   location: string | null
   note: string | null
+  failureReason?: FailureReason | null
+  receivedBy?: string | null
 }
 
 const SHIPMENTS = `${BASE}/shipments`
@@ -619,6 +655,8 @@ export async function createShipment(input: {
   shipBeforePaymentReason?: string | null
   bookedAt: string | null
   details: ShipmentDetailsInput
+  /** Own delivery: the staff member who delivers it. */
+  assignedToUserId?: string | null
 }) {
   return (await http.post<ShipmentDetail>(SHIPMENTS, input)).data
 }
@@ -641,6 +679,18 @@ export async function addTrackingUpdate(
       `${SHIPMENTS}/${id(shipmentId)}/tracking`,
       input,
     )
+  ).data
+}
+
+/** Own delivery: give the parcel to a staff member (null = nobody). */
+export async function assignShipment(
+  shipmentId: string,
+  userId: string | null,
+) {
+  return (
+    await http.put<ShipmentDetail>(`${SHIPMENTS}/${id(shipmentId)}/assignee`, {
+      userId,
+    })
   ).data
 }
 

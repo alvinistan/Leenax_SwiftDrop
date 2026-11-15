@@ -84,7 +84,15 @@ export type OrderShipment = {
   /** A tracking status, e.g. IN_TRANSIT */
   status: string
   trackingUrl: string | null
-  steps: { status: string; at: string; location: string | null }[]
+  steps: {
+    status: string
+    at: string
+    location: string | null
+    /** A failed delivery attempt: why, e.g. "Nobody was at home". */
+    failedBecause: string | null
+    /** Proof of delivery: who received the parcel. */
+    receivedBy: string | null
+  }[]
 }
 
 export type OrderSummary = {

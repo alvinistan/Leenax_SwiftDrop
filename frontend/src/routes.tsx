@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router'
+import { Navigate, type RouteObject } from 'react-router'
 import { RootLayout } from './components/layout/RootLayout'
 import { PageLoading } from './components/ui/PageLoading'
 import { CartPage } from './pages/CartPage'
@@ -307,6 +307,59 @@ export const routes: RouteObject[] = [
             }),
           },
         ],
+      },
+      {
+        path: 'delivery',
+        lazy: async () => ({
+          Component: (
+            await import('./pages/admin/delivery/AdminDeliveryLayout')
+          ).AdminDeliveryLayout,
+        }),
+        children: [
+          { index: true, element: <Navigate to="staff" replace /> },
+          {
+            path: 'staff',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/admin/delivery/DeliveryStaffPage')
+              ).DeliveryStaffPage,
+            }),
+          },
+          {
+            path: 'cod',
+            lazy: async () => ({
+              Component: (await import('./pages/admin/delivery/CodPage'))
+                .CodPage,
+            }),
+          },
+        ],
+      },
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
+  {
+    // Delivery staff (phone-first). DeliveryLayout lets only DELIVERY accounts in.
+    path: '/delivery',
+    lazy: async () => ({
+      Component: (await import('./components/layout/DeliveryLayout'))
+        .DeliveryLayout,
+    }),
+    errorElement: <RouteErrorPage />,
+    hydrateFallbackElement: <PageLoading />,
+    children: [
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import('./pages/delivery/MyDeliveriesPage'))
+            .MyDeliveriesPage,
+        }),
+      },
+      {
+        path: ':id',
+        lazy: async () => ({
+          Component: (await import('./pages/delivery/DeliveryJobPage'))
+            .DeliveryJobPage,
+        }),
       },
       { path: '*', element: <NotFoundPage /> },
     ],

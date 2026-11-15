@@ -116,7 +116,8 @@ public class ShipmentService {
             throw new ConflictException("This " + provider.getName() + " tracking number is already recorded.");
         }
         Instant bookedAt = checkedTime(request.bookedAt());
-        Shipment shipment = Shipment.bookedManually(provider, awb, ShippingAuditService.currentUser(), bookedAt);
+        Shipment shipment = Shipment.bookedManually(provider, awb, ShippingAuditService.currentUser(), bookedAt,
+                staffDelivery ? "Ready for our own delivery" : "Booked on the courier's portal");
         applyDetails(shipment, provider, d, awb);
         if (request.orderNumber() != null && !request.orderNumber().isBlank()) {
             shipment.linkTo(shippableOrder(request.orderNumber().trim(), d.destinationCountry(),

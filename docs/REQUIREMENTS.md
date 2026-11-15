@@ -97,7 +97,7 @@ None of these block Phase 1. Each one blocks the phase listed.
 | D-4 | How are delivery fees calculated? (flat, by district, by weight, by country) | Phase 8 | |
 | D-5 | Where is COD allowed? (Sri Lanka only?) | Phase 8 | **Decided 2026-11-14: Sri Lanka only, per product (default off); otherwise the owner arranges payment with the customer** |
 | D-6 | Which online payment provider? (for example PayHere, Stripe, or a bank gateway) | Phase 9 | **Decided 2026-11-15: PayHere** (sandbox first). See docs/payments/PAYHERE.md |
-| D-7 | Who delivers? (yourself, a courier company, or both) | Phase 10 | |
+| D-7 | Who delivers? (yourself, a courier company, or both) | Phase 10 | **Decided 2026-11-15: both** — couriers plus own staff for nearby postal codes; COD paid when the cash reaches the owner; proof = receiver's name. See docs/delivery/DELIVERY.md |
 | D-8 | Can guests check out without an account? | Phase 8 | **Decided 2026-11-14: No** — customers sign up |
 | D-9 | Do prices include tax? Are you VAT-registered? | Phase 8 | **Decided 2026-11-14: prices include tax; the admin sets a tax rate per product** (rates from your accountant) |
 | D-10 | Domain name (`swiftdrop.lk`?) and business registration | Phase 14 | `.lk` domains are registered through the LK Domain Registry |

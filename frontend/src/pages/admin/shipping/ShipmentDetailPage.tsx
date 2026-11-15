@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Link, useParams } from 'react-router'
 import { buttonClasses } from '../../../components/ui/buttonStyles'
@@ -16,9 +16,17 @@ import {
   fromLocalInput,
 } from '../../../features/shipping/dates'
 import {
+  listStaff,
+  type DeliveryStaff,
+} from '../../../features/delivery/deliveryApi'
+import {
   addExpense,
   addTrackingUpdate,
+  assignShipment,
   EXPENSE_KIND_LABELS,
+  FAILURE_REASON_LABELS,
+  FAILURE_REASONS,
+  type FailureReason,
   type ExpenseKind,
   getShipment,
   TRACKING_STATUS_LABELS,
@@ -110,7 +118,11 @@ function Shipment({
             {shipment.providerName}
             {shipment.serviceName && ` · ${shipment.serviceName}`}
           </Row>
-          <Row label="Tracking number (AWB)">
+          <Row
+            label={
+              shipment.staffDelivery ? 'Our reference' : 'Tracking number (AWB)'
+            }
+          >
             <span className="font-mono">{shipment.awb}</span>
             {shipment.trackingUrl && (
               <a
@@ -151,13 +163,29 @@ function Shipment({
               ` · customer paid ${formatMoney(shipment.deliveryCharged)} for delivery`}
           </Row>
           <Row label="Booked">
-            {shipment.bookingMethod === 'MANUAL'
-              ? 'By hand on the courier’s portal'
-              : 'Through the courier API'}
+            {shipment.staffDelivery
+              ? 'Own delivery'
+              : shipment.bookingMethod === 'MANUAL'
+                ? 'By hand on the courier’s portal'
+                : 'Through the courier API'}
             , recorded by {shipment.createdBy}
           </Row>
+          {shipment.cashToCollect && (
+            <Row label="Cash to collect on delivery">
+              <strong>{formatMoney(shipment.cashToCollect)}</strong>
+            </Row>
+          )}
+          {shipment.failedAttempts > 0 && (
+            <Row label="Failed delivery attempts">
+              {shipment.failedAttempts}
+            </Row>
+          )}
         </dl>
       </Card>
+
+      {shipment.staffDelivery && (
+        <AssignStaff shipment={shipment} onUpdated={onUpdated} />
+      )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem]">
         <section aria-labelledby="timeline-heading">
@@ -183,6 +211,17 @@ function Shipment({
                     {formatDateTime(event.occurredAt)}
                   </time>
                 </div>
+                {event.failureReason && (
+                  <p className="mt-1 text-sm font-medium text-amber-800">
+                    Delivery failed:{' '}
+                    {FAILURE_REASON_LABELS[event.failureReason]}
+                  </p>
+                )}
+                {event.receivedBy && (
+                  <p className="mt-1 text-sm font-medium text-slate-900">
+                    Received by {event.receivedBy}
+                  </p>
+                )}
                 {(event.location || event.note) && (
                   <p className="mt-1 text-sm text-slate-800">
                     {[event.location, event.note].filter(Boolean).join(' · ')}
@@ -219,6 +258,107 @@ function Row({
   )
 }
 
+/** Own delivery: which staff member delivers this parcel. */
+function AssignStaff({
+  shipment,
+  onUpdated,
+}: {
+  shipment: ShipmentDetail
+  onUpdated: (s: ShipmentDetail) => void
+}) {
+  const { state, retry } = useAsync(
+    (signal) => listStaff(signal),
+    'delivery-staff',
+  )
+  const [choice, setChoice] = useState(shipment.assignedTo?.id ?? '')
+  const [isSaving, setIsSaving] = useState(false)
+  const [message, setMessage] = useState<Message>()
+  const finished = shipment.allowedNextStatuses.length === 0
+  const active: DeliveryStaff[] =
+    state.status === 'success' ? state.data.filter((s) => s.enabled) : []
+
+  async function save() {
+    setIsSaving(true)
+    setMessage(undefined)
+    try {
+      const saved = await assignShipment(shipment.id, choice || null)
+      onUpdated(saved)
+      setMessage({
+        tone: 'success',
+        text: saved.assignedTo
+          ? `Given to ${saved.assignedTo.name}.`
+          : 'Nobody is assigned now.',
+      })
+    } catch (e) {
+      setMessage({ tone: 'error', text: userMessage(e) })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Card className="mt-6 p-5">
+      <h2 className="text-lg font-semibold text-slate-900">Delivered by</h2>
+      {finished ? (
+        <p className="mt-2 text-sm text-slate-700">
+          {shipment.assignedTo?.name ?? 'Nobody was assigned.'}
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-sm text-slate-600">
+            The staff member sees the address and phone on their delivery page
+            until the parcel is delivered.
+          </p>
+          {state.status === 'error' && (
+            <div className="mt-3">
+              <ErrorState
+                description={userMessage(state.error)}
+                onRetry={retry}
+              />
+            </div>
+          )}
+          {state.status === 'success' && active.length === 0 && (
+            <p className="mt-3 text-sm text-amber-900">
+              No delivery staff yet.{' '}
+              <Link
+                to="/admin/delivery/staff"
+                className="font-semibold text-brand-800 hover:underline"
+              >
+                Add a staff member
+              </Link>
+            </p>
+          )}
+          {active.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <Select
+                label="Staff member"
+                value={choice}
+                onChange={(e) => setChoice(e.target.value)}
+              >
+                <option value="">Nobody yet</option>
+                {active.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.displayName} ({s.activeDeliveries} to deliver)
+                  </option>
+                ))}
+              </Select>
+              <Button
+                variant="secondary"
+                onClick={save}
+                isLoading={isSaving}
+                disabled={choice === (shipment.assignedTo?.id ?? '')}
+              >
+                Save
+              </Button>
+            </div>
+          )}
+          <StatusMessage message={message} className="mt-3" />
+        </>
+      )}
+    </Card>
+  )
+}
+
 function TrackingUpdateForm({
   shipment,
   onUpdated,
@@ -235,11 +375,20 @@ function TrackingUpdateForm({
     handleSubmit,
     reset,
     setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<TrackingUpdateFormValues>({
     resolver: zodResolver(trackingUpdateSchema),
-    defaultValues: { status: '', occurredAt: '', location: '', note: '' },
+    defaultValues: {
+      status: '',
+      occurredAt: '',
+      location: '',
+      note: '',
+      failureReason: '',
+      receivedBy: '',
+    },
   })
+  const chosen = useWatch({ control, name: 'status' })
 
   if (!shipment.manualTracking) {
     return (
@@ -268,12 +417,30 @@ function TrackingUpdateForm({
 
   async function onSubmit(v: TrackingUpdateFormValues) {
     setMessage(undefined)
+    if (
+      shipment.staffDelivery &&
+      v.status === 'DELIVERED' &&
+      v.receivedBy.length < 2
+    ) {
+      setError('receivedBy', { message: 'Enter who received the parcel.' })
+      return
+    }
+    if (v.failureReason === 'OTHER' && !v.note) {
+      setError('note', { message: 'Describe what happened.' })
+      return
+    }
     try {
       const saved = await addTrackingUpdate(shipment.id, {
         status: v.status as TrackingStatus,
         occurredAt: fromLocalInput(v.occurredAt),
         location: v.location || null,
         note: v.note || null,
+        failureReason:
+          v.status === 'EXCEPTION' && v.failureReason
+            ? (v.failureReason as FailureReason)
+            : null,
+        receivedBy:
+          v.status === 'DELIVERED' && v.receivedBy ? v.receivedBy : null,
       })
       reset()
       onUpdated(saved)
@@ -294,8 +461,10 @@ function TrackingUpdateForm({
         Add a tracking update
       </h2>
       <p className="mt-1 text-sm text-slate-600">
-        Copy the latest status from {shipment.providerName}&apos;s tracking
-        page. Updates must be in time order.
+        {shipment.staffDelivery
+          ? 'Staff update their parcels on their delivery page; you can also record an update here.'
+          : `Copy the latest status from ${shipment.providerName}'s tracking page.`}{' '}
+        Updates must be in time order.
       </p>
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -314,6 +483,30 @@ function TrackingUpdateForm({
             </option>
           ))}
         </Select>
+        {chosen === 'EXCEPTION' && (
+          <Select
+            label="Failed delivery? Why (optional)"
+            error={errors.failureReason?.message}
+            {...register('failureReason')}
+          >
+            <option value="">Not a failed delivery</option>
+            {FAILURE_REASONS.map((r) => (
+              <option key={r} value={r}>
+                {FAILURE_REASON_LABELS[r]}
+              </option>
+            ))}
+          </Select>
+        )}
+        {chosen === 'DELIVERED' && (
+          <Input
+            label={
+              shipment.staffDelivery ? 'Received by' : 'Received by (optional)'
+            }
+            hint="The name of the person who took the parcel."
+            error={errors.receivedBy?.message}
+            {...register('receivedBy')}
+          />
+        )}
         <Input
           type="datetime-local"
           label="When (optional)"

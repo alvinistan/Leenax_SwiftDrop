@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Button } from '../../../components/ui/Button'
@@ -10,6 +10,7 @@ import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Textarea } from '../../../components/ui/Textarea'
 import { applyFieldErrors } from '../../../features/shipping/applyFieldErrors'
+import { listStaff } from '../../../features/delivery/deliveryApi'
 import { fromLocalInput } from '../../../features/shipping/dates'
 import {
   createShipment,
@@ -143,6 +144,7 @@ function ShipmentForm({
           courierCost: shipment.courierCost?.amount ?? '',
           bookedAt: '',
           shipBeforePaymentReason: '',
+          assignedToUserId: '',
         }
       : order
         ? {
@@ -159,6 +161,7 @@ function ShipmentForm({
             courierCost: '',
             bookedAt: '',
             shipBeforePaymentReason: '',
+            assignedToUserId: '',
           }
         : {
             providerId: bookable.length === 1 ? bookable[0].id : '',
@@ -171,13 +174,15 @@ function ShipmentForm({
             courierCost: '',
             bookedAt: '',
             shipBeforePaymentReason: '',
+            assignedToUserId: '',
           },
   })
   const providerId = useWatch({ control, name: 'providerId' })
-  const services =
-    providers
-      .find((p) => p.id === providerId)
-      ?.services.filter((s) => s.enabled) ?? []
+  const chosenProvider = providers.find((p) => p.id === providerId)
+  const services = chosenProvider?.services.filter((s) => s.enabled) ?? []
+  // Own delivery: our own reference instead of a courier AWB, and a staff member.
+  const staffDelivery =
+    chosenProvider?.capabilities.includes('STAFF_DELIVERY') ?? false
 
   async function onSubmit(v: ShipmentFormValues) {
     setErrorMessage(undefined)
@@ -186,6 +191,10 @@ function ShipmentForm({
         message:
           'Write why this order ships before payment (at least 5 characters).',
       })
+      return
+    }
+    if (!staffDelivery && !v.awb) {
+      setError('awb', { message: 'Tracking number (AWB) is required.' })
       return
     }
     const details = {
@@ -208,6 +217,8 @@ function ShipmentForm({
               : null,
             bookedAt: fromLocalInput(v.bookedAt),
             details,
+            assignedToUserId:
+              staffDelivery && v.assignedToUserId ? v.assignedToUserId : null,
           })
       navigate(`/admin/shipping/shipments/${saved.id}`)
     } catch (e) {
@@ -273,12 +284,29 @@ function ShipmentForm({
             ))}
           </Select>
           <Input
-            label="Tracking number (AWB)"
+            label={
+              staffDelivery
+                ? shipment
+                  ? 'Our reference'
+                  : 'Our reference (optional)'
+                : 'Tracking number (AWB)'
+            }
+            hint={
+              staffDelivery && !shipment
+                ? 'Leave empty for a new reference like LD-000012.'
+                : undefined
+            }
             autoComplete="off"
             className="font-mono uppercase"
             error={errors.awb?.message}
             {...register('awb')}
           />
+          {staffDelivery && !shipment && (
+            <StaffSelect
+              error={errors.assignedToUserId?.message}
+              {...register('assignedToUserId')}
+            />
+          )}
           <Input
             label="Order reference"
             hint={
@@ -366,5 +394,32 @@ function ShipmentForm({
         </Link>
       </div>
     </form>
+  )
+}
+
+/** Own delivery: who delivers it (optional; can be chosen later). */
+function StaffSelect(
+  props: Omit<ComponentProps<typeof Select>, 'label' | 'hint' | 'children'>,
+) {
+  const { state } = useAsync((signal) => listStaff(signal), 'delivery-staff')
+  const active =
+    state.status === 'success' ? state.data.filter((s) => s.enabled) : []
+  return (
+    <Select
+      label="Delivered by (optional)"
+      hint={
+        state.status === 'success' && active.length === 0
+          ? 'No delivery staff yet: add them under Delivery → Delivery staff.'
+          : 'You can also choose later on the shipment page.'
+      }
+      {...props}
+    >
+      <option value="">Choose later</option>
+      {active.map((s) => (
+        <option key={s.id} value={s.id}>
+          {s.displayName}
+        </option>
+      ))}
+    </Select>
   )
 }

@@ -33,3 +33,7 @@ export function isAdmin(auth: AuthState): boolean {
 export function isCustomer(auth: AuthState): boolean {
   return auth.status === 'authenticated' && auth.user.roles.includes('CUSTOMER')
 }
+
+export function isDeliveryStaff(auth: AuthState): boolean {
+  return auth.status === 'authenticated' && auth.user.roles.includes('DELIVERY')
+}

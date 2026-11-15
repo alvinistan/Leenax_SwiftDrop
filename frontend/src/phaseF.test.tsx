@@ -14,11 +14,19 @@ const dexParcel = {
   status: 'IN_TRANSIT',
   trackingUrl: 'https://track.example/t?awb=DEX778899',
   steps: [
-    { status: 'BOOKED', at: '2026-11-14T08:00:00Z', location: null },
+    {
+      status: 'BOOKED',
+      at: '2026-11-14T08:00:00Z',
+      location: null,
+      failedBecause: null,
+      receivedBy: null,
+    },
     {
       status: 'IN_TRANSIT',
       at: '2026-11-14T12:00:00Z',
       location: 'Colombo hub',
+      failedBecause: null,
+      receivedBy: null,
     },
   ],
 }

@@ -42,7 +42,19 @@ const providerSchema = z.object({
     .refine((v) => !/^0*(\.0*)?$/.test(v), 'Must be more than 0.'),
   rulesVerified: z.boolean(),
   notes: z.string().max(500, 'At most 500 characters.'),
-  services: z.array(z.object({ id: z.string(), enabled: z.boolean() })),
+  services: z.array(
+    z.object({
+      id: z.string(),
+      enabled: z.boolean(),
+      postalCodes: z
+        .string()
+        .max(2000, 'Too long.')
+        .refine(
+          (v) => postalCodeList(v).every((c) => /^[A-Z0-9-]{3,10}$/.test(c)),
+          'Postal codes are 3 to 10 letters, digits or hyphens, separated by commas.',
+        ),
+    }),
+  ),
   trackingUrlTemplate: z.union([
     z.literal(''),
     z
@@ -57,12 +69,21 @@ const providerSchema = z.object({
 })
 type ProviderFormValues = z.infer<typeof providerSchema>
 
+/** "40000, 40010 40100" → ["40000", "40010", "40100"] */
+function postalCodeList(value: string) {
+  return value
+    .split(/[,;\n]+/)
+    .map((c) => c.replace(/\s/g, '').toUpperCase())
+    .filter(Boolean)
+}
+
 const CAPABILITY_LABELS: Record<ProviderCapability, string> = {
   RATE_CARD: 'Prices from our rate card',
   LIVE_RATES: 'Live prices (API)',
   MANUAL_BOOKING: 'Book on courier portal, record AWB here',
   MANUAL_TRACKING: 'Tracking updates entered by hand',
   TRACKING_LINK: 'Link to courier tracking page',
+  STAFF_DELIVERY: 'Delivered by our own staff',
 }
 
 /**
@@ -115,7 +136,11 @@ function toForm(p: CourierProvider): ProviderFormValues {
     weightRoundingIncrementKg: p.weightRoundingIncrementKg,
     rulesVerified: p.rulesVerified,
     notes: p.notes ?? '',
-    services: p.services.map((s) => ({ id: s.id, enabled: s.enabled })),
+    services: p.services.map((s) => ({
+      id: s.id,
+      enabled: s.enabled,
+      postalCodes: s.postalCodes.join(', '),
+    })),
     trackingUrlTemplate: p.trackingUrlTemplate ?? '',
   }
 }
@@ -135,6 +160,7 @@ function ProviderCard({ provider }: { provider: CourierProvider }) {
     defaultValues: toForm(provider),
   })
   const source = useWatch({ control, name: 'ratesSource' })
+  const staffDelivery = current.capabilities.includes('STAFF_DELIVERY')
 
   async function onSubmit(values: ProviderFormValues) {
     setMessage(undefined)
@@ -147,6 +173,11 @@ function ProviderCard({ provider }: { provider: CourierProvider }) {
             : Number(values.volumetricDivisor),
         notes: values.notes.trim() || null,
         trackingUrlTemplate: values.trackingUrlTemplate || null,
+        services: values.services.map((s) => ({
+          id: s.id,
+          enabled: s.enabled,
+          postalCodes: postalCodeList(s.postalCodes),
+        })),
       })
       setCurrent(saved)
       reset(toForm(saved))
@@ -234,15 +265,17 @@ function ProviderCard({ provider }: { provider: CourierProvider }) {
               {...register('rulesVerified')}
             />
           </div>
-          <div className="sm:col-span-2">
-            <Input
-              label="Tracking link format (optional)"
-              hint="Copy it from the courier's official website and put {awb} where the tracking number goes. Shipments then get a “track on the courier's website” link."
-              placeholder="https://…{awb}…"
-              error={errors.trackingUrlTemplate?.message}
-              {...register('trackingUrlTemplate')}
-            />
-          </div>
+          {!staffDelivery && (
+            <div className="sm:col-span-2">
+              <Input
+                label="Tracking link format (optional)"
+                hint="Copy it from the courier's official website and put {awb} where the tracking number goes. Shipments then get a “track on the courier's website” link."
+                placeholder="https://…{awb}…"
+                error={errors.trackingUrlTemplate?.message}
+                {...register('trackingUrlTemplate')}
+              />
+            </div>
+          )}
           <div className="sm:col-span-2">
             <Textarea
               label="Notes (optional)"
@@ -270,6 +303,21 @@ function ProviderCard({ provider }: { provider: CourierProvider }) {
                   }
                   {...register(`services.${index}.enabled`)}
                 />
+                {service.scope === 'DOMESTIC' && (
+                  <div className="mt-2 ml-7">
+                    <Textarea
+                      label={`Postal codes ${service.name} covers (optional)`}
+                      hint={
+                        staffDelivery
+                          ? 'Where your staff deliver, separated by commas, e.g. 40000, 40010. Customers elsewhere are not offered this service.'
+                          : 'Leave empty to offer it everywhere in Sri Lanka.'
+                      }
+                      rows={2}
+                      error={errors.services?.[index]?.postalCodes?.message}
+                      {...register(`services.${index}.postalCodes`)}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

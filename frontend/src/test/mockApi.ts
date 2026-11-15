@@ -9,6 +9,7 @@ import {
 import { NotFoundError } from '../lib/errors'
 import { API, apiJson } from './apiResponses'
 import { adminHandlers } from './mockAdminApi'
+import { deliveryHandlers } from './mockDeliveryApi'
 import { shippingHandlers } from './mockShippingApi'
 import { shopHandlers } from './mockShopApi'
 
@@ -59,6 +60,7 @@ export const handlers = [
 export const server = setupServer(
   ...handlers,
   ...adminHandlers,
+  ...deliveryHandlers,
   ...shippingHandlers,
   ...shopHandlers,
 )

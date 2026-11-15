@@ -2,9 +2,25 @@
 
 Running log so work can resume at any time. Newest entry first.
 
-## Phase 9 — Online card payments (PayHere)
+## Phase 10 — Delivery management
 
 - **Status:** Awaiting owner review
+- **Date:** 2026-11-15
+- **Decided:** D-7 = couriers plus own staff locally; COD is paid when the cash reaches the owner; proof of delivery = the receiver's name
+- **Done:**
+  - Flyway V15
+  - Own delivery limited to postal codes
+  - Staff accounts and assignment
+  - Phone pages for staff
+  - Failed attempts with reasons
+  - Cash on delivery held by courier or staff until received
+  - 156 backend + 156 frontend tests; browser end-to-end on a phone screen
+- **Owner action:** own-delivery rate card, postal codes, staff accounts
+- **Report:** [phase-reports/phase-10-delivery.md](phase-reports/phase-10-delivery.md)
+
+## Phase 9 — Online card payments (PayHere)
+
+- **Status:** Done (owner continued to Phase 10)
 - **Date:** 2026-11-15
 - **Decided:** D-6 = PayHere (sandbox first)
 - **Done:**

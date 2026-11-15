@@ -223,11 +223,12 @@ export const shipmentSchema = z.object({
     .trim()
     .min(1, 'Order reference is required.')
     .max(60, 'At most 60 characters.'),
+  /** Required for couriers (checked in the form); own deliveries may leave it empty. */
   awb: z
     .string()
     .trim()
     .regex(
-      /^[A-Za-z0-9-]{4,40}$/,
+      /^([A-Za-z0-9-]{4,40})?$/,
       'Enter the tracking number (AWB): 4 to 40 letters, digits or hyphens.',
     ),
   destinationCountry: z
@@ -245,6 +246,8 @@ export const shipmentSchema = z.object({
     .string()
     .trim()
     .max(300, 'At most 300 characters.'),
+  /** Own delivery: the staff member who delivers it ('' = later). */
+  assignedToUserId: z.string(),
 })
 export type ShipmentFormValues = z.infer<typeof shipmentSchema>
 
@@ -253,5 +256,9 @@ export const trackingUpdateSchema = z.object({
   occurredAt: z.string(),
   location: z.string().trim().max(100, 'At most 100 characters.'),
   note: z.string().trim().max(500, 'At most 500 characters.'),
+  /** With "Problem (exception)": why the delivery attempt failed (optional for couriers). */
+  failureReason: z.string(),
+  /** With "Delivered": who received it (required for own deliveries, checked on the page). */
+  receivedBy: z.string().trim().max(100, 'At most 100 characters.'),
 })
 export type TrackingUpdateFormValues = z.infer<typeof trackingUpdateSchema>

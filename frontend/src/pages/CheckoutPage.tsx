@@ -330,6 +330,7 @@ function CheckoutForm({
             />
             <Input
               label="Postal code (optional)"
+              hint="Some delivery options, such as our own local delivery, depend on it."
               autoComplete="postal-code"
               error={errors.postalCode?.message}
               {...register('postalCode')}

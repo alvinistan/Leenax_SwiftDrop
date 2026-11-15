@@ -19,7 +19,9 @@ type LoginValues = z.infer<typeof loginSchema>
 
 /** Where to go after logging in when no page was asked for. */
 function home(roles: string[]): string {
-  return roles.includes('ADMIN') ? '/admin' : '/'
+  if (roles.includes('ADMIN')) return '/admin'
+  if (roles.includes('DELIVERY')) return '/delivery'
+  return '/'
 }
 
 export function LoginPage() {

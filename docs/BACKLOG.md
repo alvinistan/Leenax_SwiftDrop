@@ -16,8 +16,8 @@ Status values: `Not started` · `In progress` · `Awaiting review` · `Done`
 | 6 | Authentication and administration (6A + 6B) | 5 | Done |
 | 7 | AWS S3 product images | 6 | Awaiting review (real AWS awaiting approval) |
 | 8 | Shopping cart and checkout (COD) | 6 | Done |
-| 9 | Orders and payments (PayHere card payments) | 8 | Awaiting review |
-| 10 | Delivery management | 9 | Not started |
+| 9 | Orders and payments (PayHere card payments) | 8 | Done |
+| 10 | Delivery management (own staff, failed attempts, COD cash) | 9 | Awaiting review |
 | 11 | Quality, security and performance | 10 | Not started |
 | 12 | Docker production-like environment | 11 | Not started |
 | 13 | GitHub Actions CI/CD | 12 | Not started |

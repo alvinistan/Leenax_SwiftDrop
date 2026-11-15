@@ -14,6 +14,7 @@ class ResizeObserverStub {
 globalThis.ResizeObserver ??=
   ResizeObserverStub as unknown as typeof ResizeObserver
 import { resetMockAdmin } from './mockAdminApi'
+import { resetMockDelivery } from './mockDeliveryApi'
 import { resetMockShipping } from './mockShippingApi'
 import { resetMockShop } from './mockShopApi'
 
@@ -26,6 +27,7 @@ afterEach(() => {
   cleanup()
   server.resetHandlers()
   resetMockAdmin()
+  resetMockDelivery()
   resetMockShipping()
   resetMockShop()
   localStorage.clear() // the cart is saved in local storage

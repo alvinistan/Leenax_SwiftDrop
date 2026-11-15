@@ -122,6 +122,12 @@ public class Shipment {
     /** A shipment booked on the courier's portal; starts as BOOKED. */
     public static Shipment bookedManually(CourierProviderConfig provider, String awb, String createdBy,
                                           Instant bookedAt) {
+        return bookedManually(provider, awb, createdBy, bookedAt, "Booked on the courier's portal");
+    }
+
+    /** @param note the first step's text, e.g. "Ready for our own delivery" */
+    public static Shipment bookedManually(CourierProviderConfig provider, String awb, String createdBy,
+                                          Instant bookedAt, String note) {
         Shipment shipment = new Shipment();
         shipment.provider = provider;
         shipment.awb = awb;
@@ -129,7 +135,7 @@ public class Shipment {
         shipment.createdBy = createdBy;
         shipment.status = TrackingStatus.BOOKED;
         shipment.events.add(new TrackingEvent(shipment, TrackingStatus.BOOKED, bookedAt, null,
-                "Booked on the courier's portal", TrackingEvent.Source.MANUAL, createdBy));
+                note, TrackingEvent.Source.MANUAL, createdBy));
         return shipment;
     }
 
